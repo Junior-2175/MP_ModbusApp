@@ -148,6 +148,7 @@ namespace MP_ModbusApp
                         GroupId INTEGER NOT NULL,
                         RegisterNumber INTEGER NOT NULL,
                         RegisterName TEXT NOT NULL,
+                        DisplayFormatColumn TEXT NOT NULL DEFAULT 'Unsigned16', /* <-- NOWA KOLUMNA */
                         FOREIGN KEY (GroupId) REFERENCES ReadingGroups (GroupId) ON DELETE CASCADE
                     );";
                 command.ExecuteNonQuery();

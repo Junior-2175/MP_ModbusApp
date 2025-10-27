@@ -554,19 +554,41 @@ namespace MP_ModbusApp
             }
         }
 
-        public void SetRegisterDefinitions(List<Tuple<int, string>> registers)
+        public void SetRegisterDefinitions(List<Tuple<int, string, string>> registers)
         {
-            foreach (var regDef in registers)
+            foreach (var regDef in registers) // (int RegNum, string RegName, string RegFormat)
             {
                 foreach (DataGridViewRow row in dataGridView1.Rows)
                 {
-                    if (row.Cells["RegisterNumber"].Value != null && (int)row.Cells["RegisterNumber"].Value == regDef.Item1)
+                    if (row.IsNewRow || row.Cells["RegisterNumber"].Value == null) continue;
+
+                    // Komórka "RegisterNumber" jest typu 'int' zaraz po 'datagridUpdate()'
+                    if (row.Cells["RegisterNumber"].Value is int regNumInCell)
                     {
-                        row.Cells["Name"].Value = regDef.Item2;
-                        break;
+                        if (regNumInCell == regDef.Item1) // Item1 = RegisterNumber
+                        {
+                            row.Cells["Name"].Value = regDef.Item2; // Item2 = RegisterName
+
+                            // NOWY KOD: Ustaw DisplayFormat
+                            // Próbujemy sparsować string z bazy (np. "Float32_BE") z powrotem na enum
+                            if (Enum.TryParse<DisplayFormat>(regDef.Item3, out var displayFormat)) // Item3 = DisplayFormat (string)
+                            {
+                                row.Cells["DisplayFormatColumn"].Value = displayFormat;
+                            }
+                            else
+                            {
+                                // Wartość domyślna, jeśli format z bazy jest nieprawidłowy
+                                row.Cells["DisplayFormatColumn"].Value = DisplayFormat.Unsigned16;
+                            }
+                            break; // Znaleziono pasujący wiersz, przejdź do następnego rejestru
+                        }
                     }
                 }
             }
+
+            // Po ustawieniu WSZYSTKICH formatów, wywołujemy RefreshDisplayValues() JEDEN RAZ.
+            // To skonsoliduje wiersze (np. 32-bitowe) i ukryje te, które trzeba.
+            RefreshDisplayValues();
         }
 
 

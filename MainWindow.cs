@@ -621,15 +621,40 @@ namespace MP_ModbusApp
                             deviceForm.DeviceTabControl.TabPages.Add(newTab);
 
                             var regCmd = connection.CreateCommand();
-                            regCmd.CommandText = "SELECT RegisterNumber, RegisterName FROM RegisterDefinitions WHERE GroupId = $groupId";
+                            regCmd.CommandText = "SELECT RegisterNumber, RegisterName, DisplayFormatColumn FROM RegisterDefinitions WHERE GroupId = $groupId";
                             regCmd.Parameters.AddWithValue("$groupId", groupId);
 
-                            var registers = new List<Tuple<int, string>>();
+                            var registers = new List<Tuple<int, string, string>>();
                             using (var regReader = regCmd.ExecuteReader())
                             {
                                 while (regReader.Read())
                                 {
-                                    registers.Add(new Tuple<int, string>(Convert.ToInt32(regReader.GetValue(0)), regReader.GetString(1)));
+                                    // ---- ZAKTUALIZOWANA LOGIKA WCZYTYWANIA ----
+                                    int regNum;
+                                    string regNumString = regReader.GetValue(0).ToString();
+
+                                    // Próbujemy sparsować numer rejestru
+                                    if (!int.TryParse(regNumString, out regNum))
+                                    {
+                                        // Jeśli się nie uda (bo to np. "100 - 103"),
+                                        // próbujemy odzyskać pierwszą liczbę.
+                                        string[] parts = regNumString.Split(' ');
+                                        if (parts.Length > 0 && int.TryParse(parts[0], out regNum))
+                                        {
+                                            // Sukces, odzyskaliśmy "100"
+                                        }
+                                        else
+                                        {
+                                            // Całkowicie uszkodzone dane, pomiń ten rejestr
+                                            continue;
+                                        }
+                                    }
+                                    // ---- KONIEC ZAKTUALIZOWANEJ LOGIKI ----
+
+                                    string regName = regReader.GetString(1);
+                                    string regFormat = regReader.IsDBNull(2) ? "Unsigned16" : regReader.GetString(2);
+
+                                    registers.Add(new Tuple<int, string, string>(regNum, regName, regFormat));
                                 }
                             }
                             readingsTab.SetRegisterDefinitions(registers);

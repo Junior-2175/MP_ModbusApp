@@ -308,18 +308,34 @@ namespace MP_ModbusApp
 
                             long groupId = (long)groupCmd.ExecuteScalar();
 
+                            int startAddrForThisTab = readingsTab.GetStartAddress();
+
                             foreach (DataGridViewRow row in readingsTab.GetDataGridViewRows())
                             {
                                 if (row.IsNewRow) continue;
+
+                                // ---- NOWA LOGIKA OBLICZANIA NUMERU REJESTRU ----
+                                // Używamy indeksu wiersza i adresu startowego zakładki,
+                                // aby uzyskać prawdziwy numer rejestru (np. 100).
+                                // Ignorujemy wartość w komórce, która może być tekstem "100 - 103".
+                                int registerNumber = startAddrForThisTab + row.Index;
+                                // ---- KONIEC NOWEJ LOGIKI ----
+
                                 var regCmd = connection.CreateCommand();
                                 regCmd.Transaction = transaction;
                                 regCmd.CommandText = @"
-                            INSERT INTO RegisterDefinitions (GroupId, RegisterNumber, RegisterName)
-                            VALUES ($groupId, $regNum, $regName);";
+                            INSERT INTO RegisterDefinitions (GroupId, RegisterNumber, RegisterName, DisplayFormatColumn)
+                            VALUES ($groupId, $regNum, $regName, $displayFormat);";
 
                                 regCmd.Parameters.AddWithValue("$groupId", groupId);
-                                regCmd.Parameters.AddWithValue("$regNum", row.Cells["RegisterNumber"].Value ?? 0);
+
+                                // ZMIANA: Używamy nowej, obliczonej zmiennej 'registerNumber'
+                                regCmd.Parameters.AddWithValue("$regNum", registerNumber);
+
                                 regCmd.Parameters.AddWithValue("$regName", row.Cells["Name"].Value ?? string.Empty);
+
+                                var displayFormat = row.Cells["DisplayFormatColumn"].Value?.ToString() ?? "Unsigned16";
+                                regCmd.Parameters.AddWithValue("$displayFormat", displayFormat);
                                 regCmd.ExecuteNonQuery();
                             }
                         }
@@ -404,8 +420,6 @@ namespace MP_ModbusApp
                 int funcCode = 0;
                 ushort startAddr = 0;
                 ushort quantity = 0;
-                // string fcName = ""; // Już niepotrzebne
-
                 try
                 {
                     funcCode = readingsTab.GetFunctionCode();
