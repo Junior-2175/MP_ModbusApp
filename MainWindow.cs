@@ -451,6 +451,7 @@ namespace MP_ModbusApp
             {
                 MdiParent = this
             };
+            newDevice.DeviceSaved += (s, ev) => LoadDevicesToTree();
             newDevice.Show();
             newDevice.Activate();
         }
@@ -539,7 +540,7 @@ namespace MP_ModbusApp
                         {
                             deviceForm.Text = deviceReader.GetString(0);
                             deviceForm.DeviceName = deviceReader.GetString(0);
-                            deviceForm.SlaveId = deviceReader.GetInt32(1);
+                            deviceForm.SlaveId = Convert.ToInt32(deviceReader.GetValue(1));
                         }
                     }
 
@@ -555,9 +556,9 @@ namespace MP_ModbusApp
                         {
                             long groupId = groupReader.GetInt64(0);
                             string groupName = groupReader.GetString(1);
-                            int funcCode = groupReader.GetInt32(2);
-                            int startAddr = groupReader.GetInt32(3);
-                            int quantity = groupReader.GetInt32(4);
+                            int funcCode = Convert.ToInt32(groupReader.GetValue(2));
+                            int startAddr = Convert.ToInt32(groupReader.GetValue(3));
+                            int quantity = Convert.ToInt32(groupReader.GetValue(4));
 
                             ReadingsTab readingsTab = new ReadingsTab { Dock = DockStyle.Fill };
                             readingsTab.SetConfiguration(funcCode, startAddr, quantity);
@@ -575,9 +576,9 @@ namespace MP_ModbusApp
                             {
                                 while (regReader.Read())
                                 {
-                                    registers.Add(new Tuple<int, string>(regReader.GetInt32(0), regReader.GetString(1)));
+                                    registers.Add(new Tuple<int, string>(Convert.ToInt32(regReader.GetValue(0)), regReader.GetString(1)));
                                 }
-                            }
+                                }
                             readingsTab.SetRegisterDefinitions(registers);
                         }
                     }

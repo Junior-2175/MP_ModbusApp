@@ -104,7 +104,7 @@ namespace MP_ModbusApp
             {
                 if (dataGridView1.Rows[i].IsNewRow) continue;
 
-                dataGridView1.Rows[i].Cells["RegisterNumber"].Value = i + startRegister.Value;
+                dataGridView1.Rows[i].Cells["RegisterNumber"].Value = i + (int)startRegister.Value;
                 dataGridView1.Rows[i].Cells["Name"].Value = "Register_" + (i + startRegister.Value);
             }
             

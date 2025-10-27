@@ -44,12 +44,16 @@ namespace MP_ModbusApp
 
         private void ModbusGroup_Load(object sender, EventArgs e)
         {
-            TabPage newTab = new TabPage();
-            tabNo = tabNo + 1;
-            tabPanel1.SelectedTab = newTab;
-            newTab.Text = "Readings " + tabNo;
-            newTab.Controls.Add(new ReadingsTab() { Dock = DockStyle.Fill });
-            tabPanel1.TabPages.Add(newTab);
+            tabNo = tabPanel1.TabPages.Count;
+            if (tabPanel1.TabPages.Count == 0)
+            {
+                TabPage newTab = new TabPage();
+                tabNo = tabNo + 1;
+                tabPanel1.SelectedTab = newTab;
+                newTab.Text = "Readings " + tabNo;
+                newTab.Controls.Add(new ReadingsTab() { Dock = DockStyle.Fill });
+                tabPanel1.TabPages.Add(newTab);
+            }
             txtRenameTab.Visible = false;
         }
 
