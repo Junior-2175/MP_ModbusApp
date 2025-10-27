@@ -37,19 +37,39 @@
             label1 = new Label();
             comboBox1 = new ComboBox();
             groupBox1 = new GroupBox();
+            lblTabError = new Label();
             startRegister_1 = new NumericUpDown();
             dataGridView1 = new DataGridView();
             Name = new DataGridViewTextBoxColumn();
             RegisterNumber = new DataGridViewTextBoxColumn();
             Value = new DataGridViewTextBoxColumn();
+            contextMenuStrip1 = new ContextMenuStrip(components);
+            toolStripMenuItem2 = new ToolStripMenuItem();
+            toolStripMenuItem3 = new ToolStripMenuItem();
+            toolStripMenuItem4 = new ToolStripMenuItem();
             timer1 = new System.Windows.Forms.Timer(components);
-            lblTabError = new Label();
+            unsignedToolStripMenuItem = new ToolStripMenuItem();
+            signedToolStripMenuItem = new ToolStripMenuItem();
+            binaryToolStripMenuItem = new ToolStripMenuItem();
+            hexToolStripMenuItem = new ToolStripMenuItem();
+            aSCIIToolStripMenuItem = new ToolStripMenuItem();
+            unsignedToolStripMenuItem1 = new ToolStripMenuItem();
+            signedToolStripMenuItem1 = new ToolStripMenuItem();
+            realToolStripMenuItem = new ToolStripMenuItem();
+            hexToolStripMenuItem1 = new ToolStripMenuItem();
+            aSCIIToolStripMenuItem1 = new ToolStripMenuItem();
+            bigendianToolStripMenuItem = new ToolStripMenuItem();
+            littleendianToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
+            bigendianToolStripMenuItem1 = new ToolStripMenuItem();
+            littleendianToolStripMenuItem1 = new ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)numOfRegisters).BeginInit();
             ((System.ComponentModel.ISupportInitialize)startRegister).BeginInit();
             ((System.ComponentModel.ISupportInitialize)startRegisterHex).BeginInit();
             groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)startRegister_1).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
+            contextMenuStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // numOfRegisters
@@ -149,6 +169,17 @@
             groupBox1.TabStop = false;
             groupBox1.Text = "Read setup";
             // 
+            // lblTabError
+            // 
+            lblTabError.AutoSize = true;
+            lblTabError.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+            lblTabError.ForeColor = Color.FromArgb(192, 0, 0);
+            lblTabError.Location = new Point(176, 79);
+            lblTabError.Name = "lblTabError";
+            lblTabError.Size = new Size(39, 15);
+            lblTabError.TabIndex = 4;
+            lblTabError.Text = "label4";
+            // 
             // startRegister_1
             // 
             startRegister_1.Font = new Font("Segoe UI", 9F);
@@ -193,20 +224,131 @@
             // 
             // Value
             // 
+            Value.ContextMenuStrip = contextMenuStrip1;
             Value.HeaderText = "Value";
             Value.Name = "Value";
             Value.SortMode = DataGridViewColumnSortMode.NotSortable;
             // 
-            // lblTabError
+            // contextMenuStrip1
             // 
-            lblTabError.AutoSize = true;
-            lblTabError.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
-            lblTabError.ForeColor = Color.FromArgb(192, 0, 0);
-            lblTabError.Location = new Point(176, 79);
-            lblTabError.Name = "lblTabError";
-            lblTabError.Size = new Size(39, 15);
-            lblTabError.TabIndex = 4;
-            lblTabError.Text = "label4";
+            contextMenuStrip1.Items.AddRange(new ToolStripItem[] { toolStripMenuItem2, toolStripMenuItem3, toolStripMenuItem4 });
+            contextMenuStrip1.Name = "contextMenuStrip1";
+            contextMenuStrip1.Size = new Size(181, 92);
+            // 
+            // toolStripMenuItem2
+            // 
+            toolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { unsignedToolStripMenuItem, signedToolStripMenuItem, binaryToolStripMenuItem, hexToolStripMenuItem, aSCIIToolStripMenuItem });
+            toolStripMenuItem2.Name = "toolStripMenuItem2";
+            toolStripMenuItem2.Size = new Size(180, 22);
+            toolStripMenuItem2.Text = "16-bit";
+            // 
+            // toolStripMenuItem3
+            // 
+            toolStripMenuItem3.DropDownItems.AddRange(new ToolStripItem[] { unsignedToolStripMenuItem1, signedToolStripMenuItem1, realToolStripMenuItem, hexToolStripMenuItem1, aSCIIToolStripMenuItem1 });
+            toolStripMenuItem3.Name = "toolStripMenuItem3";
+            toolStripMenuItem3.Size = new Size(180, 22);
+            toolStripMenuItem3.Text = "32-bit";
+            // 
+            // toolStripMenuItem4
+            // 
+            toolStripMenuItem4.Name = "toolStripMenuItem4";
+            toolStripMenuItem4.Size = new Size(105, 22);
+            toolStripMenuItem4.Text = "64-bit";
+            // 
+            // unsignedToolStripMenuItem
+            // 
+            unsignedToolStripMenuItem.Name = "unsignedToolStripMenuItem";
+            unsignedToolStripMenuItem.Size = new Size(180, 22);
+            unsignedToolStripMenuItem.Text = "Unsigned";
+            unsignedToolStripMenuItem.Click += unsignedToolStripMenuItem_Click;
+            // 
+            // signedToolStripMenuItem
+            // 
+            signedToolStripMenuItem.Name = "signedToolStripMenuItem";
+            signedToolStripMenuItem.Size = new Size(180, 22);
+            signedToolStripMenuItem.Text = "Signed";
+            signedToolStripMenuItem.Click += signedToolStripMenuItem_Click;
+            // 
+            // binaryToolStripMenuItem
+            // 
+            binaryToolStripMenuItem.Name = "binaryToolStripMenuItem";
+            binaryToolStripMenuItem.Size = new Size(180, 22);
+            binaryToolStripMenuItem.Text = "Binary";
+            binaryToolStripMenuItem.Click += binaryToolStripMenuItem_Click;
+            // 
+            // hexToolStripMenuItem
+            // 
+            hexToolStripMenuItem.Name = "hexToolStripMenuItem";
+            hexToolStripMenuItem.Size = new Size(180, 22);
+            hexToolStripMenuItem.Text = "Hex";
+            hexToolStripMenuItem.Click += hexToolStripMenuItem_Click;
+            // 
+            // aSCIIToolStripMenuItem
+            // 
+            aSCIIToolStripMenuItem.Name = "aSCIIToolStripMenuItem";
+            aSCIIToolStripMenuItem.Size = new Size(180, 22);
+            aSCIIToolStripMenuItem.Text = "ASCII";
+            aSCIIToolStripMenuItem.Click += aSCIIToolStripMenuItem_Click;
+            // 
+            // unsignedToolStripMenuItem1
+            // 
+            unsignedToolStripMenuItem1.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem, littleendianToolStripMenuItem, toolStripSeparator1, bigendianToolStripMenuItem1, littleendianToolStripMenuItem1 });
+            unsignedToolStripMenuItem1.Name = "unsignedToolStripMenuItem1";
+            unsignedToolStripMenuItem1.Size = new Size(180, 22);
+            unsignedToolStripMenuItem1.Text = "Unsigned";
+            // 
+            // signedToolStripMenuItem1
+            // 
+            signedToolStripMenuItem1.Name = "signedToolStripMenuItem1";
+            signedToolStripMenuItem1.Size = new Size(180, 22);
+            signedToolStripMenuItem1.Text = "Signed";
+            // 
+            // realToolStripMenuItem
+            // 
+            realToolStripMenuItem.Name = "realToolStripMenuItem";
+            realToolStripMenuItem.Size = new Size(180, 22);
+            realToolStripMenuItem.Text = "Real";
+            // 
+            // hexToolStripMenuItem1
+            // 
+            hexToolStripMenuItem1.Name = "hexToolStripMenuItem1";
+            hexToolStripMenuItem1.Size = new Size(180, 22);
+            hexToolStripMenuItem1.Text = "Hex";
+            // 
+            // aSCIIToolStripMenuItem1
+            // 
+            aSCIIToolStripMenuItem1.Name = "aSCIIToolStripMenuItem1";
+            aSCIIToolStripMenuItem1.Size = new Size(180, 22);
+            aSCIIToolStripMenuItem1.Text = "ASCII";
+            // 
+            // bigendianToolStripMenuItem
+            // 
+            bigendianToolStripMenuItem.Name = "bigendianToolStripMenuItem";
+            bigendianToolStripMenuItem.Size = new Size(180, 22);
+            bigendianToolStripMenuItem.Text = "Big-endian";
+            // 
+            // littleendianToolStripMenuItem
+            // 
+            littleendianToolStripMenuItem.Name = "littleendianToolStripMenuItem";
+            littleendianToolStripMenuItem.Size = new Size(180, 22);
+            littleendianToolStripMenuItem.Text = "Little-endian";
+            // 
+            // toolStripSeparator1
+            // 
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(194, 6);
+            // 
+            // bigendianToolStripMenuItem1
+            // 
+            bigendianToolStripMenuItem1.Name = "bigendianToolStripMenuItem1";
+            bigendianToolStripMenuItem1.Size = new Size(197, 22);
+            bigendianToolStripMenuItem1.Text = "Big-endian byte swap";
+            // 
+            // littleendianToolStripMenuItem1
+            // 
+            littleendianToolStripMenuItem1.Name = "littleendianToolStripMenuItem1";
+            littleendianToolStripMenuItem1.Size = new Size(197, 22);
+            littleendianToolStripMenuItem1.Text = "Little-endian byte swap";
             // 
             // ReadingsTab
             // 
@@ -223,6 +365,7 @@
             groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)startRegister_1).EndInit();
             ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
+            contextMenuStrip1.ResumeLayout(false);
             ResumeLayout(false);
         }
 
@@ -237,10 +380,29 @@
         private GroupBox groupBox1;
         private DataGridView dataGridView1;
         private System.Windows.Forms.Timer timer1;
+        private NumericUpDown startRegister_1;
+        private Label lblTabError;
+        private ContextMenuStrip contextMenuStrip1;
+        private ToolStripMenuItem toolStripMenuItem2;
+        private ToolStripMenuItem toolStripMenuItem3;
+        private ToolStripMenuItem toolStripMenuItem4;
         private DataGridViewTextBoxColumn Name;
         private DataGridViewTextBoxColumn RegisterNumber;
         private DataGridViewTextBoxColumn Value;
-        private NumericUpDown startRegister_1;
-        private Label lblTabError;
+        private ToolStripMenuItem unsignedToolStripMenuItem;
+        private ToolStripMenuItem signedToolStripMenuItem;
+        private ToolStripMenuItem binaryToolStripMenuItem;
+        private ToolStripMenuItem hexToolStripMenuItem;
+        private ToolStripMenuItem aSCIIToolStripMenuItem;
+        private ToolStripMenuItem unsignedToolStripMenuItem1;
+        private ToolStripMenuItem bigendianToolStripMenuItem;
+        private ToolStripMenuItem littleendianToolStripMenuItem;
+        private ToolStripMenuItem signedToolStripMenuItem1;
+        private ToolStripMenuItem realToolStripMenuItem;
+        private ToolStripMenuItem hexToolStripMenuItem1;
+        private ToolStripMenuItem aSCIIToolStripMenuItem1;
+        private ToolStripSeparator toolStripSeparator1;
+        private ToolStripMenuItem bigendianToolStripMenuItem1;
+        private ToolStripMenuItem littleendianToolStripMenuItem1;
     }
 }

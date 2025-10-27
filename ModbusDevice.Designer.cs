@@ -78,7 +78,6 @@
             // 
             // tabPanel1
             // 
-            tabPanel1.ContextMenuStrip = contextMenuStrip1;
             tabPanel1.Dock = DockStyle.Fill;
             tabPanel1.Location = new Point(0, 71);
             tabPanel1.Name = "tabPanel1";

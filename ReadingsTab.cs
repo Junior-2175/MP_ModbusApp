@@ -92,7 +92,7 @@ namespace MP_ModbusApp
                 startRegister_1.Value = requestedFuncionNo * 100000 + startRegister.Value + 1;
             }
 
-            }
+        }
 
         private void numOfRegisters_ValueChanged(object sender, EventArgs e)
         {
@@ -109,7 +109,7 @@ namespace MP_ModbusApp
                 dataGridView1.Rows[i].Cells["RegisterNumber"].Value = i + (int)startRegister.Value;
                 dataGridView1.Rows[i].Cells["Name"].Value = "Register_" + (i + startRegister.Value);
             }
-            
+
 
 
         }
@@ -118,11 +118,11 @@ namespace MP_ModbusApp
         {
             if (_isUpdatingValues) return;
             _isUpdatingValues = true;
-           
+
             try
             {
                 string originalString = (startRegister_1.Value - 1).ToString();
-                string functionString = originalString.Substring(0,1);
+                string functionString = originalString.Substring(0, 1);
                 string registerString = originalString.Substring(1);
                 decimal registerStringDouble = Convert.ToDecimal(registerString);
                 string requestedFuncionNo = "";
@@ -138,8 +138,8 @@ namespace MP_ModbusApp
                         {
                             registerStringDouble = startRegister_1.Value - 1;
                         }
-                            break;
-                        
+                        break;
+
                     case 1:
                         requestedFuncionNo = "1";
                         break;
@@ -152,7 +152,7 @@ namespace MP_ModbusApp
                     default:
                         break;
                 }
-                if (functionString != requestedFuncionNo && comboBox1.SelectedIndex !=0 || (registerStringDouble<0 && registerStringDouble >65535))
+                if (functionString != requestedFuncionNo && comboBox1.SelectedIndex != 0 || (registerStringDouble < 0 && registerStringDouble > 65535))
                 {
                     MessageBox.Show("Invalid Register Number for the selected Function Code. Adjusting to match Function Code.");
                     return;
@@ -190,13 +190,13 @@ namespace MP_ModbusApp
 
         public void SetConfiguration(int funcCode, int startAddr, int quantity)
         {
-            _isUpdatingValues = true; 
+            _isUpdatingValues = true;
             try
             {
                 comboBox1.SelectedIndex = funcCode;
                 startRegister.Value = startAddr;
                 numOfRegisters.Value = quantity;
-                datagridUpdate(); 
+                datagridUpdate();
             }
             finally
             {
@@ -242,5 +242,53 @@ namespace MP_ModbusApp
             lblTabError.Visible = false;
         }
 
+        // Dodaj tę metodę w pliku ReadingsTab.cs
+        public void UpdateValues(ushort[] data)
+        {
+            // Sprawdzenie, czy metoda jest wywoływana z innego wątku niż wątek UI
+            if (InvokeRequired)
+            {
+                // Jeśli tak, wywołaj tę samą metodę ponownie, ale już w głównym wątku UI
+                Invoke(new Action(() => UpdateValues(data)));
+                return;
+            }
+
+            // Ten kod wykona się już bezpiecznie w wątku UI
+            if (data == null) return;
+
+            // Przejdź przez wszystkie wiersze w siatce (ale nie dalej niż ilość otrzymanych danych)
+            for (int i = 0; i < dataGridView1.Rows.Count && i < data.Length; i++)
+            {
+                if (dataGridView1.Rows[i].IsNewRow) continue;
+
+                // Ustaw wartość komórki w kolumnie "Value"
+                dataGridView1.Rows[i].Cells["Value"].Value = data[i];
+            }
+        }
+
+        private void unsignedToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void signedToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void binaryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void hexToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void aSCIIToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

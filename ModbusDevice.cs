@@ -106,17 +106,31 @@ namespace MP_ModbusApp
 
         private void tabPanel1_MouseDown(object sender, MouseEventArgs e)
         {
+            // Sprawdzamy, czy to prawy przycisk myszy
             if (e.Button == MouseButtons.Right)
             {
+                // Pętla sprawdzająca, czy kliknięcie było na którymś z nagłówków zakładek
                 for (int i = 0; i < tabPanel1.TabCount; i++)
                 {
                     Rectangle tabRect = tabPanel1.GetTabRect(i);
+
+                    // Jeśli współrzędne kliknięcia (e.Location) zawierają się w prostokącie nagłówka...
                     if (tabRect.Contains(e.Location))
                     {
+                        // ...to jest kliknięcie na nagłówek!
+
+                        // 1. (Opcjonalnie, ale dobrze to zrobić) Ustaw tę zakładkę jako aktywną
                         tabPanel1.SelectedIndex = i;
+
+                        // 2. RĘCZNIE pokaż menu kontekstowe w miejscu kliknięcia
+                        contextMenuStrip1.Show(tabPanel1, e.Location);
+
+                        // 3. Zakończ pętlę, bo znaleźliśmy klikniętą zakładkę
                         break;
                     }
                 }
+                // Jeśli pętla się zakończy, a kliknięcie nie trafiło w żaden nagłówek,
+                // menu po prostu się nie pokaże.
             }
         }
 
@@ -426,7 +440,7 @@ namespace MP_ModbusApp
                     }
 
                     // --- 2. LOGOWANIE RX (POPRAWNA ODPOWIEDŹ) ---
-                    // readingsTab.UpdateValues(data); 
+                     readingsTab.UpdateValues(data); 
 
                     // USUNĘLIŚMY TĘ LINIĘ:
                     // LogFrame("RX", $"Success. Data: [{string.Join(", ", data)}]");
@@ -474,5 +488,6 @@ namespace MP_ModbusApp
             _mainWindow?.LogCommunicationEvent(logEntry);
         }
 
+        
     }
 }
