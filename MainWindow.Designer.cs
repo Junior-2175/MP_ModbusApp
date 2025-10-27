@@ -37,6 +37,11 @@ namespace MP_ModbusApp
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWindow));
             sidePanel = new Panel();
             treeView = new TreeView();
+            treeViewContextMenu = new ContextMenuStrip(components);
+            importDeviceContextMenuItem = new ToolStripMenuItem();
+            exportDeviceContextMenuItem = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
+            deleteDeviceContextMenuItem = new ToolStripMenuItem();
             imageList1 = new ImageList(components);
             treeButton = new Panel();
             label4 = new Label();
@@ -87,6 +92,7 @@ namespace MP_ModbusApp
             viewToolStripMenuItem = new ToolStripMenuItem();
             communicationToolStripMenuItem = new ToolStripMenuItem();
             sidePanel.SuspendLayout();
+            treeViewContextMenu.SuspendLayout();
             treeButton.SuspendLayout();
             setupPanel.SuspendLayout();
             gBoxGlobalSettings.SuspendLayout();
@@ -113,12 +119,13 @@ namespace MP_ModbusApp
             sidePanel.Dock = DockStyle.Left;
             sidePanel.Location = new Point(0, 0);
             sidePanel.Name = "sidePanel";
-            sidePanel.Size = new Size(350, 574);
+            sidePanel.Size = new Size(350, 598);
             sidePanel.TabIndex = 0;
             // 
             // treeView
             // 
             treeView.BackColor = SystemColors.ButtonFace;
+            treeView.ContextMenuStrip = treeViewContextMenu;
             treeView.Dock = DockStyle.Fill;
             treeView.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             treeView.ImageIndex = 0;
@@ -142,9 +149,48 @@ namespace MP_ModbusApp
             treeNode3.Text = "Saved Devices";
             treeView.Nodes.AddRange(new TreeNode[] { treeNode3 });
             treeView.SelectedImageIndex = 0;
-            treeView.Size = new Size(350, 58);
+            treeView.Size = new Size(350, 82);
             treeView.TabIndex = 8;
+            treeView.ItemDrag += treeView_ItemDrag;
+            treeView.NodeMouseClick += treeView_NodeMouseClick;
             treeView.NodeMouseDoubleClick += treeView_NodeMouseDoubleClick;
+            treeView.GiveFeedback += treeView_GiveFeedback;
+            // 
+            // treeViewContextMenu
+            // 
+            treeViewContextMenu.Items.AddRange(new ToolStripItem[] { importDeviceContextMenuItem, exportDeviceContextMenuItem, toolStripSeparator1, deleteDeviceContextMenuItem });
+            treeViewContextMenu.Name = "contextMenuStrip1";
+            treeViewContextMenu.Size = new Size(181, 98);
+            treeViewContextMenu.Opening += treeViewContextMenu_Opening;
+            // 
+            // importDeviceContextMenuItem
+            // 
+            importDeviceContextMenuItem.Name = "importDeviceContextMenuItem";
+            importDeviceContextMenuItem.ShortcutKeys = Keys.Control | Keys.I;
+            importDeviceContextMenuItem.Size = new Size(180, 22);
+            importDeviceContextMenuItem.Text = "Import";
+            importDeviceContextMenuItem.Click += importDeviceContextMenuItem_Click;
+            // 
+            // exportDeviceContextMenuItem
+            // 
+            exportDeviceContextMenuItem.Name = "exportDeviceContextMenuItem";
+            exportDeviceContextMenuItem.ShortcutKeys = Keys.Control | Keys.E;
+            exportDeviceContextMenuItem.Size = new Size(180, 22);
+            exportDeviceContextMenuItem.Text = "Export";
+            exportDeviceContextMenuItem.Click += exportDeviceContextMenuItem_Click;
+            // 
+            // toolStripSeparator1
+            // 
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(177, 6);
+            // 
+            // deleteDeviceContextMenuItem
+            // 
+            deleteDeviceContextMenuItem.Name = "deleteDeviceContextMenuItem";
+            deleteDeviceContextMenuItem.ShortcutKeys = Keys.Delete;
+            deleteDeviceContextMenuItem.Size = new Size(180, 22);
+            deleteDeviceContextMenuItem.Text = "Remove";
+            deleteDeviceContextMenuItem.Click += deleteDeviceContextMenuItem_Click;
             // 
             // imageList1
             // 
@@ -613,9 +659,9 @@ namespace MP_ModbusApp
             // statusStrip1
             // 
             statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabel2 });
-            statusStrip1.Location = new Point(350, 552);
+            statusStrip1.Location = new Point(350, 576);
             statusStrip1.Name = "statusStrip1";
-            statusStrip1.Size = new Size(686, 22);
+            statusStrip1.Size = new Size(321, 22);
             statusStrip1.TabIndex = 2;
             statusStrip1.Text = "statusStrip1";
             // 
@@ -629,7 +675,7 @@ namespace MP_ModbusApp
             // 
             toolStripStatusLabel2.ImageScaling = ToolStripItemImageScaling.None;
             toolStripStatusLabel2.Name = "toolStripStatusLabel2";
-            toolStripStatusLabel2.Size = new Size(501, 17);
+            toolStripStatusLabel2.Size = new Size(136, 17);
             toolStripStatusLabel2.Spring = true;
             toolStripStatusLabel2.Text = "toolStripStatusLabel2";
             toolStripStatusLabel2.TextAlign = ContentAlignment.MiddleRight;
@@ -639,7 +685,7 @@ namespace MP_ModbusApp
             menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, viewToolStripMenuItem });
             menuStrip1.Location = new Point(350, 0);
             menuStrip1.Name = "menuStrip1";
-            menuStrip1.Size = new Size(686, 24);
+            menuStrip1.Size = new Size(321, 24);
             menuStrip1.TabIndex = 6;
             menuStrip1.Text = "menuStrip1";
             // 
@@ -677,7 +723,7 @@ namespace MP_ModbusApp
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1036, 574);
+            ClientSize = new Size(671, 598);
             Controls.Add(statusStrip1);
             Controls.Add(menuStrip1);
             Controls.Add(sidePanel);
@@ -688,7 +734,10 @@ namespace MP_ModbusApp
             Name = "MainWindow";
             Text = "MP_ModbusApp";
             Load += MainWindow_Load;
+            DragDrop += MainWindow_DragDrop;
+            DragEnter += MainWindow_DragEnter;
             sidePanel.ResumeLayout(false);
+            treeViewContextMenu.ResumeLayout(false);
             treeButton.ResumeLayout(false);
             treeButton.PerformLayout();
             setupPanel.ResumeLayout(false);
@@ -767,5 +816,10 @@ namespace MP_ModbusApp
         private Button openTree;
         private TreeView treeView;
         private ImageList imageList1;
+        private ContextMenuStrip treeViewContextMenu;
+        private ToolStripMenuItem importDeviceContextMenuItem;
+        private ToolStripMenuItem exportDeviceContextMenuItem;
+        private ToolStripSeparator toolStripSeparator1;
+        private ToolStripMenuItem deleteDeviceContextMenuItem;
     }
 }

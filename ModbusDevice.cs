@@ -182,34 +182,40 @@ namespace MP_ModbusApp
         {
 
             string oldName = this.Text;
+            string newName;
+
             using (RenameForm renameDialog = new RenameForm())
             {
                 renameDialog.newName = oldName;
                 if (renameDialog.ShowDialog() == DialogResult.OK)
                 {
-                    string newName = renameDialog.newName;
-                    this.Text = newName;
+                    newName = renameDialog.newName;
+                }
+                else
+                {
+                    return;
                 }
             }
 
-            if (string.IsNullOrWhiteSpace(this.Text))
+            if (string.IsNullOrWhiteSpace(newName))
             {
-                MessageBox.Show("Please enter a device name before saving.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Please provide a device name to save.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 this.Focus();
                 return;
             }
+
+            this.Text = newName;
 
             try
             {
                 SaveDeviceConfiguration();
                 MessageBox.Show("Device saved successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                this.Text = this.Text;
                 DeviceSaved?.Invoke(this, EventArgs.Empty);
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error saving device: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"An error occurred while saving the device: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
 
         }
@@ -222,13 +228,42 @@ namespace MP_ModbusApp
                 connection.Open();
                 using (var transaction = connection.BeginTransaction())
                 {
-                    var deviceCmd = connection.CreateCommand();
-                    deviceCmd.Transaction = transaction;
-                    deviceCmd.CommandText = "INSERT INTO Devices (DeviceName, SlaveId) VALUES ($name, $slaveId) RETURNING DeviceId;";
-                    deviceCmd.Parameters.AddWithValue("$name", this.Text);
-                    deviceCmd.Parameters.AddWithValue("$slaveId", (int)slaveId.Value);
+                    long deviceId;
 
-                    long deviceId = (long)deviceCmd.ExecuteScalar();
+                    var checkCmd = connection.CreateCommand();
+                    checkCmd.Transaction = transaction;
+                    checkCmd.CommandText = "SELECT DeviceId FROM Devices WHERE DeviceName = $name;";
+                    checkCmd.Parameters.AddWithValue("$name", this.Text);
+
+                    object existingIdResult = checkCmd.ExecuteScalar();
+
+                    if (existingIdResult != null)
+                    {
+                        deviceId = (long)existingIdResult;
+
+                        var deleteGroupsCmd = connection.CreateCommand();
+                        deleteGroupsCmd.Transaction = transaction;
+                        deleteGroupsCmd.CommandText = "DELETE FROM ReadingGroups WHERE DeviceId = $deviceId;";
+                        deleteGroupsCmd.Parameters.AddWithValue("$deviceId", deviceId);
+                        deleteGroupsCmd.ExecuteNonQuery();
+
+                        var updateDeviceCmd = connection.CreateCommand();
+                        updateDeviceCmd.Transaction = transaction;
+                        updateDeviceCmd.CommandText = "UPDATE Devices SET SlaveId = $slaveId WHERE DeviceId = $deviceId;";
+                        updateDeviceCmd.Parameters.AddWithValue("$slaveId", (int)slaveId.Value);
+                        updateDeviceCmd.Parameters.AddWithValue("$deviceId", deviceId);
+                        updateDeviceCmd.ExecuteNonQuery();
+                    }
+                    else
+                    {
+                        var insertDeviceCmd = connection.CreateCommand();
+                        insertDeviceCmd.Transaction = transaction;
+                        insertDeviceCmd.CommandText = "INSERT INTO Devices (DeviceName, SlaveId) VALUES ($name, $slaveId) RETURNING DeviceId;";
+                        insertDeviceCmd.Parameters.AddWithValue("$name", this.Text);
+                        insertDeviceCmd.Parameters.AddWithValue("$slaveId", (int)slaveId.Value);
+
+                        deviceId = (long)insertDeviceCmd.ExecuteScalar();
+                    }
 
                     foreach (TabPage tabPage in tabPanel1.TabPages)
                     {
@@ -237,9 +272,9 @@ namespace MP_ModbusApp
                             var groupCmd = connection.CreateCommand();
                             groupCmd.Transaction = transaction;
                             groupCmd.CommandText = @"
-                                INSERT INTO ReadingGroups (DeviceId, GroupName, FunctionCode, StartAddress, Quantity)
-                                VALUES ($deviceId, $groupName, $funcCode, $startAddr, $quantity)
-                                RETURNING GroupId;";
+                        INSERT INTO ReadingGroups (DeviceId, GroupName, FunctionCode, StartAddress, Quantity)
+                        VALUES ($deviceId, $groupName, $funcCode, $startAddr, $quantity)
+                        RETURNING GroupId;";
 
                             groupCmd.Parameters.AddWithValue("$deviceId", deviceId);
                             groupCmd.Parameters.AddWithValue("$groupName", tabPage.Text);
@@ -255,8 +290,8 @@ namespace MP_ModbusApp
                                 var regCmd = connection.CreateCommand();
                                 regCmd.Transaction = transaction;
                                 regCmd.CommandText = @"
-                                    INSERT INTO RegisterDefinitions (GroupId, RegisterNumber, RegisterName)
-                                    VALUES ($groupId, $regNum, $regName);";
+                            INSERT INTO RegisterDefinitions (GroupId, RegisterNumber, RegisterName)
+                            VALUES ($groupId, $regNum, $regName);";
 
                                 regCmd.Parameters.AddWithValue("$groupId", groupId);
                                 regCmd.Parameters.AddWithValue("$regNum", row.Cells["RegisterNumber"].Value ?? 0);
@@ -265,11 +300,12 @@ namespace MP_ModbusApp
                             }
                         }
                     }
+
                     transaction.Commit();
                 }
             }
         }
 
 
-    }
+        }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
 using Microsoft.Win32;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO.Ports;
 using System.Linq;
@@ -9,6 +10,10 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
+using System.Diagnostics;
+using System.IO;
+using System.Xml;
 
 namespace MP_ModbusApp
 {
@@ -16,9 +21,8 @@ namespace MP_ModbusApp
     {
         private SerialPort serialPort;
         private System.Net.Sockets.TcpClient tcpClient;
-        private ModbusService modbusService;
         private CommunicationLogWindow _commsLogWindow;
-
+        private Cursor _deviceDragCursor;
         bool sidePanelHidden = false;
         private readonly ToolTip toolTip1 = new ToolTip();
 
@@ -31,6 +35,21 @@ namespace MP_ModbusApp
 
         private void MainWindow_Load(object sender, EventArgs e)
         {
+            this.AllowDrop = true;
+
+            try
+            {
+                Image img = imageList1.Images[1];
+                Bitmap bmp = new Bitmap(img);
+                _deviceDragCursor = new Cursor(bmp.GetHicon());
+                bmp.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Nie można utworzyć kursora przeciągania: " + ex.Message);
+                _deviceDragCursor = Cursors.Default;
+            }
+
             sidePanel.Width = 21;
             setupButton.Height = 90;
             openMenu.Text = "Setup";
@@ -66,8 +85,8 @@ namespace MP_ModbusApp
 
         private void openMenu_Click(object sender, EventArgs e)
         {
-            
-            
+
+
             if (sidePanelHidden)
             {
                 sidePanel.Width = 350;
@@ -354,57 +373,9 @@ namespace MP_ModbusApp
         #region Obsługa połączenia
         private async void btnConnect_Click(object sender, EventArgs e)
         {
-            if (serialPort?.IsOpen == true || tcpClient?.Connected == true) { Disconnect(); return; }
-            try
-            {
-                bool success = cboxConnection.SelectedIndex switch
-                {
-                    0 => await ConnectSerialAsync(),
-                    1 or 2 => await ConnectTcpAsync(),
-                    _ => false
-                };
-            }
-            catch (Exception ex)
-            {
-                Disconnect();
-            }
+
         }
 
-        private Task<bool> ConnectSerialAsync()
-        {
-            if (cboxComPort.SelectedItem == null || cboxComPort.Text.Contains("No COM ports")) throw new InvalidOperationException("No valid COM port selected.");
-            string portName = cboxComPort.Text.Split('-')[0].Trim();
-            serialPort = new SerialPort(portName, int.Parse(cBoxBaudRate.Text), (Parity)Enum.Parse(typeof(Parity), cBoxParity.Text), int.Parse(cBoxDataBits.Text), (StopBits)Enum.Parse(typeof(StopBits), cBoxStopBits.Text))
-            {
-                ReadTimeout = (int)numResponseTimeout.Value,
-                WriteTimeout = (int)numResponseTimeout.Value
-            };
-            serialPort.Open();
-            UpdateUiState(true);
-            toolStripStatusLabel1.Text = $"Connected: {portName}/{cBoxBaudRate.Text}/{cBoxDataBits.Text}/{cBoxParity.Text[0]}/{cBoxStopBits.SelectedIndex + 1}";
-            return Task.FromResult(true);
-        }
-
-        private async Task<bool> ConnectTcpAsync()
-        {
-            string ipAddress = cboxIPAddress.Text;
-            if (string.IsNullOrWhiteSpace(ipAddress)) throw new InvalidOperationException("IP Address or Hostname cannot be empty.");
-
-            tcpClient = new System.Net.Sockets.TcpClient();
-            await tcpClient.ConnectAsync(ipAddress, (int)numIPPort.Value);
-
-            modbusService = new ModbusService(tcpClient.GetStream());
-            modbusService.FrameDataAvailable += (logEntry) =>
-            {
-                if (_commsLogWindow != null && !_commsLogWindow.IsDisposed)
-                {
-                    _commsLogWindow.LogFrame(logEntry);
-                }
-            };
-            UpdateUiState(true);
-            toolStripStatusLabel1.Text = $"Connected: {ipAddress}:{(int)numIPPort.Value}";
-            return true;
-        }
 
         private void Disconnect()
         {
@@ -412,7 +383,6 @@ namespace MP_ModbusApp
             serialPort = null;
             tcpClient?.Close();
             tcpClient = null;
-            modbusService = null;
             UpdateUiState(false);
         }
 
@@ -578,7 +548,7 @@ namespace MP_ModbusApp
                                 {
                                     registers.Add(new Tuple<int, string>(Convert.ToInt32(regReader.GetValue(0)), regReader.GetString(1)));
                                 }
-                                }
+                            }
                             readingsTab.SetRegisterDefinitions(registers);
                         }
                     }
@@ -590,6 +560,368 @@ namespace MP_ModbusApp
             catch (Exception ex)
             {
                 MessageBox.Show($"Error loading device: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void MainWindow_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(typeof(TreeNode)))
+            {
+                TreeNode node = (TreeNode)e.Data.GetData(typeof(TreeNode));
+
+                if (node.Level == 1 && node.Tag != null)
+                {
+                    e.Effect = DragDropEffects.Copy;
+                }
+                else
+                {
+                    e.Effect = DragDropEffects.None;
+                }
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
+            }
+        }
+
+        private void MainWindow_DragDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(typeof(TreeNode)))
+            {
+                TreeNode node = (TreeNode)e.Data.GetData(typeof(TreeNode));
+
+                if (node.Level == 1 && node.Tag != null)
+                {
+                    try
+                    {
+                        long deviceId = (long)node.Tag;
+                        OpenSavedDevice(deviceId);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error opening device: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void treeView_ItemDrag(object sender, ItemDragEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                TreeNode node = (TreeNode)e.Item;
+
+                if (node.Level == 1 && node.Tag != null)
+                {
+                    treeView.DoDragDrop(node, DragDropEffects.Copy);
+                }
+            }
+        }
+
+        private void treeView_GiveFeedback(object sender, GiveFeedbackEventArgs e)
+        {
+            if (e.Effect == DragDropEffects.Copy)
+            {
+                e.UseDefaultCursors = false;
+                Cursor.Current = _deviceDragCursor;
+            }
+            else
+            {
+                e.UseDefaultCursors = true;
+            }
+        }
+
+        private void importDeviceContextMenuItem_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog ofd = new OpenFileDialog())
+            {
+                ofd.Filter = "XML Files (*.xml)|*.xml";
+                ofd.Title = "Import device configuration";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        ImportDeviceFromXml(ofd.FileName);
+                        LoadDevicesToTree();
+                        MessageBox.Show("Import completed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (XmlException xmlEx)
+                    {
+                        MessageBox.Show($"XML file validation error:: {xmlEx.Message}\n\nLineNumber: {xmlEx.LineNumber}, Position: {xmlEx.LinePosition}", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error during import: {ex.Message}", "Import Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+        private void ImportDeviceFromXml(string filePath)
+        {
+            XDocument doc = XDocument.Load(filePath, LoadOptions.SetLineInfo);
+
+            XElement root = doc.Root;
+            if (root.Name != "ModbusDevice")
+                throw new XmlException("The file is not a valid ModbusDevice configuration file (incorrect root node).");
+
+            XAttribute deviceNameAttr = root.Attribute("DeviceName") ?? throw new XmlException("Missing 'DeviceName' attribute in the root node.", null, (root as IXmlLineInfo).LineNumber, (root as IXmlLineInfo).LinePosition);
+            XAttribute slaveIdAttr = root.Attribute("SlaveId") ?? throw new XmlException("Missing 'SlaveId' attribute in the root node.", null, (root as IXmlLineInfo).LineNumber, (root as IXmlLineInfo).LinePosition);
+
+            string deviceName = deviceNameAttr.Value;
+            if (!int.TryParse(slaveIdAttr.Value, out int slaveId) || slaveId < 1 || slaveId > 254)
+                throw new XmlException($"The 'SlaveId' attribute has an invalid value: '{slaveIdAttr.Value}'. Expected a number 1-254.", null, (slaveIdAttr as IXmlLineInfo).LineNumber, (slaveIdAttr as IXmlLineInfo).LinePosition);
+
+            using (var connection = new SqliteConnection($"Data Source={DatabaseHelper.GetDbPath()}"))
+            {
+                connection.Open();
+
+                var checkCmd = connection.CreateCommand();
+                checkCmd.CommandText = "SELECT COUNT(*) FROM Devices WHERE DeviceName = $name;";
+                checkCmd.Parameters.AddWithValue("$name", deviceName);
+                if ((long)checkCmd.ExecuteScalar() > 0)
+                {
+                    using (RenameForm renameDialog = new RenameForm())
+                    {
+                        renameDialog.Text = "Name Conflict";
+                        renameDialog.newName = deviceName;
+                        MessageBox.Show($"A device named '{deviceName}' already exists. Please provide a new name.", "Conflict", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+
+                        if (renameDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(renameDialog.newName))
+                        {
+                            deviceName = renameDialog.newName;
+                        }
+                        else
+                        {
+                            throw new Exception("Import canceled by user due to name conflict.");
+                        }
+                    }
+                }
+
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var deviceCmd = connection.CreateCommand();
+                    deviceCmd.Transaction = transaction;
+                    deviceCmd.CommandText = "INSERT INTO Devices (DeviceName, SlaveId) VALUES ($name, $slaveId) RETURNING DeviceId;";
+                    deviceCmd.Parameters.AddWithValue("$name", deviceName);
+                    deviceCmd.Parameters.AddWithValue("$slaveId", slaveId);
+                    long deviceId = (long)deviceCmd.ExecuteScalar();
+
+                    foreach (var groupNode in root.Elements("ReadingGroup"))
+                    {
+                        XAttribute groupNameAttr = groupNode.Attribute("GroupName") ?? throw new XmlException("Missing 'GroupName' attribute in 'ReadingGroup' node.", null, (groupNode as IXmlLineInfo).LineNumber, (groupNode as IXmlLineInfo).LinePosition);
+                        XAttribute funcCodeAttr = groupNode.Attribute("FunctionCode") ?? throw new XmlException("Missing 'FunctionCode' attribute.", null, (groupNode as IXmlLineInfo).LineNumber, (groupNode as IXmlLineInfo).LinePosition);
+                        XAttribute startAddrAttr = groupNode.Attribute("StartAddress") ?? throw new XmlException("Missing 'StartAddress' attribute.", null, (groupNode as IXmlLineInfo).LineNumber, (groupNode as IXmlLineInfo).LinePosition);
+                        XAttribute quantityAttr = groupNode.Attribute("Quantity") ?? throw new XmlException("Missing 'Quantity' attribute.", null, (groupNode as IXmlLineInfo).LineNumber, (groupNode as IXmlLineInfo).LinePosition);
+
+                        if (!int.TryParse(funcCodeAttr.Value, out int funcCode) || funcCode < 0 || funcCode > 3)
+                            throw new XmlException($"Invalid 'FunctionCode': {funcCodeAttr.Value}. Expected 0-3.", null, (funcCodeAttr as IXmlLineInfo).LineNumber, (funcCodeAttr as IXmlLineInfo).LinePosition);
+                        if (!int.TryParse(startAddrAttr.Value, out int startAddr) || startAddr < 0 || startAddr > 65535)
+                            throw new XmlException($"Invalid 'StartAddress': {startAddrAttr.Value}. Expected 0-65535.", null, (startAddrAttr as IXmlLineInfo).LineNumber, (startAddrAttr as IXmlLineInfo).LinePosition);
+                        if (!int.TryParse(quantityAttr.Value, out int quantity) || quantity < 1 || quantity > 125)
+                            throw new XmlException($"Invalid 'Quantity': {quantityAttr.Value}. Expected 1-125.", null, (quantityAttr as IXmlLineInfo).LineNumber, (quantityAttr as IXmlLineInfo).LinePosition);
+
+                        var groupCmd = connection.CreateCommand();
+                        groupCmd.Transaction = transaction;
+                        groupCmd.CommandText = "INSERT INTO ReadingGroups (DeviceId, GroupName, FunctionCode, StartAddress, Quantity) VALUES ($deviceId, $groupName, $funcCode, $startAddr, $quantity) RETURNING GroupId;";
+                        groupCmd.Parameters.AddWithValue("$deviceId", deviceId);
+                        groupCmd.Parameters.AddWithValue("$groupName", groupNameAttr.Value);
+                        groupCmd.Parameters.AddWithValue("$funcCode", funcCode);
+                        groupCmd.Parameters.AddWithValue("$startAddr", startAddr);
+                        groupCmd.Parameters.AddWithValue("$quantity", quantity);
+                        long groupId = (long)groupCmd.ExecuteScalar();
+
+                        foreach (var regNode in groupNode.Elements("Register"))
+                        {
+                            XAttribute regNumAttr = regNode.Attribute("RegisterNumber") ?? throw new XmlException("Missing 'RegisterNumber' attribute in 'Register' node.", null, (regNode as IXmlLineInfo).LineNumber, (regNode as IXmlLineInfo).LinePosition);
+                            XAttribute regNameAttr = regNode.Attribute("RegisterName") ?? throw new XmlException("Missing 'RegisterName' attribute in 'Register' node.", null, (regNode as IXmlLineInfo).LineNumber, (regNode as IXmlLineInfo).LinePosition);
+
+                            if (!int.TryParse(regNumAttr.Value, out int regNum))
+                                throw new XmlException($"Invalid 'RegisterNumber': {regNumAttr.Value}.", null, (regNumAttr as IXmlLineInfo).LineNumber, (regNumAttr as IXmlLineInfo).LinePosition);
+
+                            var regCmd = connection.CreateCommand();
+                            regCmd.Transaction = transaction;
+                            regCmd.CommandText = "INSERT INTO RegisterDefinitions (GroupId, RegisterNumber, RegisterName) VALUES ($groupId, $regNum, $regName);";
+                            regCmd.Parameters.AddWithValue("$groupId", groupId);
+                            regCmd.Parameters.AddWithValue("$regNum", regNum);
+                            regCmd.Parameters.AddWithValue("$regName", regNameAttr.Value);
+                            regCmd.ExecuteNonQuery();
+                        }
+                    }
+                    transaction.Commit();
+                }
+            }
+
+        }
+        private void exportDeviceContextMenuItem_Click(object sender, EventArgs e)
+        {
+            TreeNode selectedNode = treeView.SelectedNode;
+            if (selectedNode == null || selectedNode.Level != 1 || selectedNode.Tag == null)
+            {
+                return;
+            }
+
+            long deviceId = (long)selectedNode.Tag;
+            string deviceName = selectedNode.Text;
+
+            using (SaveFileDialog sfd = new SaveFileDialog())
+            {
+                sfd.FileName = $"{deviceName.Replace(" ", "_")}.xml";
+                sfd.Filter = "XML Files (*.xml)|*.xml";
+                sfd.Title = "Export device configuration";
+
+                if (sfd.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        ExportDeviceToXml(deviceId, sfd.FileName);
+                        MessageBox.Show("Export completed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"\"Error exporting: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+        }
+
+        private void ExportDeviceToXml(long deviceId, string filePath)
+        {
+            XDocument doc = new XDocument(new XDeclaration("1.0", "utf-8", "yes"));
+            XElement rootNode = null;
+
+            using (var connection = new SqliteConnection($"Data Source={DatabaseHelper.GetDbPath()}"))
+            {
+                connection.Open();
+
+                var deviceCmd = connection.CreateCommand();
+                deviceCmd.CommandText = "SELECT DeviceName, SlaveId FROM Devices WHERE DeviceId = $deviceId";
+                deviceCmd.Parameters.AddWithValue("$deviceId", deviceId);
+
+                using (var deviceReader = deviceCmd.ExecuteReader())
+                {
+                    if (deviceReader.Read())
+                    {
+                        rootNode = new XElement("ModbusDevice",
+                                    new XAttribute("DeviceName", deviceReader.GetString(0)),
+                                    new XAttribute("SlaveId", deviceReader.GetInt32(1))
+                                );
+                    }
+                }
+
+                if (rootNode == null)
+                {
+                    throw new Exception("Nie znaleziono urządzenia.");
+                }
+
+                var groupCmd = connection.CreateCommand();
+                groupCmd.CommandText = "SELECT GroupId, GroupName, FunctionCode, StartAddress, Quantity FROM ReadingGroups WHERE DeviceId = $deviceId";
+                groupCmd.Parameters.AddWithValue("$deviceId", deviceId);
+
+                using (var groupReader = groupCmd.ExecuteReader())
+                {
+                    while (groupReader.Read())
+                    {
+                        long groupId = groupReader.GetInt64(0);
+                        var groupNode = new XElement("ReadingGroup",
+                                            new XAttribute("GroupName", groupReader.GetString(1)),
+                                            new XAttribute("FunctionCode", groupReader.GetInt32(2)),
+                                            new XAttribute("StartAddress", groupReader.GetInt32(3)),
+                                            new XAttribute("Quantity", groupReader.GetInt32(4))
+                                        );
+
+                        var regCmd = connection.CreateCommand();
+                        regCmd.CommandText = "SELECT RegisterNumber, RegisterName FROM RegisterDefinitions WHERE GroupId = $groupId";
+                        regCmd.Parameters.AddWithValue("$groupId", groupId);
+
+                        using (var regReader = regCmd.ExecuteReader())
+                        {
+                            while (regReader.Read())
+                            {
+                                var regNode = new XElement("Register",
+                                                    new XAttribute("RegisterNumber", regReader.GetInt32(0)),
+                                                    new XAttribute("RegisterName", regReader.GetString(1))
+                                                );
+                                groupNode.Add(regNode);
+                            }
+                        }
+                        rootNode.Add(groupNode);
+                    }
+                }
+                doc.Add(rootNode);
+            }
+            doc.Save(filePath);
+        }
+
+        private void deleteDeviceContextMenuItem_Click(object sender, EventArgs e)
+        {
+            TreeNode selectedNode = treeView.SelectedNode;
+
+            if (selectedNode == null || selectedNode.Level != 1 || selectedNode.Tag == null)
+            {
+                return;
+            }
+
+            long deviceId = (long)selectedNode.Tag;
+            string deviceName = selectedNode.Text;
+
+            var result = MessageBox.Show($"Are you sure you want to delete the device '{deviceName}'? This operation cannot be undone.",
+                                         "Confirm deletion",
+                                         MessageBoxButtons.YesNo,
+                                         MessageBoxIcon.Warning);
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    DeleteDeviceFromDb(deviceId);
+                    LoadDevicesToTree();
+                    MessageBox.Show($"Device '{deviceName}' removed successfully.", "Delete", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"An error occurred while deleting the device: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            }
+        }
+
+        private void DeleteDeviceFromDb(long deviceId)
+        {
+            using (var connection = new SqliteConnection($"Data Source={DatabaseHelper.GetDbPath()}"))
+            {
+                connection.Open();
+                var command = connection.CreateCommand();
+
+                // Dzięki "ON DELETE CASCADE" w definicji bazy,
+                // usunięcie urządzenia automatycznie usunie powiązane ReadingGroups i RegisterDefinitions.
+                command.CommandText = "DELETE FROM Devices WHERE DeviceId = $deviceId;";
+                command.Parameters.AddWithValue("$deviceId", deviceId);
+                command.ExecuteNonQuery();
+            }
+        }
+
+        private void treeView_NodeMouseClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                treeView.SelectedNode = e.Node;
+            }
+        }
+
+        private void treeViewContextMenu_Opening(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            TreeNode selectedNode = treeView.SelectedNode;
+
+            importDeviceContextMenuItem.Enabled = true;
+
+            if (selectedNode != null && selectedNode.Level == 1)
+            {
+                exportDeviceContextMenuItem.Enabled = true;
+                deleteDeviceContextMenuItem.Enabled = true;
+            }
+            else
+            {
+                exportDeviceContextMenuItem.Enabled = false;
+                deleteDeviceContextMenuItem.Enabled = false;
             }
         }
     }
