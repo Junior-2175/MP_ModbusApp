@@ -160,14 +160,14 @@ namespace MP_ModbusApp
             // 
             treeViewContextMenu.Items.AddRange(new ToolStripItem[] { importDeviceContextMenuItem, exportDeviceContextMenuItem, toolStripSeparator1, deleteDeviceContextMenuItem });
             treeViewContextMenu.Name = "contextMenuStrip1";
-            treeViewContextMenu.Size = new Size(181, 98);
+            treeViewContextMenu.Size = new Size(148, 76);
             treeViewContextMenu.Opening += treeViewContextMenu_Opening;
             // 
             // importDeviceContextMenuItem
             // 
             importDeviceContextMenuItem.Name = "importDeviceContextMenuItem";
             importDeviceContextMenuItem.ShortcutKeys = Keys.Control | Keys.I;
-            importDeviceContextMenuItem.Size = new Size(180, 22);
+            importDeviceContextMenuItem.Size = new Size(147, 22);
             importDeviceContextMenuItem.Text = "Import";
             importDeviceContextMenuItem.Click += importDeviceContextMenuItem_Click;
             // 
@@ -175,20 +175,20 @@ namespace MP_ModbusApp
             // 
             exportDeviceContextMenuItem.Name = "exportDeviceContextMenuItem";
             exportDeviceContextMenuItem.ShortcutKeys = Keys.Control | Keys.E;
-            exportDeviceContextMenuItem.Size = new Size(180, 22);
+            exportDeviceContextMenuItem.Size = new Size(147, 22);
             exportDeviceContextMenuItem.Text = "Export";
             exportDeviceContextMenuItem.Click += exportDeviceContextMenuItem_Click;
             // 
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(177, 6);
+            toolStripSeparator1.Size = new Size(144, 6);
             // 
             // deleteDeviceContextMenuItem
             // 
             deleteDeviceContextMenuItem.Name = "deleteDeviceContextMenuItem";
             deleteDeviceContextMenuItem.ShortcutKeys = Keys.Delete;
-            deleteDeviceContextMenuItem.Size = new Size(180, 22);
+            deleteDeviceContextMenuItem.Size = new Size(147, 22);
             deleteDeviceContextMenuItem.Text = "Remove";
             deleteDeviceContextMenuItem.Click += deleteDeviceContextMenuItem_Click;
             // 
@@ -276,7 +276,7 @@ namespace MP_ModbusApp
             // 
             numPollDelay.Increment = new decimal(new int[] { 10, 0, 0, 0 });
             numPollDelay.Location = new Point(126, 84);
-            numPollDelay.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
+            numPollDelay.Maximum = new decimal(new int[] { 60000, 0, 0, 0 });
             numPollDelay.Name = "numPollDelay";
             numPollDelay.Size = new Size(92, 23);
             numPollDelay.TabIndex = 4;

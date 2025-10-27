@@ -21,6 +21,8 @@ namespace MP_ModbusApp
         {
             comboBox1.SelectedIndex = 2;
             dataGridView1.RowCount = (int)numOfRegisters.Value;
+
+            lblTabError.Visible = false;
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)

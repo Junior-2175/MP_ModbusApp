@@ -12,16 +12,11 @@ using System.Windows.Forms;
 
 namespace MP_ModbusApp
 {
-
-
-
-
     public partial class ModbusDevice : Form
     {
 
         private MainWindow _mainWindow;
         private IModbusMaster _modbusMaster;
-        private System.Threading.Timer _pollingTimer;
         private bool _isPolling = false;
 
 
@@ -58,6 +53,7 @@ namespace MP_ModbusApp
                 _mainWindow = mw;
             }
 
+            lblDeviceStatus.Visible = false;
             tabNo = tabPanel1.TabPages.Count;
             if (tabPanel1.TabPages.Count == 0)
             {
@@ -319,7 +315,7 @@ namespace MP_ModbusApp
                 }
             }
         }
-        private void startToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void startToolStripMenuItem_Click(object sender, EventArgs e)
         {
             _modbusMaster = _mainWindow?.ModbusMaster;
             if (_modbusMaster == null)
@@ -331,18 +327,31 @@ namespace MP_ModbusApp
             if (_isPolling) return;
             _isPolling = true;
 
-            // Użyj Timera do cyklicznego wywoływania
-            int pollDelay = _mainWindow.GetPollDelay(); // Potrzebujesz dodać tę metodę w MainWindow
-            _pollingTimer = new System.Threading.Timer(PollDevice, null, 0, pollDelay);
-
             startToolStripMenuItem.Enabled = false;
             stopToolStripMenuItem.Enabled = true;
-        }
 
+            // Uruchom pętlę odpytującą asynchronicznie
+            await PollDeviceLoop();
+        }
+        private async Task PollDeviceLoop()
+        {
+            while (_isPolling)
+            {
+                // Wykonaj jeden pełny cykl odpytania
+                await PollDeviceOnce();
+
+                if (!_isPolling) break;
+
+                // Pobierz opóźnienie (jesteśmy w wątku UI, więc jest to bezpieczne)
+                int pollDelay = _mainWindow.GetPollDelay();
+
+                // Zaczekaj asynchronicznie
+                await Task.Delay(pollDelay);
+            }
+        }
         private void stopToolStripMenuItem_Click(object sender, EventArgs e)
         {
             _isPolling = false;
-            _pollingTimer?.Dispose();
 
             startToolStripMenuItem.Enabled = true;
             stopToolStripMenuItem.Enabled = false;
@@ -354,6 +363,7 @@ namespace MP_ModbusApp
                 Invoke(new Action(() => ShowDeviceError(message)));
                 return;
             }
+            lblDeviceStatus.Visible = true;
             lblDeviceStatus.Text = $"Device Error: {message}";
             lblDeviceStatus.ForeColor = Color.Red;
         }
@@ -361,12 +371,13 @@ namespace MP_ModbusApp
         private void ClearDeviceError()
         {
             if (InvokeRequired) { /* ... */ }
+            lblDeviceStatus.Visible = false;
             lblDeviceStatus.Text = "Polling OK";
             lblDeviceStatus.ForeColor = Color.Black;
         }
 
 
-        private async void PollDevice(object state)
+        private async Task PollDeviceOnce()
         {
             if (!_isPolling || _modbusMaster == null) return;
 
@@ -376,17 +387,26 @@ namespace MP_ModbusApp
             {
                 if (tabPage.Controls[0] is not ReadingsTab readingsTab) continue;
 
+                int funcCode = 0;
+                ushort startAddr = 0;
+                ushort quantity = 0;
+                // string fcName = ""; // Już niepotrzebne
+
                 try
                 {
-                    int funcCode = readingsTab.GetFunctionCode();
-                    ushort startAddr = (ushort)readingsTab.GetStartAddress();
-                    ushort quantity = (ushort)readingsTab.GetQuantity();
+                    funcCode = readingsTab.GetFunctionCode();
+                    startAddr = (ushort)readingsTab.GetStartAddress();
+                    quantity = (ushort)readingsTab.GetQuantity();
 
-                    // Tu następuje właściwy odczyt Modbus
+                    // --- 1. LOGOWANIE TX (WYSŁANIE) ---
+                    // CAŁY TEN BLOK ZOSTAŁ USUNIĘTY 
+                    // LogFrame("TX", $"{fcName} (Slave: {slaveId}, Start: {startAddr}, Qty: {quantity})");
+
+                    // --- Operacja Modbus ---
                     ushort[] data;
                     switch (funcCode)
                     {
-                        // NModbus używa indeksów 1, 2, 3, 4, a Twój ComboBox 0, 1, 2, 3
+                        // ... (bez zmian)
                         case 0: // 01 Coils
                             bool[] coils = await _modbusMaster.ReadCoilsAsync(slaveId, startAddr, quantity);
                             data = coils.Select(c => c ? (ushort)1 : (ushort)0).ToArray();
@@ -405,42 +425,51 @@ namespace MP_ModbusApp
                             throw new Exception("Unknown function code");
                     }
 
-                    // Sukces: Zaktualizuj DataGridView (musisz to zaimplementować)
+                    // --- 2. LOGOWANIE RX (POPRAWNA ODPOWIEDŹ) ---
                     // readingsTab.UpdateValues(data); 
 
-                    // Wyczyść błędy (dla zakładki i urządzenia)
+                    // USUNĘLIŚMY TĘ LINIĘ:
+                    // LogFrame("RX", $"Success. Data: [{string.Join(", ", data)}]");
+
                     readingsTab.ClearTabError();
                     ClearDeviceError();
                 }
                 catch (NModbus.SlaveException modbusEx) // Błąd Modbus (np. zły adres)
                 {
-                    // BŁĄD NA POZIOMIE ZAKŁADKI
+                    // --- 3. LOGOWANIE BŁĘDU (RX ERROR) ---
+
+                    // USUNĘLIŚMY RÓWNIEŻ TEN BLOK:
+                    // string errorMsg = $"Modbus Error (FC: {modbusEx.FunctionCode}, Code: {modbusEx.SlaveExceptionCode})";
+                    // LogFrame("RX", "Slave Exception", errorMsg); 
+
                     readingsTab.ShowTabError($"Modbus Error: {modbusEx.Message}");
-                    LogToGlobal(tabPage.Text, modbusEx.Message);
                 }
                 catch (Exception ex) // Błąd Komunikacji (np. Timeout)
                 {
-                    // BŁĄD NA POZIOMIE URZĄDZENIA I ZAKŁADKI
-                    readingsTab.ShowTabError($"Comms Error: {ex.Message}");
-                    ShowDeviceError(ex.Message); // Pokaż też na oknie urządzenia
-                    LogToGlobal(tabPage.Text, ex.Message);
+                    // --- 3. LOGOWANIE BŁĘDU (COMMS ERROR) ---
 
-                    // Jeśli jest błąd komunikacji, przerwij odpytywanie tego urządzenia
+                    // TEN BLOK ZOSTAWIAMY!
+                    // Jest ważny dla błędów połączenia (np. Timeout), 
+                    // których NModbusLogger nie widzi.
+                    LogFrame("Error", $"Comms Error: {ex.Message}", ex.Message);
+
+                    readingsTab.ShowTabError($"Comms Error: {ex.Message}");
+                    ShowDeviceError(ex.Message);
                     stopToolStripMenuItem_Click(null, null);
                     break;
                 }
             }
         }
 
-        private void LogToGlobal(string tabName, string errorMessage)
+        private void LogFrame(string direction, string dataFrame, string error = "")
         {
             var logEntry = new ModbusFrameLog
             {
                 Timestamp = DateTime.Now,
-                Direction = "Error",
-                TransactionID = 0, // NModbus może nie udostępniać tego łatwo
-                DataFrame = $"Error in device '{this.Text}', tab '{tabName}'",
-                ErrorDescription = errorMessage
+                Direction = direction,
+                TransactionID = 0, // NModbus (zwłaszcza TCP) zarządza tym wewnętrznie
+                DataFrame = dataFrame,
+                ErrorDescription = error
             };
             _mainWindow?.LogCommunicationEvent(logEntry);
         }
