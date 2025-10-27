@@ -166,7 +166,6 @@ namespace MP_ModbusApp
         }
 
 
-        // Metody publiczne do pobierania konfiguracji z tej kontrolki
         public int GetFunctionCode()
         {
             return comboBox1.SelectedIndex;
@@ -187,16 +186,15 @@ namespace MP_ModbusApp
             return dataGridView1.Rows;
         }
 
-        // Metody publiczne do ustawiania konfiguracji (dla wczytywania)
         public void SetConfiguration(int funcCode, int startAddr, int quantity)
         {
-            _isUpdatingValues = true; // Zapobiegamy pętlom zdarzeń
+            _isUpdatingValues = true; 
             try
             {
                 comboBox1.SelectedIndex = funcCode;
                 startRegister.Value = startAddr;
                 numOfRegisters.Value = quantity;
-                datagridUpdate(); // To zaktualizuje UI na podstawie nowych wartości
+                datagridUpdate(); 
             }
             finally
             {
@@ -208,7 +206,6 @@ namespace MP_ModbusApp
         {
             foreach (var regDef in registers)
             {
-                // Znajdź wiersz pasujący do numeru rejestru
                 foreach (DataGridViewRow row in dataGridView1.Rows)
                 {
                     if (row.Cells["RegisterNumber"].Value != null && (int)row.Cells["RegisterNumber"].Value == regDef.Item1)
@@ -218,6 +215,29 @@ namespace MP_ModbusApp
                     }
                 }
             }
+        }
+
+
+
+        public void ShowTabError(string message)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(() => ShowTabError(message)));
+                return;
+            }
+            lblTabError.Text = message;
+            lblTabError.Visible = true;
+        }
+
+        public void ClearTabError()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(ClearTabError));
+                return;
+            }
+            lblTabError.Visible = false;
         }
 
     }

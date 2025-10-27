@@ -1,8 +1,12 @@
 ﻿using Microsoft.Data.Sqlite;
 using Microsoft.Win32;
+using NModbus;
+using NModbus.Device;
 using System;
 using System.Diagnostics;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.IO.Ports;
 using System.Linq;
 using System.Management;
@@ -10,21 +14,26 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Xml.Linq;
-using System.Diagnostics;
-using System.IO;
 using System.Xml;
+using System.Xml.Linq;
+using NModbus.Device;
+using NModbus.IO;
 
 namespace MP_ModbusApp
 {
     public partial class MainWindow : Form
     {
+        public IModbusMaster ModbusMaster => _modbusMaster;
+
+
         private SerialPort serialPort;
         private System.Net.Sockets.TcpClient tcpClient;
         private CommunicationLogWindow _commsLogWindow;
         private Cursor _deviceDragCursor;
         bool sidePanelHidden = false;
         private readonly ToolTip toolTip1 = new ToolTip();
+
+        private IModbusMaster _modbusMaster;
 
         public MainWindow()
         {
@@ -373,12 +382,71 @@ namespace MP_ModbusApp
         #region Obsługa połączenia
         private async void btnConnect_Click(object sender, EventArgs e)
         {
+            try
+            {
+                // 1. Utwórz fabrykę NModbus
+                var factory = new ModbusFactory();
 
+                if (cboxConnection.SelectedIndex == 0) // Serial Port
+                {
+                    // 2. Pobierz ustawienia SerialPort z GUI
+                    string fullPortName = cboxComPort.SelectedItem.ToString();
+                    string portName = fullPortName.Split(' ')[0];
+                    if (portName == "⚠") // Obsługa portu z ostrzeżeniem
+                    {
+                        portName = fullPortName.Split(' ')[1];
+                    }
+
+                    int baudRate = int.Parse(cBoxBaudRate.SelectedItem.ToString());
+                    int dataBits = int.Parse(cBoxDataBits.SelectedItem.ToString());
+                    System.IO.Ports.Parity parity = Enum.Parse<System.IO.Ports.Parity>(cBoxParity.SelectedItem.ToString());
+                    System.IO.Ports.StopBits stopBits = Enum.Parse<System.IO.Ports.StopBits>(cBoxStopBits.SelectedItem.ToString());
+
+                    // 3. Utwórz i otwórz SerialPort
+                    serialPort = new SerialPort(portName, baudRate, parity, dataBits, stopBits);
+                    serialPort.Open();
+
+                    // 4. Utwórz SerialPortAdapter (wymagany przez NModbus)
+                    var adapter = new SerialPortAdapter(serialPort);
+
+                    // 5. Utwórz mastera używając ADAPTERA
+                    _modbusMaster = rBtnRTU.Checked
+                        ? factory.CreateRtuMaster(adapter)
+                        : factory.CreateAsciiMaster(adapter);
+                }
+                else // TCP/IP
+                {
+                    // 6. Dla TCP/IP adapter nie jest potrzebny, wystarczy TcpClient
+                    tcpClient = new System.Net.Sockets.TcpClient();
+                    await tcpClient.ConnectAsync(cboxIPAddress.Text, (int)numIPPort.Value);
+
+                    _modbusMaster = factory.CreateMaster(tcpClient);
+                }
+
+                // Ustaw timeouty z GUI
+                _modbusMaster.Transport.ReadTimeout = (int)numResponseTimeout.Value;
+                _modbusMaster.Transport.WriteTimeout = (int)numResponseTimeout.Value;
+
+                UpdateUiState(true);
+                toolStripStatusLabel1.Text = "Connected!";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Connection failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                Disconnect();
+            }
         }
 
+        public int GetPollDelay()
+        {
+            return (int)numPollDelay.Value;
+        }
 
         private void Disconnect()
         {
+            _modbusMaster?.Dispose();
+            _modbusMaster = null;
+
             serialPort?.Close();
             serialPort = null;
             tcpClient?.Close();
@@ -920,6 +988,10 @@ namespace MP_ModbusApp
                 exportDeviceContextMenuItem.Enabled = false;
                 deleteDeviceContextMenuItem.Enabled = false;
             }
+        }
+        public void LogCommunicationEvent(ModbusFrameLog logEntry)
+        {
+            _commsLogWindow?.LogFrame(logEntry);
         }
     }
 }

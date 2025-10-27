@@ -35,9 +35,12 @@
             contextMenuStrip1 = new ContextMenuStrip(components);
             addToolStripMenuItem = new ToolStripMenuItem();
             removeToolStripMenuItem = new ToolStripMenuItem();
-            toolStripSeparator1 = new ToolStripSeparator();
+            toolStripSeparator2 = new ToolStripSeparator();
             renameToolStripMenuItem = new ToolStripMenuItem();
+            toolStripSeparator1 = new ToolStripSeparator();
+            chartToolStripMenuItem = new ToolStripMenuItem();
             panel1 = new Panel();
+            lblDeviceStatus = new Label();
             menuStrip1 = new MenuStrip();
             deviceToolStripMenuItem = new ToolStripMenuItem();
             saveToolStripMenuItem = new ToolStripMenuItem();
@@ -46,8 +49,6 @@
             startToolStripMenuItem = new ToolStripMenuItem();
             stopToolStripMenuItem = new ToolStripMenuItem();
             txtRenameTab = new TextBox();
-            toolStripSeparator2 = new ToolStripSeparator();
-            chartToolStripMenuItem = new ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)slaveId).BeginInit();
             contextMenuStrip1.SuspendLayout();
             panel1.SuspendLayout();
@@ -91,7 +92,7 @@
             // 
             contextMenuStrip1.Items.AddRange(new ToolStripItem[] { addToolStripMenuItem, removeToolStripMenuItem, toolStripSeparator2, renameToolStripMenuItem, toolStripSeparator1, chartToolStripMenuItem });
             contextMenuStrip1.Name = "contextMenuStrip1";
-            contextMenuStrip1.Size = new Size(211, 126);
+            contextMenuStrip1.Size = new Size(211, 104);
             // 
             // addToolStripMenuItem
             // 
@@ -109,10 +110,10 @@
             removeToolStripMenuItem.Text = "Remove";
             removeToolStripMenuItem.Click += removeToolStripMenuItem_Click;
             // 
-            // toolStripSeparator1
+            // toolStripSeparator2
             // 
-            toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(207, 6);
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(207, 6);
             // 
             // renameToolStripMenuItem
             // 
@@ -122,8 +123,21 @@
             renameToolStripMenuItem.Text = "Rename";
             renameToolStripMenuItem.Click += renameToolStripMenuItem_Click;
             // 
+            // toolStripSeparator1
+            // 
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(207, 6);
+            // 
+            // chartToolStripMenuItem
+            // 
+            chartToolStripMenuItem.Name = "chartToolStripMenuItem";
+            chartToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.X;
+            chartToolStripMenuItem.Size = new Size(210, 22);
+            chartToolStripMenuItem.Text = "Chart";
+            // 
             // panel1
             // 
+            panel1.Controls.Add(lblDeviceStatus);
             panel1.Controls.Add(slaveId);
             panel1.Controls.Add(label4);
             panel1.Dock = DockStyle.Top;
@@ -131,6 +145,17 @@
             panel1.Name = "panel1";
             panel1.Size = new Size(450, 47);
             panel1.TabIndex = 6;
+            // 
+            // lblDeviceStatus
+            // 
+            lblDeviceStatus.AutoSize = true;
+            lblDeviceStatus.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+            lblDeviceStatus.ForeColor = Color.FromArgb(192, 0, 0);
+            lblDeviceStatus.Location = new Point(169, 14);
+            lblDeviceStatus.Name = "lblDeviceStatus";
+            lblDeviceStatus.Size = new Size(37, 15);
+            lblDeviceStatus.TabIndex = 4;
+            lblDeviceStatus.Text = "label1";
             // 
             // menuStrip1
             // 
@@ -178,6 +203,7 @@
             startToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.S;
             startToolStripMenuItem.Size = new Size(142, 22);
             startToolStripMenuItem.Text = "Start";
+            startToolStripMenuItem.Click += startToolStripMenuItem_Click;
             // 
             // stopToolStripMenuItem
             // 
@@ -193,18 +219,6 @@
             txtRenameTab.Size = new Size(100, 23);
             txtRenameTab.TabIndex = 8;
             txtRenameTab.KeyDown += txtRenameTab_KeyDown;
-            // 
-            // toolStripSeparator2
-            // 
-            toolStripSeparator2.Name = "toolStripSeparator2";
-            toolStripSeparator2.Size = new Size(207, 6);
-            // 
-            // chartToolStripMenuItem
-            // 
-            chartToolStripMenuItem.Name = "chartToolStripMenuItem";
-            chartToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.X;
-            chartToolStripMenuItem.Size = new Size(210, 22);
-            chartToolStripMenuItem.Text = "Chart";
             // 
             // ModbusDevice
             // 
@@ -249,5 +263,6 @@
         private ToolStripMenuItem newReadingsToolStripMenuItem;
         private ToolStripSeparator toolStripSeparator2;
         private ToolStripMenuItem chartToolStripMenuItem;
+        private Label lblDeviceStatus;
     }
 }

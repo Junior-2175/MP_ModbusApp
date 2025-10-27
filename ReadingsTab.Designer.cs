@@ -43,6 +43,7 @@
             RegisterNumber = new DataGridViewTextBoxColumn();
             Value = new DataGridViewTextBoxColumn();
             timer1 = new System.Windows.Forms.Timer(components);
+            lblTabError = new Label();
             ((System.ComponentModel.ISupportInitialize)numOfRegisters).BeginInit();
             ((System.ComponentModel.ISupportInitialize)startRegister).BeginInit();
             ((System.ComponentModel.ISupportInitialize)startRegisterHex).BeginInit();
@@ -130,6 +131,7 @@
             // 
             // groupBox1
             // 
+            groupBox1.Controls.Add(lblTabError);
             groupBox1.Controls.Add(numOfRegisters);
             groupBox1.Controls.Add(label3);
             groupBox1.Controls.Add(startRegister_1);
@@ -195,6 +197,17 @@
             Value.Name = "Value";
             Value.SortMode = DataGridViewColumnSortMode.NotSortable;
             // 
+            // lblTabError
+            // 
+            lblTabError.AutoSize = true;
+            lblTabError.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+            lblTabError.ForeColor = Color.FromArgb(192, 0, 0);
+            lblTabError.Location = new Point(176, 79);
+            lblTabError.Name = "lblTabError";
+            lblTabError.Size = new Size(39, 15);
+            lblTabError.TabIndex = 4;
+            lblTabError.Text = "label4";
+            // 
             // ReadingsTab
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -228,5 +241,6 @@
         private DataGridViewTextBoxColumn RegisterNumber;
         private DataGridViewTextBoxColumn Value;
         private NumericUpDown startRegister_1;
+        private Label lblTabError;
     }
 }
