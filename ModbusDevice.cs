@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Data.Sqlite;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -10,8 +11,29 @@ using System.Windows.Forms;
 
 namespace MP_ModbusApp
 {
+
+
+
+
     public partial class ModbusDevice : Form
     {
+
+
+        public event EventHandler DeviceSaved;
+
+        public string DeviceName
+        {
+            get => this.Text;
+            set => this.Text = value;
+        }
+
+        public int SlaveId
+        {
+            get => (int)slaveId.Value;
+            set => slaveId.Value = value;
+        }
+
+        public TabControl DeviceTabControl => tabPanel1;
 
         private TabPage tabToRename = null;
         private int tabNo = 0;
@@ -97,18 +119,9 @@ namespace MP_ModbusApp
             }
         }
 
-        private void txtRenameTab_LostFocus(object sender, EventArgs e)
-        {
-            if (tabToRename != null && txtRenameTab.Visible)
-            {
-                AllowRename();
-            }
-        }
-
         private void AllowRename()
         {
             if (tabToRename == null) return;
-
             if (!string.IsNullOrWhiteSpace(txtRenameTab.Text))
             {
                 tabToRename.Text = txtRenameTab.Text;
@@ -125,5 +138,134 @@ namespace MP_ModbusApp
             tabToRename = null;
             txtRenameTab.Parent = this;
         }
+
+        private void ModbusDevice_Resize(object sender, EventArgs e)
+        {
+            CancelRename();
+        }
+
+        private void newReadingsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            TabPage newTab = new TabPage();
+            tabNo = tabNo + 1;
+            tabPanel1.SelectedTab = newTab;
+            newTab.Text = "Readings " + tabNo;
+            newTab.Controls.Add(new ReadingsTab() { Dock = DockStyle.Fill });
+            tabPanel1.TabPages.Add(newTab);
+        }
+
+        private void tabPanel1_DoubleClick(object sender, EventArgs e)
+        {
+            tabToRename = tabPanel1.SelectedTab;
+            if (tabToRename == null) return;
+
+            Rectangle tabRect = tabPanel1.GetTabRect(tabPanel1.SelectedIndex);
+            Point textCords = new Point(
+                tabPanel1.Left + tabRect.Left,
+                tabPanel1.Top + tabRect.Top);
+            txtRenameTab.Location = textCords;
+            txtRenameTab.Size = tabRect.Size;
+            txtRenameTab.Text = tabToRename.Text;
+
+            txtRenameTab.Visible = true;
+            txtRenameTab.BringToFront();
+            txtRenameTab.Focus();
+            txtRenameTab.SelectAll();
+
+        }
+
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+            string oldName = this.Text;
+            using (RenameForm renameDialog = new RenameForm())
+            {
+                renameDialog.newName = oldName;
+                if (renameDialog.ShowDialog() == DialogResult.OK)
+                {
+                    string newName = renameDialog.newName;
+                    this.Text = newName;
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(this.Text))
+            {
+                MessageBox.Show("Please enter a device name before saving.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                this.Focus();
+                return;
+            }
+
+            try
+            {
+                SaveDeviceConfiguration();
+                MessageBox.Show("Device saved successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                this.Text = this.Text;
+                DeviceSaved?.Invoke(this, EventArgs.Empty);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving device: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+        }
+
+
+        private void SaveDeviceConfiguration()
+        {
+            using (var connection = new SqliteConnection($"Data Source={DatabaseHelper.GetDbPath()}"))
+            {
+                connection.Open();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    var deviceCmd = connection.CreateCommand();
+                    deviceCmd.Transaction = transaction;
+                    deviceCmd.CommandText = "INSERT INTO Devices (DeviceName, SlaveId) VALUES ($name, $slaveId) RETURNING DeviceId;";
+                    deviceCmd.Parameters.AddWithValue("$name", this.Text);
+                    deviceCmd.Parameters.AddWithValue("$slaveId", (int)slaveId.Value);
+
+                    long deviceId = (long)deviceCmd.ExecuteScalar();
+
+                    foreach (TabPage tabPage in tabPanel1.TabPages)
+                    {
+                        if (tabPage.Controls[0] is ReadingsTab readingsTab)
+                        {
+                            var groupCmd = connection.CreateCommand();
+                            groupCmd.Transaction = transaction;
+                            groupCmd.CommandText = @"
+                                INSERT INTO ReadingGroups (DeviceId, GroupName, FunctionCode, StartAddress, Quantity)
+                                VALUES ($deviceId, $groupName, $funcCode, $startAddr, $quantity)
+                                RETURNING GroupId;";
+
+                            groupCmd.Parameters.AddWithValue("$deviceId", deviceId);
+                            groupCmd.Parameters.AddWithValue("$groupName", tabPage.Text);
+                            groupCmd.Parameters.AddWithValue("$funcCode", readingsTab.GetFunctionCode());
+                            groupCmd.Parameters.AddWithValue("$startAddr", readingsTab.GetStartAddress());
+                            groupCmd.Parameters.AddWithValue("$quantity", readingsTab.GetQuantity());
+
+                            long groupId = (long)groupCmd.ExecuteScalar();
+
+                            foreach (DataGridViewRow row in readingsTab.GetDataGridViewRows())
+                            {
+                                if (row.IsNewRow) continue;
+                                var regCmd = connection.CreateCommand();
+                                regCmd.Transaction = transaction;
+                                regCmd.CommandText = @"
+                                    INSERT INTO RegisterDefinitions (GroupId, RegisterNumber, RegisterName)
+                                    VALUES ($groupId, $regNum, $regName);";
+
+                                regCmd.Parameters.AddWithValue("$groupId", groupId);
+                                regCmd.Parameters.AddWithValue("$regNum", row.Cells["RegisterNumber"].Value ?? 0);
+                                regCmd.Parameters.AddWithValue("$regName", row.Cells["Name"].Value ?? string.Empty);
+                                regCmd.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                    transaction.Commit();
+                }
+            }
+        }
+
+
     }
 }

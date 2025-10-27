@@ -144,6 +144,7 @@ namespace MP_ModbusApp
             treeView.SelectedImageIndex = 0;
             treeView.Size = new Size(350, 58);
             treeView.TabIndex = 8;
+            treeView.NodeMouseDoubleClick += treeView_NodeMouseDoubleClick;
             // 
             // imageList1
             // 
@@ -653,7 +654,7 @@ namespace MP_ModbusApp
             // 
             newToolStripMenuItem.Name = "newToolStripMenuItem";
             newToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.N;
-            newToolStripMenuItem.Size = new Size(180, 22);
+            newToolStripMenuItem.Size = new Size(141, 22);
             newToolStripMenuItem.Text = "New";
             newToolStripMenuItem.Click += newToolStripMenuItem_Click;
             // 

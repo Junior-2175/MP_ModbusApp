@@ -12,6 +12,12 @@ namespace MP_ModbusApp
         private static readonly string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MP_ModbusMaster.db");
         private static readonly string connectionString = $"Data Source={dbPath}";
 
+        // Dodaj tę metodę, aby udostępnić ścieżkę na zewnątrz
+        public static string GetDbPath()
+        {
+            return dbPath;
+        }
+
         public static void InitializeDatabase()
         {
             using (var connection = new SqliteConnection(connectionString))
@@ -106,5 +112,48 @@ namespace MP_ModbusApp
             }
             return addresses;
         }
+
+        // --- Metody dla tabeli Devices, ReadingGroups, RegisterDefinitions ---
+
+        public static void CreateDeviceTables()
+        {
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                connection.Open();
+                var command = connection.CreateCommand();
+
+                command.CommandText = @"
+                    CREATE TABLE IF NOT EXISTS Devices (
+                        DeviceId INTEGER PRIMARY KEY AUTOINCREMENT,
+                        DeviceName TEXT NOT NULL,
+                        SlaveId INTEGER NOT NULL
+                    );";
+                command.ExecuteNonQuery();
+
+                command.CommandText = @"
+                    CREATE TABLE IF NOT EXISTS ReadingGroups (
+                        GroupId INTEGER PRIMARY KEY AUTOINCREMENT,
+                        DeviceId INTEGER NOT NULL,
+                        GroupName TEXT NOT NULL,
+                        FunctionCode INTEGER NOT NULL,
+                        StartAddress INTEGER NOT NULL,
+                        Quantity INTEGER NOT NULL,
+                        FOREIGN KEY (DeviceId) REFERENCES Devices (DeviceId) ON DELETE CASCADE
+                    );";
+                command.ExecuteNonQuery();
+
+                command.CommandText = @"
+                    CREATE TABLE IF NOT EXISTS RegisterDefinitions (
+                        RegisterId INTEGER PRIMARY KEY AUTOINCREMENT,
+                        GroupId INTEGER NOT NULL,
+                        RegisterNumber INTEGER NOT NULL,
+                        RegisterName TEXT NOT NULL,
+                        FOREIGN KEY (GroupId) REFERENCES ReadingGroups (GroupId) ON DELETE CASCADE
+                    );";
+                command.ExecuteNonQuery();
+            }
+        }
+
     }
+
 }

@@ -20,6 +20,7 @@ namespace MP_ModbusApp
 
                 // Dodaj tę linię, aby utworzyć bazę danych przy starcie aplikacji
                 DatabaseHelper.InitializeDatabase();
+                DatabaseHelper.CreateDeviceTables();
 
                 ApplicationConfiguration.Initialize();
                 Application.Run(new MainWindow());

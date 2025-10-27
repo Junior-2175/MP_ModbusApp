@@ -1,13 +1,14 @@
-﻿using Microsoft.Win32;
+﻿using Microsoft.Data.Sqlite;
+using Microsoft.Win32;
 using System;
 using System.Drawing;
 using System.IO.Ports;
 using System.Linq;
 using System.Management;
-using System.Windows.Forms;
 using System.Net;
-using System.Threading.Tasks;
 using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace MP_ModbusApp
 {
@@ -24,6 +25,8 @@ namespace MP_ModbusApp
         public MainWindow()
         {
             InitializeComponent();
+            toolTip1.SetToolTip(openMenu, "Show / Hide connection setting");
+            toolTip1.SetToolTip(openTree, "Show / Hide devices tree");
         }
 
         private void MainWindow_Load(object sender, EventArgs e)
@@ -52,15 +55,19 @@ namespace MP_ModbusApp
             PopulateComboBoxes();
             RefreshComPorts();
             LoadSettings();
+            LoadDevicesToTree();
 
             cboxComPort.DrawItem += CboxComPort_DrawItem;
             cboxComPort.DropDownClosed += CboxComPort_DropDownClosed;
             cboxComPort.SelectedIndexChanged += cboxComPort_SelectedIndexChanged;
             UpdateUiState(false);
+
         }
 
         private void openMenu_Click(object sender, EventArgs e)
         {
+            
+            
             if (sidePanelHidden)
             {
                 sidePanel.Width = 350;
@@ -440,13 +447,149 @@ namespace MP_ModbusApp
 
         private void newToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // Przypisanie do _currentGroup zostało usunięte, ponieważ pole było nieużywane.
             var newDevice = new ModbusDevice
             {
                 MdiParent = this
             };
             newDevice.Show();
             newDevice.Activate();
+        }
+
+
+
+        private void LoadDevicesToTree()
+        {
+            TreeNode rootNode = treeView.Nodes[0];
+            if (rootNode == null) return;
+
+            rootNode.Nodes.Clear();
+
+            using (var connection = new SqliteConnection($"Data Source={DatabaseHelper.GetDbPath()}"))
+            {
+                connection.Open();
+                var deviceCmd = connection.CreateCommand();
+                deviceCmd.CommandText = "SELECT DeviceId, DeviceName, SlaveId FROM Devices ORDER BY DeviceName";
+
+                using (var deviceReader = deviceCmd.ExecuteReader())
+                {
+                    while (deviceReader.Read())
+                    {
+                        long deviceId = deviceReader.GetInt64(0);
+                        string deviceName = deviceReader.GetString(1);
+                        int slaveId = deviceReader.GetInt32(2);
+
+                        TreeNode deviceNode = new TreeNode(deviceName)
+                        {
+                            ImageIndex = 1,
+                            SelectedImageIndex = 1,
+                            Tag = deviceId
+                        };
+                        rootNode.Nodes.Add(deviceNode);
+
+                        var groupCmd = connection.CreateCommand();
+                        groupCmd.CommandText = "SELECT GroupId, GroupName FROM ReadingGroups WHERE DeviceId = $deviceId ORDER BY GroupName";
+                        groupCmd.Parameters.AddWithValue("$deviceId", deviceId);
+
+                        using (var groupReader = groupCmd.ExecuteReader())
+                        {
+                            while (groupReader.Read())
+                            {
+                                TreeNode groupNode = new TreeNode(groupReader.GetString(1))
+                                {
+                                    ImageIndex = 2,
+                                    SelectedImageIndex = 2,
+                                    Tag = groupReader.GetInt64(0)
+                                };
+                                deviceNode.Nodes.Add(groupNode);
+                            }
+                        }
+                    }
+                }
+            }
+            //rootNode.Expand();
+        }
+
+        private void treeView_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
+        {
+            if (e.Node.Level == 1 && e.Node.Tag != null)
+            {
+                long deviceId = (long)e.Node.Tag;
+                OpenSavedDevice(deviceId);
+            }
+        }
+
+        private void OpenSavedDevice(long deviceId)
+        {
+            try
+            {
+                using (var connection = new SqliteConnection($"Data Source={DatabaseHelper.GetDbPath()}"))
+                {
+                    connection.Open();
+
+                    var deviceForm = new ModbusDevice { MdiParent = this };
+                    deviceForm.DeviceSaved += (s, ev) => LoadDevicesToTree();
+
+                    var deviceCmd = connection.CreateCommand();
+                    deviceCmd.CommandText = "SELECT DeviceName, SlaveId FROM Devices WHERE DeviceId = $deviceId";
+                    deviceCmd.Parameters.AddWithValue("$deviceId", deviceId);
+
+                    using (var deviceReader = deviceCmd.ExecuteReader())
+                    {
+                        if (deviceReader.Read())
+                        {
+                            deviceForm.Text = deviceReader.GetString(0);
+                            deviceForm.DeviceName = deviceReader.GetString(0);
+                            deviceForm.SlaveId = deviceReader.GetInt32(1);
+                        }
+                    }
+
+                    var groupCmd = connection.CreateCommand();
+                    groupCmd.CommandText = "SELECT GroupId, GroupName, FunctionCode, StartAddress, Quantity FROM ReadingGroups WHERE DeviceId = $deviceId";
+                    groupCmd.Parameters.AddWithValue("$deviceId", deviceId);
+
+                    using (var groupReader = groupCmd.ExecuteReader())
+                    {
+                        deviceForm.DeviceTabControl.TabPages.Clear();
+
+                        while (groupReader.Read())
+                        {
+                            long groupId = groupReader.GetInt64(0);
+                            string groupName = groupReader.GetString(1);
+                            int funcCode = groupReader.GetInt32(2);
+                            int startAddr = groupReader.GetInt32(3);
+                            int quantity = groupReader.GetInt32(4);
+
+                            ReadingsTab readingsTab = new ReadingsTab { Dock = DockStyle.Fill };
+                            readingsTab.SetConfiguration(funcCode, startAddr, quantity);
+
+                            TabPage newTab = new TabPage(groupName);
+                            newTab.Controls.Add(readingsTab);
+                            deviceForm.DeviceTabControl.TabPages.Add(newTab);
+
+                            var regCmd = connection.CreateCommand();
+                            regCmd.CommandText = "SELECT RegisterNumber, RegisterName FROM RegisterDefinitions WHERE GroupId = $groupId";
+                            regCmd.Parameters.AddWithValue("$groupId", groupId);
+
+                            var registers = new List<Tuple<int, string>>();
+                            using (var regReader = regCmd.ExecuteReader())
+                            {
+                                while (regReader.Read())
+                                {
+                                    registers.Add(new Tuple<int, string>(regReader.GetInt32(0), regReader.GetString(1)));
+                                }
+                            }
+                            readingsTab.SetRegisterDefinitions(registers);
+                        }
+                    }
+
+                    deviceForm.Show();
+                    deviceForm.Activate();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading device: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

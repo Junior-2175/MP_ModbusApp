@@ -166,5 +166,59 @@ namespace MP_ModbusApp
         }
 
 
+        // Metody publiczne do pobierania konfiguracji z tej kontrolki
+        public int GetFunctionCode()
+        {
+            return comboBox1.SelectedIndex;
+        }
+
+        public int GetStartAddress()
+        {
+            return (int)startRegister.Value;
+        }
+
+        public int GetQuantity()
+        {
+            return (int)numOfRegisters.Value;
+        }
+
+        public DataGridViewRowCollection GetDataGridViewRows()
+        {
+            return dataGridView1.Rows;
+        }
+
+        // Metody publiczne do ustawiania konfiguracji (dla wczytywania)
+        public void SetConfiguration(int funcCode, int startAddr, int quantity)
+        {
+            _isUpdatingValues = true; // Zapobiegamy pętlom zdarzeń
+            try
+            {
+                comboBox1.SelectedIndex = funcCode;
+                startRegister.Value = startAddr;
+                numOfRegisters.Value = quantity;
+                datagridUpdate(); // To zaktualizuje UI na podstawie nowych wartości
+            }
+            finally
+            {
+                _isUpdatingValues = false;
+            }
+        }
+
+        public void SetRegisterDefinitions(List<Tuple<int, string>> registers)
+        {
+            foreach (var regDef in registers)
+            {
+                // Znajdź wiersz pasujący do numeru rejestru
+                foreach (DataGridViewRow row in dataGridView1.Rows)
+                {
+                    if (row.Cells["RegisterNumber"].Value != null && (int)row.Cells["RegisterNumber"].Value == regDef.Item1)
+                    {
+                        row.Cells["Name"].Value = regDef.Item2;
+                        break;
+                    }
+                }
+            }
+        }
+
     }
 }

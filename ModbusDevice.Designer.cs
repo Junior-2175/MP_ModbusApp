@@ -41,6 +41,7 @@
             menuStrip1 = new MenuStrip();
             deviceToolStripMenuItem = new ToolStripMenuItem();
             saveToolStripMenuItem = new ToolStripMenuItem();
+            newReadingsToolStripMenuItem = new ToolStripMenuItem();
             pollingToolStripMenuItem = new ToolStripMenuItem();
             startToolStripMenuItem = new ToolStripMenuItem();
             stopToolStripMenuItem = new ToolStripMenuItem();
@@ -81,6 +82,7 @@
             tabPanel1.SelectedIndex = 0;
             tabPanel1.Size = new Size(450, 410);
             tabPanel1.TabIndex = 5;
+            tabPanel1.DoubleClick += tabPanel1_DoubleClick;
             tabPanel1.MouseDown += tabPanel1_MouseDown;
             // 
             // contextMenuStrip1
@@ -140,7 +142,7 @@
             // 
             // deviceToolStripMenuItem
             // 
-            deviceToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { saveToolStripMenuItem });
+            deviceToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { saveToolStripMenuItem, newReadingsToolStripMenuItem });
             deviceToolStripMenuItem.Name = "deviceToolStripMenuItem";
             deviceToolStripMenuItem.Size = new Size(54, 20);
             deviceToolStripMenuItem.Text = "Device";
@@ -149,8 +151,17 @@
             // 
             saveToolStripMenuItem.Name = "saveToolStripMenuItem";
             saveToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.S;
-            saveToolStripMenuItem.Size = new Size(138, 22);
+            saveToolStripMenuItem.Size = new Size(228, 22);
             saveToolStripMenuItem.Text = "Save";
+            saveToolStripMenuItem.Click += saveToolStripMenuItem_Click;
+            // 
+            // newReadingsToolStripMenuItem
+            // 
+            newReadingsToolStripMenuItem.Name = "newReadingsToolStripMenuItem";
+            newReadingsToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.Oemplus;
+            newReadingsToolStripMenuItem.Size = new Size(228, 22);
+            newReadingsToolStripMenuItem.Text = "New readings";
+            newReadingsToolStripMenuItem.Click += newReadingsToolStripMenuItem_Click;
             // 
             // pollingToolStripMenuItem
             // 
@@ -193,6 +204,7 @@
             Name = "ModbusDevice";
             Text = "New Device";
             Load += ModbusGroup_Load;
+            Resize += ModbusDevice_Resize;
             ((System.ComponentModel.ISupportInitialize)slaveId).EndInit();
             contextMenuStrip1.ResumeLayout(false);
             panel1.ResumeLayout(false);
@@ -220,5 +232,6 @@
         private ToolStripMenuItem startToolStripMenuItem;
         private ToolStripMenuItem stopToolStripMenuItem;
         private TextBox txtRenameTab;
+        private ToolStripMenuItem newReadingsToolStripMenuItem;
     }
 }
