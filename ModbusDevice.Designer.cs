@@ -46,6 +46,8 @@
             startToolStripMenuItem = new ToolStripMenuItem();
             stopToolStripMenuItem = new ToolStripMenuItem();
             txtRenameTab = new TextBox();
+            toolStripSeparator2 = new ToolStripSeparator();
+            chartToolStripMenuItem = new ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)slaveId).BeginInit();
             contextMenuStrip1.SuspendLayout();
             panel1.SuspendLayout();
@@ -87,9 +89,9 @@
             // 
             // contextMenuStrip1
             // 
-            contextMenuStrip1.Items.AddRange(new ToolStripItem[] { addToolStripMenuItem, removeToolStripMenuItem, toolStripSeparator1, renameToolStripMenuItem });
+            contextMenuStrip1.Items.AddRange(new ToolStripItem[] { addToolStripMenuItem, removeToolStripMenuItem, toolStripSeparator2, renameToolStripMenuItem, toolStripSeparator1, chartToolStripMenuItem });
             contextMenuStrip1.Name = "contextMenuStrip1";
-            contextMenuStrip1.Size = new Size(211, 76);
+            contextMenuStrip1.Size = new Size(211, 126);
             // 
             // addToolStripMenuItem
             // 
@@ -192,6 +194,18 @@
             txtRenameTab.TabIndex = 8;
             txtRenameTab.KeyDown += txtRenameTab_KeyDown;
             // 
+            // toolStripSeparator2
+            // 
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(207, 6);
+            // 
+            // chartToolStripMenuItem
+            // 
+            chartToolStripMenuItem.Name = "chartToolStripMenuItem";
+            chartToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.X;
+            chartToolStripMenuItem.Size = new Size(210, 22);
+            chartToolStripMenuItem.Text = "Chart";
+            // 
             // ModbusDevice
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -233,5 +247,7 @@
         private ToolStripMenuItem stopToolStripMenuItem;
         private TextBox txtRenameTab;
         private ToolStripMenuItem newReadingsToolStripMenuItem;
+        private ToolStripSeparator toolStripSeparator2;
+        private ToolStripMenuItem chartToolStripMenuItem;
     }
 }

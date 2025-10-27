@@ -40,6 +40,9 @@ namespace MP_ModbusApp
         public ModbusDevice()
         {
             InitializeComponent();
+            addToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+ + ";
+            removeToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+ - ";
+            newReadingsToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+ + ";
         }
 
         private void ModbusGroup_Load(object sender, EventArgs e)

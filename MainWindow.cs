@@ -46,7 +46,7 @@ namespace MP_ModbusApp
             }
             catch (Exception ex)
             {
-                Debug.WriteLine("Nie można utworzyć kursora przeciągania: " + ex.Message);
+                Debug.WriteLine("Failed to create drag cursor: " + ex.Message);
                 _deviceDragCursor = Cursors.Default;
             }
 
@@ -810,7 +810,7 @@ namespace MP_ModbusApp
 
                 if (rootNode == null)
                 {
-                    throw new Exception("Nie znaleziono urządzenia.");
+                    throw new Exception("Device not found.");
                 }
 
                 var groupCmd = connection.CreateCommand();
@@ -890,9 +890,6 @@ namespace MP_ModbusApp
             {
                 connection.Open();
                 var command = connection.CreateCommand();
-
-                // Dzięki "ON DELETE CASCADE" w definicji bazy,
-                // usunięcie urządzenia automatycznie usunie powiązane ReadingGroups i RegisterDefinitions.
                 command.CommandText = "DELETE FROM Devices WHERE DeviceId = $deviceId;";
                 command.Parameters.AddWithValue("$deviceId", deviceId);
                 command.ExecuteNonQuery();
