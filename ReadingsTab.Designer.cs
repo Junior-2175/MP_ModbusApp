@@ -40,9 +40,6 @@
             lblTabError = new Label();
             startRegister_1 = new NumericUpDown();
             dataGridView1 = new DataGridView();
-            Name = new DataGridViewTextBoxColumn();
-            RegisterNumber = new DataGridViewTextBoxColumn();
-            Value = new DataGridViewTextBoxColumn();
             contextMenuStrip1 = new ContextMenuStrip(components);
             toolStripMenuItem2 = new ToolStripMenuItem();
             unsignedToolStripMenuItem = new ToolStripMenuItem();
@@ -82,38 +79,41 @@
             bigendianByteSwapToolStripMenuItem3 = new ToolStripMenuItem();
             littleendianByteSwapToolStripMenuItem3 = new ToolStripMenuItem();
             toolStripMenuItem4 = new ToolStripMenuItem();
-            DisplayFormatColumn = new DataGridViewTextBoxColumn();
-            timer1 = new System.Windows.Forms.Timer(components);
             unsignedToolStripMenuItem2 = new ToolStripMenuItem();
-            signedToolStripMenuItem2 = new ToolStripMenuItem();
-            realToolStripMenuItem1 = new ToolStripMenuItem();
-            hexToolStripMenuItem2 = new ToolStripMenuItem();
-            aSCIIToolStripMenuItem2 = new ToolStripMenuItem();
             bigendianToolStripMenuItem6 = new ToolStripMenuItem();
-            bigendianToolStripMenuItem7 = new ToolStripMenuItem();
-            bigendianToolStripMenuItem8 = new ToolStripMenuItem();
-            bigendianToolStripMenuItem9 = new ToolStripMenuItem();
-            bigendianToolStripMenuItem10 = new ToolStripMenuItem();
             littleendianToolStripMenuItem6 = new ToolStripMenuItem();
-            littleendianToolStripMenuItem7 = new ToolStripMenuItem();
-            littleendianToolStripMenuItem8 = new ToolStripMenuItem();
-            littleendianToolStripMenuItem9 = new ToolStripMenuItem();
-            littleendianToolStripMenuItem10 = new ToolStripMenuItem();
             toolStripSeparator6 = new ToolStripSeparator();
-            toolStripSeparator7 = new ToolStripSeparator();
-            toolStripSeparator8 = new ToolStripSeparator();
-            toolStripSeparator9 = new ToolStripSeparator();
-            toolStripSeparator10 = new ToolStripSeparator();
             bigendianByteSwapToolStripMenuItem4 = new ToolStripMenuItem();
-            bigendianByteSwapToolStripMenuItem5 = new ToolStripMenuItem();
-            bigendianByteSwapToolStripMenuItem6 = new ToolStripMenuItem();
-            bigendianByteSwapToolStripMenuItem7 = new ToolStripMenuItem();
-            bigendianByteSwapToolStripMenuItem8 = new ToolStripMenuItem();
             littleendianByteSwapToolStripMenuItem4 = new ToolStripMenuItem();
+            signedToolStripMenuItem2 = new ToolStripMenuItem();
+            bigendianToolStripMenuItem7 = new ToolStripMenuItem();
+            littleendianToolStripMenuItem7 = new ToolStripMenuItem();
+            toolStripSeparator7 = new ToolStripSeparator();
+            bigendianByteSwapToolStripMenuItem5 = new ToolStripMenuItem();
             littleendianByteSwapToolStripMenuItem5 = new ToolStripMenuItem();
+            realToolStripMenuItem1 = new ToolStripMenuItem();
+            bigendianToolStripMenuItem8 = new ToolStripMenuItem();
+            littleendianToolStripMenuItem8 = new ToolStripMenuItem();
+            toolStripSeparator8 = new ToolStripSeparator();
+            bigendianByteSwapToolStripMenuItem6 = new ToolStripMenuItem();
             littleendianByteSwapToolStripMenuItem6 = new ToolStripMenuItem();
+            hexToolStripMenuItem2 = new ToolStripMenuItem();
+            bigendianToolStripMenuItem9 = new ToolStripMenuItem();
+            littleendianToolStripMenuItem9 = new ToolStripMenuItem();
+            toolStripSeparator9 = new ToolStripSeparator();
+            bigendianByteSwapToolStripMenuItem7 = new ToolStripMenuItem();
             littleendianByteSwapToolStripMenuItem7 = new ToolStripMenuItem();
+            aSCIIToolStripMenuItem2 = new ToolStripMenuItem();
+            bigendianToolStripMenuItem10 = new ToolStripMenuItem();
+            littleendianToolStripMenuItem10 = new ToolStripMenuItem();
+            toolStripSeparator10 = new ToolStripSeparator();
+            bigendianByteSwapToolStripMenuItem8 = new ToolStripMenuItem();
             littleendianByteSwapToolStripMenuItem8 = new ToolStripMenuItem();
+            timer1 = new System.Windows.Forms.Timer(components);
+            Name = new DataGridViewTextBoxColumn();
+            RegisterNumber = new DataGridViewTextBoxColumn();
+            Value = new DataGridViewTextBoxColumn();
+            DisplayFormatColumn = new DataGridViewTextBoxColumn();
             ((System.ComponentModel.ISupportInitialize)numOfRegisters).BeginInit();
             ((System.ComponentModel.ISupportInitialize)startRegister).BeginInit();
             ((System.ComponentModel.ISupportInitialize)startRegisterHex).BeginInit();
@@ -257,41 +257,18 @@
             dataGridView1.Size = new Size(332, 329);
             dataGridView1.TabIndex = 6;
             // 
-            // Name
-            // 
-            Name.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-            Name.HeaderText = "Name";
-            Name.Name = "Name";
-            Name.SortMode = DataGridViewColumnSortMode.NotSortable;
-            // 
-            // RegisterNumber
-            // 
-            RegisterNumber.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
-            RegisterNumber.HeaderText = "Register Number";
-            RegisterNumber.Name = "RegisterNumber";
-            RegisterNumber.ReadOnly = true;
-            RegisterNumber.SortMode = DataGridViewColumnSortMode.NotSortable;
-            RegisterNumber.Width = 92;
-            // 
-            // Value
-            // 
-            Value.ContextMenuStrip = contextMenuStrip1;
-            Value.HeaderText = "Value";
-            Value.Name = "Value";
-            Value.SortMode = DataGridViewColumnSortMode.NotSortable;
-            // 
             // contextMenuStrip1
             // 
             contextMenuStrip1.Items.AddRange(new ToolStripItem[] { toolStripMenuItem2, toolStripMenuItem3, toolStripMenuItem4 });
             contextMenuStrip1.Name = "contextMenuStrip1";
-            contextMenuStrip1.Size = new Size(181, 92);
+            contextMenuStrip1.Size = new Size(106, 70);
             contextMenuStrip1.Opening += contextMenuStrip1_Opening;
             // 
             // toolStripMenuItem2
             // 
             toolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { unsignedToolStripMenuItem, signedToolStripMenuItem, binaryToolStripMenuItem, hexToolStripMenuItem, aSCIIToolStripMenuItem });
             toolStripMenuItem2.Name = "toolStripMenuItem2";
-            toolStripMenuItem2.Size = new Size(180, 22);
+            toolStripMenuItem2.Size = new Size(105, 22);
             toolStripMenuItem2.Text = "16-bit";
             // 
             // unsignedToolStripMenuItem
@@ -333,7 +310,7 @@
             // 
             toolStripMenuItem3.DropDownItems.AddRange(new ToolStripItem[] { unsignedToolStripMenuItem1, signedToolStripMenuItem1, realToolStripMenuItem, hexToolStripMenuItem1, aSCIIToolStripMenuItem1 });
             toolStripMenuItem3.Name = "toolStripMenuItem3";
-            toolStripMenuItem3.Size = new Size(180, 22);
+            toolStripMenuItem3.Size = new Size(105, 22);
             toolStripMenuItem3.Text = "32-bit";
             // 
             // unsignedToolStripMenuItem1
@@ -526,15 +503,8 @@
             // 
             toolStripMenuItem4.DropDownItems.AddRange(new ToolStripItem[] { unsignedToolStripMenuItem2, signedToolStripMenuItem2, realToolStripMenuItem1, hexToolStripMenuItem2, aSCIIToolStripMenuItem2 });
             toolStripMenuItem4.Name = "toolStripMenuItem4";
-            toolStripMenuItem4.Size = new Size(180, 22);
+            toolStripMenuItem4.Size = new Size(105, 22);
             toolStripMenuItem4.Text = "64-bit";
-            // 
-            // DisplayFormatColumn
-            // 
-            DisplayFormatColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
-            DisplayFormatColumn.HeaderText = "DisplayFormat";
-            DisplayFormatColumn.Name = "DisplayFormatColumn";
-            DisplayFormatColumn.Width = 108;
             // 
             // unsignedToolStripMenuItem2
             // 
@@ -543,68 +513,12 @@
             unsignedToolStripMenuItem2.Size = new Size(180, 22);
             unsignedToolStripMenuItem2.Text = "Unsigned";
             // 
-            // signedToolStripMenuItem2
-            // 
-            signedToolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem7, littleendianToolStripMenuItem7, toolStripSeparator7, bigendianByteSwapToolStripMenuItem5, littleendianByteSwapToolStripMenuItem5 });
-            signedToolStripMenuItem2.Name = "signedToolStripMenuItem2";
-            signedToolStripMenuItem2.Size = new Size(180, 22);
-            signedToolStripMenuItem2.Text = "Signed";
-            // 
-            // realToolStripMenuItem1
-            // 
-            realToolStripMenuItem1.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem8, littleendianToolStripMenuItem8, toolStripSeparator8, bigendianByteSwapToolStripMenuItem6, littleendianByteSwapToolStripMenuItem6 });
-            realToolStripMenuItem1.Name = "realToolStripMenuItem1";
-            realToolStripMenuItem1.Size = new Size(180, 22);
-            realToolStripMenuItem1.Text = "Real";
-            // 
-            // hexToolStripMenuItem2
-            // 
-            hexToolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem9, littleendianToolStripMenuItem9, toolStripSeparator9, bigendianByteSwapToolStripMenuItem7, littleendianByteSwapToolStripMenuItem7 });
-            hexToolStripMenuItem2.Name = "hexToolStripMenuItem2";
-            hexToolStripMenuItem2.Size = new Size(180, 22);
-            hexToolStripMenuItem2.Text = "Hex";
-            // 
-            // aSCIIToolStripMenuItem2
-            // 
-            aSCIIToolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem10, littleendianToolStripMenuItem10, toolStripSeparator10, bigendianByteSwapToolStripMenuItem8, littleendianByteSwapToolStripMenuItem8 });
-            aSCIIToolStripMenuItem2.Name = "aSCIIToolStripMenuItem2";
-            aSCIIToolStripMenuItem2.Size = new Size(180, 22);
-            aSCIIToolStripMenuItem2.Text = "ASCII";
-            // 
             // bigendianToolStripMenuItem6
             // 
             bigendianToolStripMenuItem6.Name = "bigendianToolStripMenuItem6";
             bigendianToolStripMenuItem6.Size = new Size(197, 22);
             bigendianToolStripMenuItem6.Text = "Big-endian";
             bigendianToolStripMenuItem6.Click += bigendianToolStripMenuItem6_Click;
-            // 
-            // bigendianToolStripMenuItem7
-            // 
-            bigendianToolStripMenuItem7.Name = "bigendianToolStripMenuItem7";
-            bigendianToolStripMenuItem7.Size = new Size(197, 22);
-            bigendianToolStripMenuItem7.Text = "Big-endian";
-            bigendianToolStripMenuItem7.Click += bigendianToolStripMenuItem7_Click;
-            // 
-            // bigendianToolStripMenuItem8
-            // 
-            bigendianToolStripMenuItem8.Name = "bigendianToolStripMenuItem8";
-            bigendianToolStripMenuItem8.Size = new Size(197, 22);
-            bigendianToolStripMenuItem8.Text = "Big-endian";
-            bigendianToolStripMenuItem8.Click += bigendianToolStripMenuItem8_Click;
-            // 
-            // bigendianToolStripMenuItem9
-            // 
-            bigendianToolStripMenuItem9.Name = "bigendianToolStripMenuItem9";
-            bigendianToolStripMenuItem9.Size = new Size(197, 22);
-            bigendianToolStripMenuItem9.Text = "Big-endian";
-            bigendianToolStripMenuItem9.Click += bigendianToolStripMenuItem9_Click;
-            // 
-            // bigendianToolStripMenuItem10
-            // 
-            bigendianToolStripMenuItem10.Name = "bigendianToolStripMenuItem10";
-            bigendianToolStripMenuItem10.Size = new Size(197, 22);
-            bigendianToolStripMenuItem10.Text = "Big-endian";
-            bigendianToolStripMenuItem10.Click += bigendianToolStripMenuItem10_Click;
             // 
             // littleendianToolStripMenuItem6
             // 
@@ -613,58 +527,10 @@
             littleendianToolStripMenuItem6.Text = "Little-endian";
             littleendianToolStripMenuItem6.Click += littleendianToolStripMenuItem6_Click;
             // 
-            // littleendianToolStripMenuItem7
-            // 
-            littleendianToolStripMenuItem7.Name = "littleendianToolStripMenuItem7";
-            littleendianToolStripMenuItem7.Size = new Size(197, 22);
-            littleendianToolStripMenuItem7.Text = "Little-endian";
-            littleendianToolStripMenuItem7.Click += littleendianToolStripMenuItem7_Click;
-            // 
-            // littleendianToolStripMenuItem8
-            // 
-            littleendianToolStripMenuItem8.Name = "littleendianToolStripMenuItem8";
-            littleendianToolStripMenuItem8.Size = new Size(197, 22);
-            littleendianToolStripMenuItem8.Text = "Little-endian";
-            littleendianToolStripMenuItem8.Click += littleendianToolStripMenuItem8_Click;
-            // 
-            // littleendianToolStripMenuItem9
-            // 
-            littleendianToolStripMenuItem9.Name = "littleendianToolStripMenuItem9";
-            littleendianToolStripMenuItem9.Size = new Size(197, 22);
-            littleendianToolStripMenuItem9.Text = "Little-endian";
-            littleendianToolStripMenuItem9.Click += littleendianToolStripMenuItem9_Click;
-            // 
-            // littleendianToolStripMenuItem10
-            // 
-            littleendianToolStripMenuItem10.Name = "littleendianToolStripMenuItem10";
-            littleendianToolStripMenuItem10.Size = new Size(197, 22);
-            littleendianToolStripMenuItem10.Text = "Little-endian";
-            littleendianToolStripMenuItem10.Click += littleendianToolStripMenuItem10_Click;
-            // 
             // toolStripSeparator6
             // 
             toolStripSeparator6.Name = "toolStripSeparator6";
             toolStripSeparator6.Size = new Size(194, 6);
-            // 
-            // toolStripSeparator7
-            // 
-            toolStripSeparator7.Name = "toolStripSeparator7";
-            toolStripSeparator7.Size = new Size(194, 6);
-            // 
-            // toolStripSeparator8
-            // 
-            toolStripSeparator8.Name = "toolStripSeparator8";
-            toolStripSeparator8.Size = new Size(194, 6);
-            // 
-            // toolStripSeparator9
-            // 
-            toolStripSeparator9.Name = "toolStripSeparator9";
-            toolStripSeparator9.Size = new Size(194, 6);
-            // 
-            // toolStripSeparator10
-            // 
-            toolStripSeparator10.Name = "toolStripSeparator10";
-            toolStripSeparator10.Size = new Size(194, 6);
             // 
             // bigendianByteSwapToolStripMenuItem4
             // 
@@ -673,40 +539,45 @@
             bigendianByteSwapToolStripMenuItem4.Text = "Big-endian byte swap";
             bigendianByteSwapToolStripMenuItem4.Click += bigendianByteSwapToolStripMenuItem4_Click;
             // 
-            // bigendianByteSwapToolStripMenuItem5
-            // 
-            bigendianByteSwapToolStripMenuItem5.Name = "bigendianByteSwapToolStripMenuItem5";
-            bigendianByteSwapToolStripMenuItem5.Size = new Size(197, 22);
-            bigendianByteSwapToolStripMenuItem5.Text = "Big-endian byte swap";
-            bigendianByteSwapToolStripMenuItem5.Click += bigendianByteSwapToolStripMenuItem5_Click;
-            // 
-            // bigendianByteSwapToolStripMenuItem6
-            // 
-            bigendianByteSwapToolStripMenuItem6.Name = "bigendianByteSwapToolStripMenuItem6";
-            bigendianByteSwapToolStripMenuItem6.Size = new Size(197, 22);
-            bigendianByteSwapToolStripMenuItem6.Text = "Big-endian byte swap";
-            bigendianByteSwapToolStripMenuItem6.Click += bigendianByteSwapToolStripMenuItem6_Click;
-            // 
-            // bigendianByteSwapToolStripMenuItem7
-            // 
-            bigendianByteSwapToolStripMenuItem7.Name = "bigendianByteSwapToolStripMenuItem7";
-            bigendianByteSwapToolStripMenuItem7.Size = new Size(197, 22);
-            bigendianByteSwapToolStripMenuItem7.Text = "Big-endian byte swap";
-            bigendianByteSwapToolStripMenuItem7.Click += bigendianByteSwapToolStripMenuItem7_Click;
-            // 
-            // bigendianByteSwapToolStripMenuItem8
-            // 
-            bigendianByteSwapToolStripMenuItem8.Name = "bigendianByteSwapToolStripMenuItem8";
-            bigendianByteSwapToolStripMenuItem8.Size = new Size(197, 22);
-            bigendianByteSwapToolStripMenuItem8.Text = "Big-endian byte swap";
-            bigendianByteSwapToolStripMenuItem8.Click += bigendianByteSwapToolStripMenuItem8_Click;
-            // 
             // littleendianByteSwapToolStripMenuItem4
             // 
             littleendianByteSwapToolStripMenuItem4.Name = "littleendianByteSwapToolStripMenuItem4";
             littleendianByteSwapToolStripMenuItem4.Size = new Size(197, 22);
             littleendianByteSwapToolStripMenuItem4.Text = "Little-endian byte swap";
             littleendianByteSwapToolStripMenuItem4.Click += littleendianByteSwapToolStripMenuItem4_Click;
+            // 
+            // signedToolStripMenuItem2
+            // 
+            signedToolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem7, littleendianToolStripMenuItem7, toolStripSeparator7, bigendianByteSwapToolStripMenuItem5, littleendianByteSwapToolStripMenuItem5 });
+            signedToolStripMenuItem2.Name = "signedToolStripMenuItem2";
+            signedToolStripMenuItem2.Size = new Size(180, 22);
+            signedToolStripMenuItem2.Text = "Signed";
+            // 
+            // bigendianToolStripMenuItem7
+            // 
+            bigendianToolStripMenuItem7.Name = "bigendianToolStripMenuItem7";
+            bigendianToolStripMenuItem7.Size = new Size(197, 22);
+            bigendianToolStripMenuItem7.Text = "Big-endian";
+            bigendianToolStripMenuItem7.Click += bigendianToolStripMenuItem7_Click;
+            // 
+            // littleendianToolStripMenuItem7
+            // 
+            littleendianToolStripMenuItem7.Name = "littleendianToolStripMenuItem7";
+            littleendianToolStripMenuItem7.Size = new Size(197, 22);
+            littleendianToolStripMenuItem7.Text = "Little-endian";
+            littleendianToolStripMenuItem7.Click += littleendianToolStripMenuItem7_Click;
+            // 
+            // toolStripSeparator7
+            // 
+            toolStripSeparator7.Name = "toolStripSeparator7";
+            toolStripSeparator7.Size = new Size(194, 6);
+            // 
+            // bigendianByteSwapToolStripMenuItem5
+            // 
+            bigendianByteSwapToolStripMenuItem5.Name = "bigendianByteSwapToolStripMenuItem5";
+            bigendianByteSwapToolStripMenuItem5.Size = new Size(197, 22);
+            bigendianByteSwapToolStripMenuItem5.Text = "Big-endian byte swap";
+            bigendianByteSwapToolStripMenuItem5.Click += bigendianByteSwapToolStripMenuItem5_Click;
             // 
             // littleendianByteSwapToolStripMenuItem5
             // 
@@ -715,12 +586,78 @@
             littleendianByteSwapToolStripMenuItem5.Text = "Little-endian byte swap";
             littleendianByteSwapToolStripMenuItem5.Click += littleendianByteSwapToolStripMenuItem5_Click;
             // 
+            // realToolStripMenuItem1
+            // 
+            realToolStripMenuItem1.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem8, littleendianToolStripMenuItem8, toolStripSeparator8, bigendianByteSwapToolStripMenuItem6, littleendianByteSwapToolStripMenuItem6 });
+            realToolStripMenuItem1.Name = "realToolStripMenuItem1";
+            realToolStripMenuItem1.Size = new Size(180, 22);
+            realToolStripMenuItem1.Text = "Real";
+            // 
+            // bigendianToolStripMenuItem8
+            // 
+            bigendianToolStripMenuItem8.Name = "bigendianToolStripMenuItem8";
+            bigendianToolStripMenuItem8.Size = new Size(197, 22);
+            bigendianToolStripMenuItem8.Text = "Big-endian";
+            bigendianToolStripMenuItem8.Click += bigendianToolStripMenuItem8_Click;
+            // 
+            // littleendianToolStripMenuItem8
+            // 
+            littleendianToolStripMenuItem8.Name = "littleendianToolStripMenuItem8";
+            littleendianToolStripMenuItem8.Size = new Size(197, 22);
+            littleendianToolStripMenuItem8.Text = "Little-endian";
+            littleendianToolStripMenuItem8.Click += littleendianToolStripMenuItem8_Click;
+            // 
+            // toolStripSeparator8
+            // 
+            toolStripSeparator8.Name = "toolStripSeparator8";
+            toolStripSeparator8.Size = new Size(194, 6);
+            // 
+            // bigendianByteSwapToolStripMenuItem6
+            // 
+            bigendianByteSwapToolStripMenuItem6.Name = "bigendianByteSwapToolStripMenuItem6";
+            bigendianByteSwapToolStripMenuItem6.Size = new Size(197, 22);
+            bigendianByteSwapToolStripMenuItem6.Text = "Big-endian byte swap";
+            bigendianByteSwapToolStripMenuItem6.Click += bigendianByteSwapToolStripMenuItem6_Click;
+            // 
             // littleendianByteSwapToolStripMenuItem6
             // 
             littleendianByteSwapToolStripMenuItem6.Name = "littleendianByteSwapToolStripMenuItem6";
             littleendianByteSwapToolStripMenuItem6.Size = new Size(197, 22);
             littleendianByteSwapToolStripMenuItem6.Text = "Little-endian byte swap";
             littleendianByteSwapToolStripMenuItem6.Click += littleendianByteSwapToolStripMenuItem6_Click;
+            // 
+            // hexToolStripMenuItem2
+            // 
+            hexToolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem9, littleendianToolStripMenuItem9, toolStripSeparator9, bigendianByteSwapToolStripMenuItem7, littleendianByteSwapToolStripMenuItem7 });
+            hexToolStripMenuItem2.Name = "hexToolStripMenuItem2";
+            hexToolStripMenuItem2.Size = new Size(180, 22);
+            hexToolStripMenuItem2.Text = "Hex";
+            // 
+            // bigendianToolStripMenuItem9
+            // 
+            bigendianToolStripMenuItem9.Name = "bigendianToolStripMenuItem9";
+            bigendianToolStripMenuItem9.Size = new Size(197, 22);
+            bigendianToolStripMenuItem9.Text = "Big-endian";
+            bigendianToolStripMenuItem9.Click += bigendianToolStripMenuItem9_Click;
+            // 
+            // littleendianToolStripMenuItem9
+            // 
+            littleendianToolStripMenuItem9.Name = "littleendianToolStripMenuItem9";
+            littleendianToolStripMenuItem9.Size = new Size(197, 22);
+            littleendianToolStripMenuItem9.Text = "Little-endian";
+            littleendianToolStripMenuItem9.Click += littleendianToolStripMenuItem9_Click;
+            // 
+            // toolStripSeparator9
+            // 
+            toolStripSeparator9.Name = "toolStripSeparator9";
+            toolStripSeparator9.Size = new Size(194, 6);
+            // 
+            // bigendianByteSwapToolStripMenuItem7
+            // 
+            bigendianByteSwapToolStripMenuItem7.Name = "bigendianByteSwapToolStripMenuItem7";
+            bigendianByteSwapToolStripMenuItem7.Size = new Size(197, 22);
+            bigendianByteSwapToolStripMenuItem7.Text = "Big-endian byte swap";
+            bigendianByteSwapToolStripMenuItem7.Click += bigendianByteSwapToolStripMenuItem7_Click;
             // 
             // littleendianByteSwapToolStripMenuItem7
             // 
@@ -729,6 +666,39 @@
             littleendianByteSwapToolStripMenuItem7.Text = "Little-endian byte swap";
             littleendianByteSwapToolStripMenuItem7.Click += littleendianByteSwapToolStripMenuItem7_Click;
             // 
+            // aSCIIToolStripMenuItem2
+            // 
+            aSCIIToolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem10, littleendianToolStripMenuItem10, toolStripSeparator10, bigendianByteSwapToolStripMenuItem8, littleendianByteSwapToolStripMenuItem8 });
+            aSCIIToolStripMenuItem2.Name = "aSCIIToolStripMenuItem2";
+            aSCIIToolStripMenuItem2.Size = new Size(180, 22);
+            aSCIIToolStripMenuItem2.Text = "ASCII";
+            // 
+            // bigendianToolStripMenuItem10
+            // 
+            bigendianToolStripMenuItem10.Name = "bigendianToolStripMenuItem10";
+            bigendianToolStripMenuItem10.Size = new Size(197, 22);
+            bigendianToolStripMenuItem10.Text = "Big-endian";
+            bigendianToolStripMenuItem10.Click += bigendianToolStripMenuItem10_Click;
+            // 
+            // littleendianToolStripMenuItem10
+            // 
+            littleendianToolStripMenuItem10.Name = "littleendianToolStripMenuItem10";
+            littleendianToolStripMenuItem10.Size = new Size(197, 22);
+            littleendianToolStripMenuItem10.Text = "Little-endian";
+            littleendianToolStripMenuItem10.Click += littleendianToolStripMenuItem10_Click;
+            // 
+            // toolStripSeparator10
+            // 
+            toolStripSeparator10.Name = "toolStripSeparator10";
+            toolStripSeparator10.Size = new Size(194, 6);
+            // 
+            // bigendianByteSwapToolStripMenuItem8
+            // 
+            bigendianByteSwapToolStripMenuItem8.Name = "bigendianByteSwapToolStripMenuItem8";
+            bigendianByteSwapToolStripMenuItem8.Size = new Size(197, 22);
+            bigendianByteSwapToolStripMenuItem8.Text = "Big-endian byte swap";
+            bigendianByteSwapToolStripMenuItem8.Click += bigendianByteSwapToolStripMenuItem8_Click;
+            // 
             // littleendianByteSwapToolStripMenuItem8
             // 
             littleendianByteSwapToolStripMenuItem8.Name = "littleendianByteSwapToolStripMenuItem8";
@@ -736,13 +706,45 @@
             littleendianByteSwapToolStripMenuItem8.Text = "Little-endian byte swap";
             littleendianByteSwapToolStripMenuItem8.Click += littleendianByteSwapToolStripMenuItem8_Click;
             // 
+            // Name
+            // 
+            Name.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            Name.HeaderText = "Name";
+            Name.Name = "Name";
+            Name.SortMode = DataGridViewColumnSortMode.NotSortable;
+            // 
+            // RegisterNumber
+            // 
+            RegisterNumber.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
+            RegisterNumber.HeaderText = "Register Number";
+            RegisterNumber.Name = "RegisterNumber";
+            RegisterNumber.ReadOnly = true;
+            RegisterNumber.SortMode = DataGridViewColumnSortMode.NotSortable;
+            RegisterNumber.Width = 92;
+            // 
+            // Value
+            // 
+            Value.ContextMenuStrip = contextMenuStrip1;
+            Value.HeaderText = "Value";
+            Value.Name = "Value";
+            Value.SortMode = DataGridViewColumnSortMode.NotSortable;
+            // 
+            // DisplayFormatColumn
+            // 
+            DisplayFormatColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
+            DisplayFormatColumn.HeaderText = "DisplayFormat";
+            DisplayFormatColumn.Name = "DisplayFormatColumn";
+            DisplayFormatColumn.ReadOnly = true;
+            DisplayFormatColumn.SortMode = DataGridViewColumnSortMode.NotSortable;
+            DisplayFormatColumn.Visible = false;
+            DisplayFormatColumn.Width = 89;
+            // 
             // ReadingsTab
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(dataGridView1);
             Controls.Add(groupBox1);
-            Name = "ReadingsTab";
             Size = new Size(332, 438);
             Load += ReadingsTab_Load;
             ((System.ComponentModel.ISupportInitialize)numOfRegisters).EndInit();
@@ -788,10 +790,6 @@
         private ToolStripSeparator toolStripSeparator1;
         private ToolStripMenuItem bigendianToolStripMenuItem1;
         private ToolStripMenuItem littleendianToolStripMenuItem1;
-        private DataGridViewTextBoxColumn Name;
-        private DataGridViewTextBoxColumn RegisterNumber;
-        private DataGridViewTextBoxColumn Value;
-        private DataGridViewTextBoxColumn DisplayFormatColumn;
         private ToolStripMenuItem bigendianToolStripMenuItem2;
         private ToolStripMenuItem littleendianToolStripMenuItem3;
         private ToolStripSeparator toolStripSeparator2;
@@ -842,5 +840,9 @@
         private ToolStripSeparator toolStripSeparator10;
         private ToolStripMenuItem bigendianByteSwapToolStripMenuItem8;
         private ToolStripMenuItem littleendianByteSwapToolStripMenuItem8;
+        private DataGridViewTextBoxColumn Name;
+        private DataGridViewTextBoxColumn RegisterNumber;
+        private DataGridViewTextBoxColumn Value;
+        private DataGridViewTextBoxColumn DisplayFormatColumn;
     }
 }

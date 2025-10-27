@@ -4,6 +4,8 @@ using System.Windows.Forms;
 using System.Xml.Linq;
 using static System.ComponentModel.Design.ObjectSelectorEditor;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using System.Text; // Dodane dla obsługi ASCII
+using System.Collections.Generic; // Dodane dla Dictionary
 
 namespace MP_ModbusApp
 {
@@ -38,6 +40,12 @@ namespace MP_ModbusApp
             ASCII32_LE,
             ASCII32_BE_BS,
             ASCII32_LE_BS,
+            // NOWE FORMATY HEX 32
+            Hex32_BE,
+            Hex32_LE,
+            Hex32_BE_BS,
+            Hex32_LE_BS,
+
 
             // 64-bit (analogicznie)
             Unsigned64_BE,
@@ -48,20 +56,59 @@ namespace MP_ModbusApp
             Double64_LE,
             Unsigned64_BE_BS,
             Signed64_BE_BS,
-            Float64_BE_BS, // Real
+            Float64_BE_BS, // Real (alias dla Double)
             Unsigned64_LE_BS,
             Signed64_LE_BS,
-            Float64_LE_BS,
+            Float64_LE_BS, // alias dla Double
             ASCII64_BE,
             ASCII64_LE,
             ASCII64_BE_BS,
-            ASCII64_LE_BS
-            // Możesz dodać więcej kombinacji, np. "Byte Swap"
+            ASCII64_LE_BS,
+            // NOWE FORMATY HEX 64
+            Hex64_BE,
+            Hex64_LE,
+            Hex64_BE_BS,
+            Hex64_LE_BS
         }
         public ReadingsTab()
         {
 
             InitializeComponent();
+
+            // --- PODŁĄCZENIE WSZYSTKICH HANDLERÓW Z DESIGNERA ---
+            // Upewnij się, że te linie są w ReadingsTab.Designer.cs
+            // Jeśli ich tam nie ma, musisz je dodać ręcznie w Designerze
+            // lub dodać je tutaj, zaraz po InitializeComponent().
+
+            // 32-bit Unsigned BS
+            this.bigendianToolStripMenuItem1.Click += new System.EventHandler(this.unsigned32BEBSToolStripMenuItem_Click);
+            this.littleendianToolStripMenuItem1.Click += new System.EventHandler(this.unsigned32LEBSToolStripMenuItem_Click);
+
+            // 32-bit Signed BS
+            this.bigendianByteSwapToolStripMenuItem.Click += new System.EventHandler(this.signed32BEBSToolStripMenuItem_Click);
+            this.littleendianByteSwapToolStripMenuItem1.Click += new System.EventHandler(this.signed32LEBSToolStripMenuItem_Click);
+
+            // 32-bit Real BS
+            this.bigendianByteSwapToolStripMenuItem1.Click += new System.EventHandler(this.float32BEBSToolStripMenuItem_Click);
+            this.littleendianByteSwapToolStripMenuItem.Click += new System.EventHandler(this.float32LEBSToolStripMenuItem_Click);
+
+            // 32-bit Hex
+            this.bigendianToolStripMenuItem4.Click += new System.EventHandler(this.hex32BEToolStripMenuItem_Click);
+            this.littleendianToolStripMenuItem5.Click += new System.EventHandler(this.hex32LEToolStripMenuItem_Click);
+            this.bigendianByteSwapToolStripMenuItem2.Click += new System.EventHandler(this.hex32BEBSToolStripMenuItem_Click);
+            this.littleendianByteSwapToolStripMenuItem2.Click += new System.EventHandler(this.hex32LEBSToolStripMenuItem_Click);
+
+            // 32-bit ASCII
+            this.bigendianToolStripMenuItem5.Click += new System.EventHandler(this.ascii32BEToolStripMenuItem_Click);
+            this.littleendianToolStripMenuItem4.Click += new System.EventHandler(this.ascii32LEToolStripMenuItem_Click);
+            this.bigendianByteSwapToolStripMenuItem3.Click += new System.EventHandler(this.ascii32BEBSToolStripMenuItem_Click);
+            this.littleendianByteSwapToolStripMenuItem3.Click += new System.EventHandler(this.ascii32LEBSToolStripMenuItem_Click);
+
+            // 64-bit Hex
+            this.bigendianToolStripMenuItem9.Click += new System.EventHandler(this.hex64BEToolStripMenuItem_Click);
+            this.littleendianToolStripMenuItem9.Click += new System.EventHandler(this.hex64LEToolStripMenuItem_Click);
+            this.bigendianByteSwapToolStripMenuItem7.Click += new System.EventHandler(this.hex64BEBSToolStripMenuItem_Click);
+            this.littleendianByteSwapToolStripMenuItem7.Click += new System.EventHandler(this.hex64LEBSToolStripMenuItem_Click);
         }
 
         private void ReadingsTab_Load(object sender, EventArgs e)
@@ -309,11 +356,8 @@ namespace MP_ModbusApp
             ApplyFormatToSelected(DisplayFormat.ASCII);
         }
 
-        // Dodaj nowe metody Click dla menu 32-bit i 64-bit.
-        // Musisz je podłączyć w `ReadingsTab.Designer.cs`!
-        // Np. this.bigendianToolStripMenuItem.Click += new System.EventHandler(this.unsigned32BEToolStripMenuItem_Click);
 
-        // Przykłady (musisz je dodać i podłączyć w Designerze):
+        // Metody Click dla menu 32-bit.
         private void unsigned32BEToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ApplyFormatToSelected(DisplayFormat.Unsigned32_BE);
@@ -343,6 +387,80 @@ namespace MP_ModbusApp
         {
             ApplyFormatToSelected(DisplayFormat.Float32_LE);
         }
+
+        // 32-bit Byte Swap
+        private void unsigned32BEBSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Unsigned32_BE_BS);
+        }
+
+        private void unsigned32LEBSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Unsigned32_LE_BS);
+        }
+
+        private void signed32BEBSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Signed32_BE_BS);
+        }
+
+        private void signed32LEBSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Signed32_LE_BS);
+        }
+
+        private void float32BEBSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Float32_BE_BS);
+        }
+
+        private void float32LEBSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Float32_LE_BS);
+        }
+
+        // 32-bit ASCII
+        private void ascii32BEToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.ASCII32_BE);
+        }
+
+        private void ascii32LEToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.ASCII32_LE);
+        }
+
+        private void ascii32BEBSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.ASCII32_BE_BS);
+        }
+
+        private void ascii32LEBSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.ASCII32_LE_BS);
+        }
+
+        // 32-bit Hex
+        private void hex32BEToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Hex32_BE);
+        }
+
+        private void hex32LEToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Hex32_LE);
+        }
+
+        private void hex32BEBSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Hex32_BE_BS);
+        }
+
+        private void hex32LEBSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Hex32_LE_BS);
+        }
+
 
         // ... i analogicznie dla 64-bit ...
 
@@ -490,36 +608,71 @@ namespace MP_ModbusApp
             // Odśwież wyświetlanie w siatce
             RefreshDisplayValues();
         }
+
         /// <summary>
         /// Zwraca liczbę 16-bitowych rejestrów wymaganą przez dany format.
+        /// (ZAKTUALIZOWANA WERSJA)
         /// </summary>
         private int GetRegistersForFormat(DisplayFormat format)
         {
-            switch (format)
-            {
-                case DisplayFormat.Unsigned32_BE:
-                case DisplayFormat.Signed32_BE:
-                case DisplayFormat.Float32_BE:
-                case DisplayFormat.Unsigned32_LE:
-                case DisplayFormat.Signed32_LE:
-                case DisplayFormat.Float32_LE:
-                    return 2;
+            string fmtStr = format.ToString();
 
-                case DisplayFormat.Unsigned64_BE:
-                case DisplayFormat.Signed64_BE:
-                case DisplayFormat.Double64_BE:
-                case DisplayFormat.Unsigned64_LE:
-                case DisplayFormat.Signed64_LE:
-                case DisplayFormat.Double64_LE:
-                    return 4;
+            // Format 64-bitowy (Double, Long, ASCII64, Hex64) wymaga 4 rejestrów
+            if (fmtStr.Contains("64"))
+                return 4;
 
-                default: // Wszystkie formaty 16-bitowe
-                    return 1;
-            }
+            // Format 32-bitowy (Float, Int, UInt, ASCII32, Hex32) wymaga 2 rejestrów
+            if (fmtStr.Contains("32"))
+                return 2;
+
+            // Domyślnie format 16-bitowy (lub ASCII 16-bit) wymaga 1 rejestru
+            return 1;
         }
 
         /// <summary>
+        /// Buduje tablicę bajtów z surowych rejestrów Modbus (ushort)
+        /// uwzględniając kolejność (LE/BE) i zamianę bajtów (BS).
+        /// (NOWA METODA POMOCNICZA)
+        /// </summary>
+        /// <param name="rowIndex">Indeks startowy w _rawData</param>
+        /// <param name="numRegisters">Liczba rejestrów (2 dla 32-bit, 4 dla 64-bit)</param>
+        /// <param name="isLE_Format">Czy format jest Little-Endian (zamieniona kolejność rejestrów)</param>
+        /// <param name="isBS_Format">Czy format wymaga zamiany bajtów wewnątrz każdego rejestru</param>
+        /// <returns>Tablica bajtów gotowa do konwersji (w kolejności Big-Endian)</returns>
+        private byte[] BuildByteArray(int rowIndex, int numRegisters, bool isLE_Format, bool isBS_Format)
+        {
+            byte[] bytes = new byte[numRegisters * 2];
+
+            // 1. Pobierz rejestry i zastosuj zamianę bajtów (BS) jeśli trzeba
+            ushort[] regs = new ushort[numRegisters];
+            for (int i = 0; i < numRegisters; i++)
+            {
+                ushort raw = _rawData[rowIndex + i];
+                regs[i] = isBS_Format ? (ushort)((raw << 8) | (raw >> 8)) : raw;
+            }
+
+            // 2. Ułóż rejestry w odpowiedniej kolejności (BE lub LE)
+            for (int i = 0; i < numRegisters; i++)
+            {
+                // Dla BE: 0, 1, 2, 3
+                // Dla LE: 3, 2, 1, 0 (odwrócona kolejność SŁÓW/REJESTRÓW)
+                int regIndex = isLE_Format ? (numRegisters - 1 - i) : i;
+
+                // 3. Rozbij każdy rejestr na bajty (Hi, Lo)
+                byte[] regBytes = BitConverter.GetBytes(regs[regIndex]); // Na PC (LE) da to [Lo, Hi]
+
+                // Składamy bajty w kolejności Big-Endian (zawsze Hi, Lo)
+                bytes[i * 2] = regBytes[1]; // Hi Byte
+                bytes[i * 2 + 1] = regBytes[0]; // Lo Byte
+            }
+
+            return bytes;
+        }
+
+
+        /// <summary>
         /// Formatuje wartość dla danego wiersza na podstawie surowych danych i formatu wiersza.
+        /// (KOMPLETNA POPRAWIONA WERSJA)
         /// </summary>
         private string FormatValue(int rowIndex)
         {
@@ -528,6 +681,7 @@ namespace MP_ModbusApp
 
             DisplayFormat format = (DisplayFormat)dataGridView1.Rows[rowIndex].Cells["DisplayFormatColumn"].Value;
             int regsNeeded = GetRegistersForFormat(format);
+            string fmtStr = format.ToString();
 
             // Zabezpieczenie (Feature 3)
             if (rowIndex + regsNeeded > _rawData.Length)
@@ -544,73 +698,127 @@ namespace MP_ModbusApp
                         case DisplayFormat.Signed16: return ((short)val).ToString();
                         case DisplayFormat.Hex16: return $"0x{val:X4}";
                         case DisplayFormat.Binary16: return Convert.ToString(val, 2).PadLeft(16, '0');
-                        case DisplayFormat.ASCII: return new string(new[] { (char)val }); // Uproszczone
+                        case DisplayFormat.ASCII:
+                            byte[] asciiBytes = BitConverter.GetBytes(val);
+                            // Zamień bajty, jeśli trzeba (Hi, Lo) -> (Lo, Hi) dla czytelnego ASCII
+                            if (BitConverter.IsLittleEndian)
+                                return $"{(char)asciiBytes[0]}{(char)asciiBytes[1]}";
+                            else
+                                return $"{(char)asciiBytes[1]}{(char)asciiBytes[0]}";
                         case DisplayFormat.Unsigned16:
                         default:
                             return val.ToString();
                     }
                 }
 
+                bool isLE_Format = fmtStr.Contains("_LE");
+                bool isBS_Format = fmtStr.Contains("_BS");
+                bool isAscii = fmtStr.Contains("ASCII");
+                bool isHex = fmtStr.Contains("Hex");
+
                 // --- Logika 32-bit ---
                 if (regsNeeded == 2)
                 {
-                    // Kolejność bajtów dla 32-bit BE (Big-Endian): [Reg1_Hi, Reg1_Lo, Reg2_Hi, Reg2_Lo]
-                    // Kolejność bajtów dla 32-bit LE (Little-Endian): [Reg2_Hi, Reg2_Lo, Reg1_Hi, Reg1_Lo]
-                    // NModbus dostarcza ushorty w kolejności hosta (zazwyczaj LE).
-                    // Musimy je poprawnie złożyć.
+                    byte[] bytes = BuildByteArray(rowIndex, 2, isLE_Format, isBS_Format);
 
-                    byte[] bytes = new byte[4];
-                    bool isLE_Format = format.ToString().Contains("_LE");
-
-                    byte[] reg1Bytes = BitConverter.GetBytes(_rawData[rowIndex]);
-                    byte[] reg2Bytes = BitConverter.GetBytes(_rawData[rowIndex + 1]);
-
-                    // Standardowa kolejność Modbus (Big-Endian dla rejestrów)
-                    // Rejestr 1 (indeks 0) to wyższa część, Rejestr 2 (indeks 1) to niższa
-                    // Musimy zamienić bajty wewnątrz ushort (Host LE -> Network BE)
-
-                    // [Reg1_Hi, Reg1_Lo] = [reg1Bytes[1], reg1Bytes[0]]
-                    // [Reg2_Hi, Reg2_Lo] = [reg2Bytes[1], reg2Bytes[0]]
-
-                    if (!isLE_Format) // Big Endian (np. Float32_BE)
+                    // *** KLUCZOWA POPRAWKA LOGIKI ***
+                    // BuildByteArray zawsze zwraca tablicę w kolejności Big Endian (MSB...LSB).
+                    // BitConverter na PC (Little Endian) oczekuje tablicy w kolejności Little Endian (LSB...MSB).
+                    // Dlatego *musimy* odwrócić tablicę, jeśli działamy na maszynie Little Endian.
+                    // (Ignorujemy to dla ASCII i Hex, które chcemy wyświetlać w kolejności Big Endian).
+                    if (!isAscii && !isHex)
                     {
-                        bytes[0] = reg1Bytes[1]; // Reg1_Hi
-                        bytes[1] = reg1Bytes[0]; // Reg1_Lo
-                        bytes[2] = reg2Bytes[1]; // Reg2_Hi
-                        bytes[3] = reg2Bytes[0]; // Reg2_Lo
+                        if (BitConverter.IsLittleEndian)
+                            Array.Reverse(bytes);
                     }
-                    else // Little Endian (np. Float32_LE) - zamieniona kolejność rejestrów
-                    {
-                        bytes[0] = reg2Bytes[1]; // Reg2_Hi
-                        bytes[1] = reg2Bytes[0]; // Reg2_Lo
-                        bytes[2] = reg1Bytes[1]; // Reg1_Hi
-                        bytes[3] = reg1Bytes[0]; // Reg1_Lo
-                    }
-
-                    // Nasz PC jest Little-Endian, więc jeśli format jest Big-Endian, musimy odwrócić
-                    if (BitConverter.IsLittleEndian && !isLE_Format)
-                        Array.Reverse(bytes);
-                    // Jeśli nasz PC jest LE i format jest LE, nic nie robimy (bajty już są w kolejności LE)
 
                     switch (format)
                     {
+                        // 32-bit Numeryczne
                         case DisplayFormat.Unsigned32_BE:
                         case DisplayFormat.Unsigned32_LE:
+                        case DisplayFormat.Unsigned32_BE_BS:
+                        case DisplayFormat.Unsigned32_LE_BS:
                             return BitConverter.ToUInt32(bytes, 0).ToString();
+
                         case DisplayFormat.Signed32_BE:
                         case DisplayFormat.Signed32_LE:
+                        case DisplayFormat.Signed32_BE_BS:
+                        case DisplayFormat.Signed32_LE_BS:
                             return BitConverter.ToInt32(bytes, 0).ToString();
+
                         case DisplayFormat.Float32_BE:
                         case DisplayFormat.Float32_LE:
-                            return BitConverter.ToSingle(bytes, 0).ToString("F3");
+                        case DisplayFormat.Float32_BE_BS:
+                        case DisplayFormat.Float32_LE_BS:
+                            return BitConverter.ToSingle(bytes, 0).ToString("F3"); // "F3" = 3 miejsca po przecinku
+
+                        // 32-bit ASCII (dostarczone jako [Hi, Lo, Hi, Lo])
+                        case DisplayFormat.ASCII32_BE:
+                        case DisplayFormat.ASCII32_LE:
+                        case DisplayFormat.ASCII32_BE_BS:
+                        case DisplayFormat.ASCII32_LE_BS:
+                            return Encoding.ASCII.GetString(bytes).Replace("\0", " "); // Czyścimy znaki null
+
+                        // 32-bit Hex (dostarczone jako [Hi, Lo, Hi, Lo])
+                        case DisplayFormat.Hex32_BE:
+                        case DisplayFormat.Hex32_LE:
+                        case DisplayFormat.Hex32_BE_BS:
+                        case DisplayFormat.Hex32_LE_BS:
+                            return "0x" + BitConverter.ToString(bytes).Replace("-", "");
                     }
                 }
 
-                // --- Logika 64-bit (Analogicznie) ---
+                // --- Logika 64-bit ---
                 if (regsNeeded == 4)
                 {
-                    // Implementacja analogiczna do 32-bit, ale składająca 8 bajtów z 4 rejestrów
-                    return "Wartość 64-bit (TODO)";
+                    byte[] bytes = BuildByteArray(rowIndex, 4, isLE_Format, isBS_Format);
+
+                    // *** KLUCZOWA POPRAWKA LOGIKI ***
+                    // Ta sama logika co dla 32-bit.
+                    if (!isAscii && !isHex)
+                    {
+                        if (BitConverter.IsLittleEndian)
+                            Array.Reverse(bytes);
+                    }
+
+                    switch (format)
+                    {
+                        // 64-bit Numeryczne (Unsigned)
+                        case DisplayFormat.Unsigned64_BE:
+                        case DisplayFormat.Unsigned64_LE:
+                        case DisplayFormat.Unsigned64_BE_BS:
+                        case DisplayFormat.Unsigned64_LE_BS:
+                            return BitConverter.ToUInt64(bytes, 0).ToString();
+
+                        // 64-bit Numeryczne (Signed)
+                        case DisplayFormat.Signed64_BE:
+                        case DisplayFormat.Signed64_LE:
+                        case DisplayFormat.Signed64_BE_BS:
+                        case DisplayFormat.Signed64_LE_BS:
+                            return BitConverter.ToInt64(bytes, 0).ToString();
+
+                        // 64-bit Numeryczne (Float/Double)
+                        case DisplayFormat.Double64_BE:
+                        case DisplayFormat.Double64_LE:
+                        case DisplayFormat.Float64_BE_BS:
+                        case DisplayFormat.Float64_LE_BS:
+                            return BitConverter.ToDouble(bytes, 0).ToString("F5"); // "F5" = 5 miejsc po przecinku
+
+                        // 64-bit ASCII (nie wymaga odwracania)
+                        case DisplayFormat.ASCII64_BE:
+                        case DisplayFormat.ASCII64_LE:
+                        case DisplayFormat.ASCII64_BE_BS:
+                        case DisplayFormat.ASCII64_LE_BS:
+                            return Encoding.ASCII.GetString(bytes).Replace("\0", " "); // Czyścimy znaki null
+
+                        // 64-bit Hex
+                        case DisplayFormat.Hex64_BE:
+                        case DisplayFormat.Hex64_LE:
+                        case DisplayFormat.Hex64_BE_BS:
+                        case DisplayFormat.Hex64_LE_BS:
+                            return "0x" + BitConverter.ToString(bytes).Replace("-", "");
+                    }
                 }
             }
             catch (Exception ex)
@@ -620,6 +828,7 @@ namespace MP_ModbusApp
 
             return "---";
         }
+
 
         /// <summary>
         /// Główna funkcja odświeżająca. Stosuje formaty i ukrywa wiersze. (Feature 1)
@@ -681,104 +890,134 @@ namespace MP_ModbusApp
             dataGridView1.ResumeLayout();
         }
 
+        // --- WYPEŁNIONE HANDLERY DLA 64-BIT (I INNYCH BRAKUJĄCYCH) ---
+
+        // 64-bit Unsigned
         private void bigendianToolStripMenuItem6_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.Unsigned64_BE);
         }
 
         private void littleendianToolStripMenuItem6_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.Unsigned64_LE);
         }
 
         private void bigendianByteSwapToolStripMenuItem4_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.Unsigned64_BE_BS);
         }
 
         private void littleendianByteSwapToolStripMenuItem4_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.Unsigned64_LE_BS);
         }
 
+        // 64-bit Signed
         private void bigendianToolStripMenuItem7_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.Signed64_BE);
         }
 
         private void littleendianToolStripMenuItem7_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.Signed64_LE);
         }
 
         private void bigendianByteSwapToolStripMenuItem5_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.Signed64_BE_BS);
         }
 
         private void littleendianByteSwapToolStripMenuItem5_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.Signed64_LE_BS);
         }
 
+        // 64-bit Real (Double)
         private void bigendianToolStripMenuItem8_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.Double64_BE);
         }
 
         private void littleendianToolStripMenuItem8_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.Double64_LE);
         }
 
         private void bigendianByteSwapToolStripMenuItem6_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.Float64_BE_BS);
         }
 
         private void littleendianByteSwapToolStripMenuItem6_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.Float64_LE_BS);
         }
 
-        private void bigendianToolStripMenuItem9_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void littleendianToolStripMenuItem9_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void bigendianByteSwapToolStripMenuItem7_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void littleendianByteSwapToolStripMenuItem7_Click(object sender, EventArgs e)
-        {
-
-        }
-
+        // 64-bit ASCII
         private void bigendianToolStripMenuItem10_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.ASCII64_BE);
         }
 
         private void littleendianToolStripMenuItem10_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.ASCII64_LE);
         }
 
         private void bigendianByteSwapToolStripMenuItem8_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.ASCII64_BE_BS);
         }
 
         private void littleendianByteSwapToolStripMenuItem8_Click(object sender, EventArgs e)
         {
-
+            ApplyFormatToSelected(DisplayFormat.ASCII64_LE_BS);
         }
+
+
+        // 64-bit Hex
+        private void hex64BEToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Hex64_BE);
+        }
+
+        private void hex64LEToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Hex64_LE);
+        }
+
+        private void hex64BEBSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Hex64_BE_BS);
+        }
+
+        private void hex64LEBSToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Hex64_LE_BS);
+        }
+
+        // Puste handlery z designera (teraz podłączone do Hex64)
+        private void bigendianToolStripMenuItem9_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Hex64_BE);
+        }
+
+        private void littleendianToolStripMenuItem9_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Hex64_LE);
+        }
+
+        private void bigendianByteSwapToolStripMenuItem7_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Hex64_BE_BS);
+        }
+
+        private void littleendianByteSwapToolStripMenuItem7_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Hex64_LE_BS);
+        }
+
     }
 }
