@@ -31,7 +31,9 @@
             components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CommunicationLogWindow));
             dgvLog = new DataGridView();
-            toolStrip1 = new ToolStrip();
+            chkStopOnError = new CheckBox();
+            contextMenuStrip1 = new ContextMenuStrip(components);
+            copyToolStripMenuItem = new ToolStripMenuItem();
             btnStartLogging = new ToolStripButton();
             btnStopLogging = new ToolStripButton();
             toolStripSeparator1 = new ToolStripSeparator();
@@ -39,12 +41,14 @@
             toolStripSeparator2 = new ToolStripSeparator();
             btnExportToCsv = new ToolStripButton();
             toolStripSeparator3 = new ToolStripSeparator();
-            chkStopOnError = new CheckBox();
-            contextMenuStrip1 = new ContextMenuStrip(components);
-            copyToolStripMenuItem = new ToolStripMenuItem();
+            toolStrip1 = new ToolStrip();
+            toolStripSeparator4 = new ToolStripSeparator();
+            btnClearFilter = new ToolStripButton();
+            lblFilter = new ToolStripLabel();
+            cboDeviceFilter = new ToolStripComboBox();
             ((System.ComponentModel.ISupportInitialize)dgvLog).BeginInit();
-            toolStrip1.SuspendLayout();
             contextMenuStrip1.SuspendLayout();
+            toolStrip1.SuspendLayout();
             SuspendLayout();
             // 
             // dgvLog
@@ -58,18 +62,33 @@
             dgvLog.Location = new Point(0, 25);
             dgvLog.Name = "dgvLog";
             dgvLog.RowTemplate.Height = 15;
-            dgvLog.Size = new Size(378, 203);
+            dgvLog.Size = new Size(599, 245);
             dgvLog.TabIndex = 0;
             dgvLog.MouseDown += dgvLog_MouseDown;
             // 
-            // toolStrip1
+            // chkStopOnError
             // 
-            toolStrip1.Items.AddRange(new ToolStripItem[] { btnStartLogging, btnStopLogging, toolStripSeparator1, btnClearLog, toolStripSeparator2, btnExportToCsv, toolStripSeparator3 });
-            toolStrip1.Location = new Point(0, 0);
-            toolStrip1.Name = "toolStrip1";
-            toolStrip1.Size = new Size(378, 25);
-            toolStrip1.TabIndex = 1;
-            toolStrip1.Text = "toolStrip1";
+            chkStopOnError.AutoSize = true;
+            chkStopOnError.Location = new Point(500, 3);
+            chkStopOnError.Name = "chkStopOnError";
+            chkStopOnError.Size = new Size(95, 19);
+            chkStopOnError.TabIndex = 2;
+            chkStopOnError.Text = "Stop on Error";
+            chkStopOnError.UseVisualStyleBackColor = true;
+            // 
+            // contextMenuStrip1
+            // 
+            contextMenuStrip1.Items.AddRange(new ToolStripItem[] { copyToolStripMenuItem });
+            contextMenuStrip1.Name = "contextMenuStrip1";
+            contextMenuStrip1.Size = new Size(145, 26);
+            // 
+            // copyToolStripMenuItem
+            // 
+            copyToolStripMenuItem.Name = "copyToolStripMenuItem";
+            copyToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.C;
+            copyToolStripMenuItem.Size = new Size(144, 22);
+            copyToolStripMenuItem.Text = "Copy";
+            copyToolStripMenuItem.Click += copyToolStripMenuItem_Click;
             // 
             // btnStartLogging
             // 
@@ -126,35 +145,47 @@
             toolStripSeparator3.Name = "toolStripSeparator3";
             toolStripSeparator3.Size = new Size(6, 25);
             // 
-            // chkStopOnError
+            // toolStrip1
             // 
-            chkStopOnError.AutoSize = true;
-            chkStopOnError.Location = new Point(242, 3);
-            chkStopOnError.Name = "chkStopOnError";
-            chkStopOnError.Size = new Size(95, 19);
-            chkStopOnError.TabIndex = 2;
-            chkStopOnError.Text = "Stop on Error";
-            chkStopOnError.UseVisualStyleBackColor = true;
+            toolStrip1.Items.AddRange(new ToolStripItem[] { btnStartLogging, btnStopLogging, toolStripSeparator1, btnClearLog, toolStripSeparator2, btnExportToCsv, toolStripSeparator3, lblFilter, cboDeviceFilter, btnClearFilter, toolStripSeparator4 });
+            toolStrip1.Location = new Point(0, 0);
+            toolStrip1.Name = "toolStrip1";
+            toolStrip1.Size = new Size(599, 25);
+            toolStrip1.TabIndex = 1;
+            toolStrip1.Text = "toolStrip1";
+            toolStrip1.ItemClicked += toolStrip1_ItemClicked;
             // 
-            // contextMenuStrip1
+            // toolStripSeparator4
             // 
-            contextMenuStrip1.Items.AddRange(new ToolStripItem[] { copyToolStripMenuItem });
-            contextMenuStrip1.Name = "contextMenuStrip1";
-            contextMenuStrip1.Size = new Size(145, 26);
+            toolStripSeparator4.Name = "toolStripSeparator4";
+            toolStripSeparator4.Size = new Size(6, 25);
             // 
-            // copyToolStripMenuItem
+            // btnClearFilter
             // 
-            copyToolStripMenuItem.Name = "copyToolStripMenuItem";
-            copyToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.C;
-            copyToolStripMenuItem.Size = new Size(144, 22);
-            copyToolStripMenuItem.Text = "Copy";
-            copyToolStripMenuItem.Click += copyToolStripMenuItem_Click;
+            btnClearFilter.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            btnClearFilter.Image = (Image)resources.GetObject("btnClearFilter.Image");
+            btnClearFilter.ImageTransparentColor = Color.Magenta;
+            btnClearFilter.Name = "btnClearFilter";
+            btnClearFilter.Size = new Size(38, 22);
+            btnClearFilter.Text = "Clear";
+            btnClearFilter.ToolTipText = "Clear";
+            // 
+            // lblFilter
+            // 
+            lblFilter.Name = "lblFilter";
+            lblFilter.Size = new Size(89, 22);
+            lblFilter.Text = "Filter by device:";
+            // 
+            // cboDeviceFilter
+            // 
+            cboDeviceFilter.Name = "cboDeviceFilter";
+            cboDeviceFilter.Size = new Size(121, 25);
             // 
             // CommunicationLogWindow
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(378, 228);
+            ClientSize = new Size(599, 270);
             Controls.Add(chkStopOnError);
             Controls.Add(dgvLog);
             Controls.Add(toolStrip1);
@@ -162,9 +193,9 @@
             Text = "Communication";
             Load += CommunicationLogWindow_Load;
             ((System.ComponentModel.ISupportInitialize)dgvLog).EndInit();
+            contextMenuStrip1.ResumeLayout(false);
             toolStrip1.ResumeLayout(false);
             toolStrip1.PerformLayout();
-            contextMenuStrip1.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
         }
@@ -172,7 +203,9 @@
         #endregion
 
         private DataGridView dgvLog;
-        private ToolStrip toolStrip1;
+        private CheckBox chkStopOnError;
+        private ContextMenuStrip contextMenuStrip1;
+        private ToolStripMenuItem copyToolStripMenuItem;
         private ToolStripButton btnStartLogging;
         private ToolStripButton btnStopLogging;
         private ToolStripSeparator toolStripSeparator1;
@@ -180,8 +213,10 @@
         private ToolStripSeparator toolStripSeparator2;
         private ToolStripButton btnExportToCsv;
         private ToolStripSeparator toolStripSeparator3;
-        private CheckBox chkStopOnError;
-        private ContextMenuStrip contextMenuStrip1;
-        private ToolStripMenuItem copyToolStripMenuItem;
+        private ToolStrip toolStrip1;
+        private ToolStripLabel lblFilter;
+        private ToolStripComboBox cboDeviceFilter;
+        private ToolStripButton btnClearFilter;
+        private ToolStripSeparator toolStripSeparator4;
     }
 }

@@ -117,24 +117,24 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <metadata name="toolStrip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
+  <metadata name="contextMenuStrip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>122, 17</value>
   </metadata>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="btnStartLogging.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         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
-        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
+        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
 </value>
   </data>
   <data name="btnStopLogging.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
@@ -200,7 +200,16 @@
         0cY8XvczafkAuL2/lUugb2UAAAAASUVORK5CYII=
 </value>
   </data>
-  <metadata name="contextMenuStrip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>122, 17</value>
+  <metadata name="toolStrip1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
   </metadata>
+  <data name="btnClearFilter.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAACNSURBVDhPY/j27dt/SjADiHByciILoxjw4f1HkjDJBjy/
+        dfL/iW5TME2WASe6Tf4fqpUCG0KWARAXmBB2waSzr/4vuPQawwB0jNWArH0v/ksvfATGhAzBMABZMzGG
+        oBig07ASQzM2Q0Ds1hMvMQ1A14SOQRpBGMYHuZYkA7BhkKspMgCEqWcAJZiBUgAABzX8nOIkzeMAAAAA
+        SUVORK5CYII=
+</value>
+  </data>
 </root>

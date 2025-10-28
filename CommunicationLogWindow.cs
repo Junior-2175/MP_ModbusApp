@@ -11,10 +11,20 @@ namespace MP_ModbusApp
         private bool _isLoggingActive = true;
         private readonly BindingList<ModbusFrameLog> _frameLogs = new BindingList<ModbusFrameLog>();
 
+        // --- NOWY KOD ---
+        private readonly BindingSource _bindingSource = new BindingSource();
+        // --- KONIEC NOWEGO KODU ---
+
         public CommunicationLogWindow()
         {
             InitializeComponent();
-            dgvLog.DataSource = _frameLogs;
+
+            // --- ZMIENIONY KOD ---
+            // Użyj BindingSource jako pośrednika
+            _bindingSource.DataSource = _frameLogs;
+            dgvLog.DataSource = _bindingSource;
+            // --- KONIEC ZMIENIONEGO KODU ---
+
 
             // Konfiguracja DataGridView
             dgvLog.AllowUserToAddRows = false;
@@ -23,11 +33,21 @@ namespace MP_ModbusApp
             dgvLog.SelectionMode = DataGridViewSelectionMode.CellSelect;
             dgvLog.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
             dgvLog.RowHeadersVisible = false;
+
             // Ustawienia poszczególnych kolumn
             dgvLog.Columns["Timestamp"].HeaderText = "Time";
             dgvLog.Columns["Timestamp"].DefaultCellStyle.Format = "HH:mm:ss.fff";
 
-            dgvLog.Columns["TransactionID"].HeaderText = "Trans. ID";
+            // --- NOWY KOD DLA KOLUMNY DEVICENAME ---
+            if (dgvLog.Columns["DeviceName"] != null)
+            {
+                dgvLog.Columns["DeviceName"].HeaderText = "Device";
+                dgvLog.Columns["DeviceName"].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            }
+            // --- KONIEC NOWEGO KODU ---
+
+            //dgvLog.Columns["TransactionID"].HeaderText = "Trans. ID";
+            //dgvLog.Columns["TransactionID"].Visible = false; // Ukryjmy ją, skoro nie jest używana
 
             dgvLog.Columns["Direction"].HeaderText = "Dir";
 
@@ -35,19 +55,41 @@ namespace MP_ModbusApp
 
             dgvLog.Columns["ErrorDescription"].HeaderText = "Error";
             dgvLog.Columns["ErrorDescription"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+
+            // --- NOWY KOD: Podłączenie handlerów ---
+            this.cboDeviceFilter.SelectedIndexChanged += new System.EventHandler(this.cboDeviceFilter_SelectedIndexChanged);
+            this.btnClearFilter.Click += new System.EventHandler(this.btnClearFilter_Click);
+            // --- KONIEC NOWEGO KODU ---
         }
 
+        // --- ZMIENIONA METODA ---
+        // Ta metoda jest teraz wywoływana bezpiecznie w wątku UI
+        private void AddLogEntry(ModbusFrameLog logEntry)
+        {
+            if (this.IsDisposed) return; // Zabezpieczenie
+
+            _frameLogs.Add(logEntry); // Dodaj do głównej listy
+
+            // Dodaj urządzenie do filtra, jeśli jest nowe
+            if (!string.IsNullOrEmpty(logEntry.DeviceName) && !cboDeviceFilter.Items.Contains(logEntry.DeviceName))
+            {
+                cboDeviceFilter.Items.Add(logEntry.DeviceName);
+            }
+        }
+
+        // --- ZMIENIONA METODA ---
         public void LogFrame(ModbusFrameLog logEntry)
         {
             if (!_isLoggingActive) return;
 
             if (InvokeRequired)
             {
-                Invoke(new Action(() => _frameLogs.Add(logEntry)));
+                // Użyj Invoke, aby zachować kolejność logów i bezpiecznie zaktualizować UI
+                Invoke(new Action(() => AddLogEntry(logEntry)));
             }
             else
             {
-                _frameLogs.Add(logEntry);
+                AddLogEntry(logEntry);
             }
         }
 
@@ -92,11 +134,16 @@ namespace MP_ModbusApp
         private void btnClearLog_Click(object sender, EventArgs e)
         {
             _frameLogs.Clear();
+            cboDeviceFilter.Items.Clear();
+            cboDeviceFilter.Items.Add("(Show All)");
+            cboDeviceFilter.SelectedItem = "(Show All)";
         }
 
+        // --- ZMIENIONA METODA ---
         private void btnExportToCsv_Click(object sender, EventArgs e)
         {
-            if (dgvLog.Rows.Count == 0)
+            // Zmieniono dgvLog.Rows.Count na _bindingSource.List.Count
+            if (_bindingSource.List.Count == 0)
             {
                 MessageBox.Show("No data to export.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
@@ -111,11 +158,15 @@ namespace MP_ModbusApp
                     try
                     {
                         var sb = new StringBuilder();
-                        sb.AppendLine("Timestamp,TransactionID,Direction,Frame,ErrorDescription");
+                        // --- NOWY KOD: Dodano kolumnę DeviceName ---
+                        sb.AppendLine("Timestamp,DeviceName,TransactionID,Direction,Frame,ErrorDescription");
+                        // --- KONIEC NOWEGO KODU ---
 
+                        // Użyj _frameLogs, aby eksportować wszystko,
+                        // a nie _bindingSource.List (które zawiera tylko przefiltrowane)
                         foreach (var log in _frameLogs)
                         {
-                            sb.AppendLine($"{log.Timestamp:yyyy-MM-dd HH:mm:ss.fff},{log.TransactionID},{log.Direction},\"{log.DataFrame}\",\"{log.ErrorDescription}\"");
+                            sb.AppendLine($"{log.Timestamp:yyyy-MM-dd HH:mm:ss.fff},{log.DeviceName},{log.Direction},\"{log.DataFrame}\",\"{log.ErrorDescription}\"");
                         }
                         File.WriteAllText(saveFileDialog.FileName, sb.ToString());
                         MessageBox.Show("Export completed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -128,10 +179,16 @@ namespace MP_ModbusApp
             }
         }
 
+        // --- ZMIENIONA METODA ---
         private void CommunicationLogWindow_Load(object sender, EventArgs e)
         {
             btnStartLogging.Enabled = false;
             btnStopLogging.Enabled = true;
+
+            // --- NOWY KOD FILTROWANIA ---
+            cboDeviceFilter.Items.Add("(Show All)");
+            cboDeviceFilter.SelectedItem = "(Show All)";
+            // --- KONIEC NOWEGO KODU ---
         }
 
         private void dgvLog_MouseDown(object sender, MouseEventArgs e)
@@ -167,5 +224,36 @@ namespace MP_ModbusApp
             DataObject dataObj = this.dgvLog.GetClipboardContent();
             Clipboard.SetDataObject(dataObj);
         }
+
+        // --- NOWE METODY HANDLERÓW FILTROWANIA ---
+        private void cboDeviceFilter_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (cboDeviceFilter.SelectedItem == null) return;
+
+            string selectedDevice = cboDeviceFilter.SelectedItem.ToString();
+
+            if (selectedDevice == "(Show All)")
+            {
+                _bindingSource.Filter = null;
+            }
+            else
+            {
+                // Budujemy filtr. Używamy string.Format, aby poprawnie obsłużyć
+                // nazwy, które mogłyby zawierać apostrof.
+                _bindingSource.Filter = string.Format("DeviceName = '{0}'", selectedDevice.Replace("'", "''"));
+            }
+        }
+
+        private void btnClearFilter_Click(object sender, EventArgs e)
+        {
+            _bindingSource.Filter = null;
+            cboDeviceFilter.SelectedItem = "(Show All)";
+        }
+
+        private void toolStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+
+        }
+        // --- KONIEC NOWYCH METOD ---
     }
 }

@@ -549,7 +549,6 @@ namespace MP_ModbusApp
             {
                 Timestamp = DateTime.Now,
                 Direction = direction,
-                TransactionID = 0,
                 DataFrame = dataFrame,
                 ErrorDescription = error
             };

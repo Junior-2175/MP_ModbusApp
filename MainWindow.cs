@@ -419,7 +419,7 @@ namespace MP_ModbusApp
                     System.IO.Ports.Parity parity = Enum.Parse<System.IO.Ports.Parity>(cBoxParity.SelectedItem.ToString());
                     System.IO.Ports.StopBits stopBits = Enum.Parse<System.IO.Ports.StopBits>(cBoxStopBits.SelectedItem.ToString());
 
-                    connectionPort = portName.ToString() +"/"+ baudRate.ToString() + "/" + parity.ToString() + "/" + dataBits.ToString() + "/" + stopBits.ToString();
+                    connectionPort = portName.ToString() + "/" + baudRate.ToString() + "/" + parity.ToString() + "/" + dataBits.ToString() + "/" + stopBits.ToString();
                     serialPort = new SerialPort(portName, baudRate, parity, dataBits, stopBits);
                     serialPort.Open();
 
@@ -1075,6 +1075,7 @@ namespace MP_ModbusApp
                 return level == LoggingLevel.Trace;
             }
 
+            // *** TO JEST ZMODYFIKOWANA METODA ***
             public void Log(LoggingLevel level, string message)
             {
                 if (!ShouldLog(level) || _logWindow == null || _logWindow.IsDisposed)
@@ -1092,29 +1093,40 @@ namespace MP_ModbusApp
                         string hexFrame = hexData;//.Replace(" ", ":"); // "01-03-00-..."
                         string errorDesc = "";
 
-                        // --- NOWA LOGIKA PARSOWANIA BŁĘDÓW ---
-                        if (direction == "RX")
+                        // --- NOWA LOGIKA PARSOWANIA BŁĘDÓW i SlaveID ---
+                        string[] bytes = hexData.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                        int fcIndex = -1;
+                        byte slaveId = 0;
+                        string deviceName = "Unknown"; // Domyślna nazwa
+
+                        if (bytes.Length > 7 && int.TryParse(bytes[0], System.Globalization.NumberStyles.HexNumber, null, out _))
                         {
-                            string[] bytes = hexData.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                            // Sprawdzamy, czy to TCP (ramka > 6 bajtów i zaczyna się od Trans. ID)
-                            // czy RTU (ramka krótsza)
-                            int fcIndex = -1;
-                            if (bytes.Length > 7 && int.TryParse(bytes[0], System.Globalization.NumberStyles.HexNumber, null, out _))
+                            // TCP: [MBAP: 6B] [SlaveID: 1B] [FC: 1B] [Dane/Błąd: NB]
+                            // Przykład błędu: 00 01 00 00 00 03 01 83 03
+                            fcIndex = 7;
+                            // Slave ID jest w 7. bajcie (indeks 6)
+                            if (bytes.Length > 6 && byte.TryParse(bytes[6], System.Globalization.NumberStyles.HexNumber, null, out slaveId))
                             {
-                                // TCP: [MBAP: 6B] [SlaveID: 1B] [FC: 1B] [Dane/Błąd: NB]
-                                // Przykład błędu: 00 01 00 00 00 03 01 83 03
-                                fcIndex = 7;
+                                deviceName = $"Slave {slaveId}";
                             }
-                            else if (bytes.Length > 1) // Zakładamy RTU/ASCII
+                        }
+                        else if (bytes.Length > 1) // Zakładamy RTU/ASCII
+                        {
+                            // RTU: [SlaveID: 1B] [FC: 1B] [Dane/Błąd: NB] [CRC: 2B]
+                            fcIndex = 1;
+                            // Slave ID jest w 1. bajcie (indeks 0)
+                            if (byte.TryParse(bytes[0], System.Globalization.NumberStyles.HexNumber, null, out slaveId))
                             {
-                                // RTU: [SlaveID: 1B] [FC: 1B] [Dane/Błąd: NB] [CRC: 2B]
-                                fcIndex = 1;
+                                deviceName = $"Slave {slaveId}";
                             }
+                        }
 
-                            if (fcIndex != -1 && bytes.Length > fcIndex)
+                        if (fcIndex != -1 && bytes.Length > fcIndex)
+                        {
+                            // Sprawdź kod funkcji (FC)
+                            if (direction == "RX") // Błędy są tylko w odpowiedziach (RX)
                             {
-                                // Sprawdź kod funkcji (FC)
                                 if (int.TryParse(bytes[fcIndex], System.Globalization.NumberStyles.HexNumber, null, out int fc) && fc > 128)
                                 {
                                     // To jest ramka błędu! (FC > 0x80)
@@ -1147,7 +1159,8 @@ namespace MP_ModbusApp
                             Timestamp = DateTime.Now,
                             Direction = direction,
                             DataFrame = hexFrame,
-                            ErrorDescription = errorDesc // Wypełniamy kolumnę błędu
+                            ErrorDescription = errorDesc, // Wypełniamy kolumnę błędu
+                            DeviceName = deviceName // <-- WAŻNA ZMIANA
                         };
 
                         _logWindow.LogFrame(logEntry);
