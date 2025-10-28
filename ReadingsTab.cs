@@ -75,40 +75,98 @@ namespace MP_ModbusApp
 
             InitializeComponent();
 
+            // --- TAGOWANIE ELEMENTÓW MENU DLA CHECKBOXÓW ---
+            // (Ten kod jest taki sam jak w poprzedniej odpowiedzi)
+
+            // 16-bit
+            this.unsignedToolStripMenuItem.Tag = DisplayFormat.Unsigned16;
+            this.signedToolStripMenuItem.Tag = DisplayFormat.Signed16;
+            this.binaryToolStripMenuItem.Tag = DisplayFormat.Binary16;
+            this.hexToolStripMenuItem.Tag = DisplayFormat.Hex16;
+            this.aSCIIToolStripMenuItem.Tag = DisplayFormat.ASCII;
+
+            // 32-bit Unsigned
+            this.bigendianToolStripMenuItem.Tag = DisplayFormat.Unsigned32_BE;
+            this.littleendianToolStripMenuItem.Tag = DisplayFormat.Unsigned32_LE;
+            // 32-bit Signed
+            this.bigendianToolStripMenuItem2.Tag = DisplayFormat.Signed32_BE;
+            this.littleendianToolStripMenuItem3.Tag = DisplayFormat.Signed32_LE;
+            // 32-bit Real
+            this.bigendianToolStripMenuItem3.Tag = DisplayFormat.Float32_BE;
+            this.littleendianToolStripMenuItem2.Tag = DisplayFormat.Float32_LE;
+
+            // 64-bit Unsigned
+            this.bigendianToolStripMenuItem6.Tag = DisplayFormat.Unsigned64_BE;
+            this.littleendianToolStripMenuItem6.Tag = DisplayFormat.Unsigned64_LE;
+            this.bigendianByteSwapToolStripMenuItem4.Tag = DisplayFormat.Unsigned64_BE_BS;
+            this.littleendianByteSwapToolStripMenuItem4.Tag = DisplayFormat.Unsigned64_LE_BS;
+            // 64-bit Signed
+            this.bigendianToolStripMenuItem7.Tag = DisplayFormat.Signed64_BE;
+            this.littleendianToolStripMenuItem7.Tag = DisplayFormat.Signed64_LE;
+            this.bigendianByteSwapToolStripMenuItem5.Tag = DisplayFormat.Signed64_BE_BS;
+            this.littleendianByteSwapToolStripMenuItem5.Tag = DisplayFormat.Signed64_LE_BS;
+            // 64-bit Real (Double)
+            this.bigendianToolStripMenuItem8.Tag = DisplayFormat.Double64_BE;
+            this.littleendianToolStripMenuItem8.Tag = DisplayFormat.Double64_LE;
+            this.bigendianByteSwapToolStripMenuItem6.Tag = DisplayFormat.Float64_BE_BS;
+            this.littleendianByteSwapToolStripMenuItem6.Tag = DisplayFormat.Float64_LE_BS;
+            // 64-bit ASCII
+            this.bigendianToolStripMenuItem10.Tag = DisplayFormat.ASCII64_BE;
+            this.littleendianToolStripMenuItem10.Tag = DisplayFormat.ASCII64_LE;
+            this.bigendianByteSwapToolStripMenuItem8.Tag = DisplayFormat.ASCII64_BE_BS;
+            this.littleendianByteSwapToolStripMenuItem8.Tag = DisplayFormat.ASCII64_LE_BS;
+
+
             // --- PODŁĄCZENIE WSZYSTKICH HANDLERÓW Z DESIGNERA ---
-            // Upewnij się, że te linie są w ReadingsTab.Designer.cs
-            // Jeśli ich tam nie ma, musisz je dodać ręcznie w Designerze
-            // lub dodać je tutaj, zaraz po InitializeComponent().
+            // (Ten kod jest taki sam jak w poprzedniej odpowiedzi)
 
             // 32-bit Unsigned BS
             this.bigendianToolStripMenuItem1.Click += new System.EventHandler(this.unsigned32BEBSToolStripMenuItem_Click);
+            this.bigendianToolStripMenuItem1.Tag = DisplayFormat.Unsigned32_BE_BS;
             this.littleendianToolStripMenuItem1.Click += new System.EventHandler(this.unsigned32LEBSToolStripMenuItem_Click);
+            this.littleendianToolStripMenuItem1.Tag = DisplayFormat.Unsigned32_LE_BS;
 
             // 32-bit Signed BS
             this.bigendianByteSwapToolStripMenuItem.Click += new System.EventHandler(this.signed32BEBSToolStripMenuItem_Click);
+            this.bigendianByteSwapToolStripMenuItem.Tag = DisplayFormat.Signed32_BE_BS;
             this.littleendianByteSwapToolStripMenuItem1.Click += new System.EventHandler(this.signed32LEBSToolStripMenuItem_Click);
+            this.littleendianByteSwapToolStripMenuItem1.Tag = DisplayFormat.Signed32_LE_BS;
 
             // 32-bit Real BS
             this.bigendianByteSwapToolStripMenuItem1.Click += new System.EventHandler(this.float32BEBSToolStripMenuItem_Click);
+            this.bigendianByteSwapToolStripMenuItem1.Tag = DisplayFormat.Float32_BE_BS;
             this.littleendianByteSwapToolStripMenuItem.Click += new System.EventHandler(this.float32LEBSToolStripMenuItem_Click);
+            this.littleendianByteSwapToolStripMenuItem.Tag = DisplayFormat.Float32_LE_BS;
 
             // 32-bit Hex
             this.bigendianToolStripMenuItem4.Click += new System.EventHandler(this.hex32BEToolStripMenuItem_Click);
+            this.bigendianToolStripMenuItem4.Tag = DisplayFormat.Hex32_BE;
             this.littleendianToolStripMenuItem5.Click += new System.EventHandler(this.hex32LEToolStripMenuItem_Click);
+            this.littleendianToolStripMenuItem5.Tag = DisplayFormat.Hex32_LE;
             this.bigendianByteSwapToolStripMenuItem2.Click += new System.EventHandler(this.hex32BEBSToolStripMenuItem_Click);
+            this.bigendianByteSwapToolStripMenuItem2.Tag = DisplayFormat.Hex32_BE_BS;
             this.littleendianByteSwapToolStripMenuItem2.Click += new System.EventHandler(this.hex32LEBSToolStripMenuItem_Click);
+            this.littleendianByteSwapToolStripMenuItem2.Tag = DisplayFormat.Hex32_LE_BS;
 
             // 32-bit ASCII
             this.bigendianToolStripMenuItem5.Click += new System.EventHandler(this.ascii32BEToolStripMenuItem_Click);
+            this.bigendianToolStripMenuItem5.Tag = DisplayFormat.ASCII32_BE;
             this.littleendianToolStripMenuItem4.Click += new System.EventHandler(this.ascii32LEToolStripMenuItem_Click);
+            this.littleendianToolStripMenuItem4.Tag = DisplayFormat.ASCII32_LE;
             this.bigendianByteSwapToolStripMenuItem3.Click += new System.EventHandler(this.ascii32BEBSToolStripMenuItem_Click);
+            this.bigendianByteSwapToolStripMenuItem3.Tag = DisplayFormat.ASCII32_BE_BS;
             this.littleendianByteSwapToolStripMenuItem3.Click += new System.EventHandler(this.ascii32LEBSToolStripMenuItem_Click);
+            this.littleendianByteSwapToolStripMenuItem3.Tag = DisplayFormat.ASCII32_LE_BS;
 
             // 64-bit Hex
             this.bigendianToolStripMenuItem9.Click += new System.EventHandler(this.hex64BEToolStripMenuItem_Click);
+            this.bigendianToolStripMenuItem9.Tag = DisplayFormat.Hex64_BE;
             this.littleendianToolStripMenuItem9.Click += new System.EventHandler(this.hex64LEToolStripMenuItem_Click);
+            this.littleendianToolStripMenuItem9.Tag = DisplayFormat.Hex64_LE;
             this.bigendianByteSwapToolStripMenuItem7.Click += new System.EventHandler(this.hex64BEBSToolStripMenuItem_Click);
+            this.bigendianByteSwapToolStripMenuItem7.Tag = DisplayFormat.Hex64_BE_BS;
             this.littleendianByteSwapToolStripMenuItem7.Click += new System.EventHandler(this.hex64LEBSToolStripMenuItem_Click);
+            this.littleendianByteSwapToolStripMenuItem7.Tag = DisplayFormat.Hex64_LE_BS;
         }
 
         private void ReadingsTab_Load(object sender, EventArgs e)
@@ -292,6 +350,59 @@ namespace MP_ModbusApp
             RefreshDisplayValues();
         }
 
+        // --- ZAKTUALIZOWANY KOD ---
+        /// <summary>
+        /// Rekursywnie przeszukuje elementy menu i ustawia 'Checked' na tym,
+        /// który pasuje do bieżącego formatu komórki, ORAZ na jego rodzicach.
+        /// </summary>
+        /// <returns>Zwraca 'true', jeśli ten element lub jego potomek jest zaznaczony.</returns>
+        private bool UpdateMenuChecks(ToolStripItemCollection items, DisplayFormat currentFormat)
+        {
+            bool anyChildInThisListIsChecked = false;
+
+            foreach (ToolStripItem item in items)
+            {
+                if (item is ToolStripMenuItem menuItem)
+                {
+                    bool isThisItemTheOne = false;
+                    bool isDescendantChecked = false;
+
+                    // 1. Sprawdź, czy ten element jest finalnym wyborem (ma Tag)
+                    if (menuItem.Tag is DisplayFormat itemFormat)
+                    {
+                        if (itemFormat == currentFormat)
+                        {
+                            isThisItemTheOne = true;
+                            anyChildInThisListIsChecked = true; // Sygnał dla rodzica
+                        }
+                    }
+
+                    // 2. Rekurencja, jeśli element ma pod-menu
+                    if (menuItem.HasDropDownItems)
+                    {
+                        // Jeśli potomek jest zaznaczony, ten rodzic też musi być
+                        isDescendantChecked = UpdateMenuChecks(menuItem.DropDownItems, currentFormat);
+                        if (isDescendantChecked)
+                        {
+                            anyChildInThisListIsChecked = true; // Sygnał dla rodzica
+                        }
+                    }
+
+                    // 3. Ustaw stan zaznaczenia
+                    // Element jest zaznaczony, jeśli:
+                    // A) Jest to dokładnie ten element, który wybrał użytkownik (isThisItemTheOne)
+                    // LUB
+                    // B) Jest rodzicem dla elementu, który wybrał użytkownik (isDescendantChecked)
+                    menuItem.Checked = (isThisItemTheOne || isDescendantChecked);
+                }
+            }
+
+            // Zwróć status do wywołania nadrzędnego
+            return anyChildInThisListIsChecked;
+        }
+        // --- KONIEC ZAKTUALIZOWANEGO KODU ---
+
+
         /// <summary>
         /// Obsługa zdarzenia 'Opening' menu kontekstowego (Feature 3)
         /// </summary>
@@ -303,7 +414,30 @@ namespace MP_ModbusApp
                 return;
             }
 
-            // Znajdź maksymalny indeks wiersza wśród zaznaczonych komórek "Value"
+            // --- Logika zaznaczania (taka sama jak w poprzedniej odpowiedzi) ---
+            DataGridViewCell firstSelectedCell = null;
+            foreach (DataGridViewCell cell in dataGridView1.SelectedCells)
+            {
+                if (cell.ColumnIndex == Value.Index)
+                {
+                    firstSelectedCell = cell;
+                    break;
+                }
+            }
+
+            DisplayFormat currentFormat = DisplayFormat.Unsigned16; // Domyślnie
+
+            if (firstSelectedCell != null &&
+                dataGridView1.Rows[firstSelectedCell.RowIndex].Cells["DisplayFormatColumn"].Value != null)
+            {
+                currentFormat = (DisplayFormat)dataGridView1.Rows[firstSelectedCell.RowIndex].Cells["DisplayFormatColumn"].Value;
+            }
+
+            // Zaktualizuj "check" status dla wszystkich itemów w menu
+            // Wywołanie jest takie samo, ale teraz funkcja robi więcej
+            UpdateMenuChecks(contextMenuStrip1.Items, currentFormat);
+
+            // --- Logika włączania/wyłączania (taka sama jak w poprzedniej odpowiedzi) ---
             int maxRowIndex = -1;
             foreach (DataGridViewCell cell in dataGridView1.SelectedCells)
             {
@@ -315,7 +449,6 @@ namespace MP_ModbusApp
 
             if (maxRowIndex == -1)
             {
-                // Nie zaznaczono żadnej komórki "Value"
                 toolStripMenuItem2.Enabled = false; // 16-bit
                 toolStripMenuItem3.Enabled = false; // 32-bit
                 toolStripMenuItem4.Enabled = false; // 64-bit
@@ -324,11 +457,11 @@ namespace MP_ModbusApp
 
             int rowsAvailable = dataGridView1.Rows.Count - maxRowIndex;
 
-            // Włącz/wyłącz opcje menu na podstawie dostępnego miejsca
             toolStripMenuItem2.Enabled = (rowsAvailable >= 1); // 16-bit
             toolStripMenuItem3.Enabled = (rowsAvailable >= 2); // 32-bit
             toolStripMenuItem4.Enabled = (rowsAvailable >= 4); // 64-bit
         }
+
 
         // ZASTĄP puste metody Click dla menu 16-bit
         private void unsignedToolStripMenuItem_Click(object sender, EventArgs e)
@@ -439,6 +572,8 @@ namespace MP_ModbusApp
         {
             ApplyFormatToSelected(DisplayFormat.ASCII32_LE_BS);
         }
+
+
 
         // 32-bit Hex
         private void hex32BEToolStripMenuItem_Click(object sender, EventArgs e)

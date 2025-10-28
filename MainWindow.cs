@@ -392,6 +392,7 @@ namespace MP_ModbusApp
         #region Obsługa połączenia
         private async void btnConnect_Click(object sender, EventArgs e)
         {
+            string connectionPort = "";
             try
             {
                 if (_commsLogWindow == null || _commsLogWindow.IsDisposed)
@@ -418,6 +419,7 @@ namespace MP_ModbusApp
                     System.IO.Ports.Parity parity = Enum.Parse<System.IO.Ports.Parity>(cBoxParity.SelectedItem.ToString());
                     System.IO.Ports.StopBits stopBits = Enum.Parse<System.IO.Ports.StopBits>(cBoxStopBits.SelectedItem.ToString());
 
+                    connectionPort = portName.ToString() +"/"+ baudRate.ToString() + "/" + parity.ToString() + "/" + dataBits.ToString() + "/" + stopBits.ToString();
                     serialPort = new SerialPort(portName, baudRate, parity, dataBits, stopBits);
                     serialPort.Open();
 
@@ -430,13 +432,14 @@ namespace MP_ModbusApp
                     tcpClient = new System.Net.Sockets.TcpClient();
                     await tcpClient.ConnectAsync(cboxIPAddress.Text, (int)numIPPort.Value);
                     _modbusMaster = factory.CreateMaster(tcpClient);
+                    connectionPort = cboxIPAddress.Text + ":" + numIPPort.Value.ToString();
                 }
 
                 _modbusMaster.Transport.ReadTimeout = (int)numResponseTimeout.Value;
                 _modbusMaster.Transport.WriteTimeout = (int)numResponseTimeout.Value;
 
                 UpdateUiState(true);
-                toolStripStatusLabel1.Text = "Connected!";
+                toolStripStatusLabel1.Text = "Connected:" + connectionPort;
             }
             catch (Exception ex)
             {
@@ -445,8 +448,24 @@ namespace MP_ModbusApp
             }
         }
 
+        // --- ZAKTUALIZOWANY KOD ---
         private void Disconnect()
         {
+            // --- NOWY KOD ---
+            // Zatrzymaj polling we wszystkich otwartych oknach urządzeń
+            // Musi to być ZANIM _modbusMaster zostanie ustawiony na null
+            foreach (Form childForm in this.MdiChildren)
+            {
+                // Sprawdź, czy formularz jest typu ModbusDevice
+                if (childForm is ModbusDevice deviceWindow)
+                {
+                    // Wywołaj publiczną metodę zatrzymania pollingu
+                    deviceWindow.StopPolling();
+                }
+            }
+            // --- KONIEC NOWEGO KODU ---
+
+
             _modbusMaster?.Dispose(); // Ważne!
             _modbusMaster = null;
 
@@ -456,6 +475,7 @@ namespace MP_ModbusApp
             tcpClient = null;
             UpdateUiState(false);
         }
+        // --- KONIEC ZAKTUALIZOWANEGO KODU ---
 
         private void UpdateUiState(bool isConnected)
         {

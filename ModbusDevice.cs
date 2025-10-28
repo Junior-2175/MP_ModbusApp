@@ -44,9 +44,12 @@ namespace MP_ModbusApp
             addToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+ + ";
             removeToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+ - ";
             newReadingsToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+ + ";
+
+            // Podłączenie przycisku "Pause"
+            this.stopToolStripMenuItem.Click += new System.EventHandler(this.stopToolStripMenuItem_Click);
         }
 
-        private void ModbusGroup_Load(object sender, EventArgs e)
+        private async void ModbusGroup_Load(object sender, EventArgs e)
         {
             if (this.MdiParent is MainWindow mw)
             {
@@ -65,6 +68,10 @@ namespace MP_ModbusApp
                 tabPanel1.TabPages.Add(newTab);
             }
             txtRenameTab.Visible = false;
+
+            // Automatyczne uruchomienie pollingu
+            await Task.Delay(100);
+            startToolStripMenuItem_Click(sender, e);
         }
 
         private void addToolStripMenuItem_Click(object sender, EventArgs e)
@@ -106,31 +113,18 @@ namespace MP_ModbusApp
 
         private void tabPanel1_MouseDown(object sender, MouseEventArgs e)
         {
-            // Sprawdzamy, czy to prawy przycisk myszy
             if (e.Button == MouseButtons.Right)
             {
-                // Pętla sprawdzająca, czy kliknięcie było na którymś z nagłówków zakładek
                 for (int i = 0; i < tabPanel1.TabCount; i++)
                 {
                     Rectangle tabRect = tabPanel1.GetTabRect(i);
-
-                    // Jeśli współrzędne kliknięcia (e.Location) zawierają się w prostokącie nagłówka...
                     if (tabRect.Contains(e.Location))
                     {
-                        // ...to jest kliknięcie na nagłówek!
-
-                        // 1. (Opcjonalnie, ale dobrze to zrobić) Ustaw tę zakładkę jako aktywną
                         tabPanel1.SelectedIndex = i;
-
-                        // 2. RĘCZNIE pokaż menu kontekstowe w miejscu kliknięcia
                         contextMenuStrip1.Show(tabPanel1, e.Location);
-
-                        // 3. Zakończ pętlę, bo znaleźliśmy klikniętą zakładkę
                         break;
                     }
                 }
-                // Jeśli pętla się zakończy, a kliknięcie nie trafiło w żaden nagłówek,
-                // menu po prostu się nie pokaże.
             }
         }
 
@@ -313,13 +307,7 @@ namespace MP_ModbusApp
                             foreach (DataGridViewRow row in readingsTab.GetDataGridViewRows())
                             {
                                 if (row.IsNewRow) continue;
-
-                                // ---- NOWA LOGIKA OBLICZANIA NUMERU REJESTRU ----
-                                // Używamy indeksu wiersza i adresu startowego zakładki,
-                                // aby uzyskać prawdziwy numer rejestru (np. 100).
-                                // Ignorujemy wartość w komórce, która może być tekstem "100 - 103".
                                 int registerNumber = startAddrForThisTab + row.Index;
-                                // ---- KONIEC NOWEJ LOGIKI ----
 
                                 var regCmd = connection.CreateCommand();
                                 regCmd.Transaction = transaction;
@@ -328,10 +316,7 @@ namespace MP_ModbusApp
                             VALUES ($groupId, $regNum, $regName, $displayFormat);";
 
                                 regCmd.Parameters.AddWithValue("$groupId", groupId);
-
-                                // ZMIANA: Używamy nowej, obliczonej zmiennej 'registerNumber'
                                 regCmd.Parameters.AddWithValue("$regNum", registerNumber);
-
                                 regCmd.Parameters.AddWithValue("$regName", row.Cells["Name"].Value ?? string.Empty);
 
                                 var displayFormat = row.Cells["DisplayFormatColumn"].Value?.ToString() ?? "Unsigned16";
@@ -350,7 +335,7 @@ namespace MP_ModbusApp
             _modbusMaster = _mainWindow?.ModbusMaster;
             if (_modbusMaster == null)
             {
-                ShowDeviceError("Not connected in MainWindow!");
+                ShowDeviceError("Not connected in Setup tab!");
                 return;
             }
 
@@ -360,32 +345,54 @@ namespace MP_ModbusApp
             startToolStripMenuItem.Enabled = false;
             stopToolStripMenuItem.Enabled = true;
 
-            // Uruchom pętlę odpytującą asynchronicznie
             await PollDeviceLoop();
         }
         private async Task PollDeviceLoop()
         {
             while (_isPolling)
             {
-                // Wykonaj jeden pełny cykl odpytania
                 await PollDeviceOnce();
 
                 if (!_isPolling) break;
 
-                // Pobierz opóźnienie (jesteśmy w wątku UI, więc jest to bezpieczne)
                 int pollDelay = _mainWindow.GetPollDelay();
 
-                // Zaczekaj asynchronicznie
                 await Task.Delay(pollDelay);
             }
         }
-        private void stopToolStripMenuItem_Click(object sender, EventArgs e)
+
+        /// <summary>
+        /// Publiczna metoda do zatrzymywania pollingu, wywoływana z zewnątrz (np. przez MainWindow).
+        /// Jest bezpieczna wątkowo.
+        /// </summary>
+        public void StopPolling()
         {
+            // Ustaw flagę zatrzymania
             _isPolling = false;
 
-            startToolStripMenuItem.Enabled = true;
-            stopToolStripMenuItem.Enabled = false;
+            // Aktualizacja UI musi być w wątku UI
+            if (this.InvokeRequired)
+            {
+                this.Invoke(new Action(() =>
+                {
+                    startToolStripMenuItem.Enabled = true;
+                    stopToolStripMenuItem.Enabled = false;
+                }));
+            }
+            else
+            {
+                startToolStripMenuItem.Enabled = true;
+                stopToolStripMenuItem.Enabled = false;
+            }
         }
+
+        // Ta funkcja jest podłączona do przycisku "Pause"
+        private void stopToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Po prostu wywołuje nową, publiczną, bezpieczną wątkowo metodę
+            this.StopPolling();
+        }
+
         private void ShowDeviceError(string message)
         {
             if (InvokeRequired)
@@ -400,11 +407,46 @@ namespace MP_ModbusApp
 
         private void ClearDeviceError()
         {
-            if (InvokeRequired) { /* ... */ }
+            if (InvokeRequired)
+            {
+                Invoke(new Action(ClearDeviceError));
+                return;
+            }
             lblDeviceStatus.Visible = false;
-            lblDeviceStatus.Text = "Polling OK";
-            lblDeviceStatus.ForeColor = Color.Black;
+            // --- ZAKTUALIZOWANY KOD: Lepszy komunikat o stanie ---
+            lblDeviceStatus.Text = _isPolling ? "Polling OK" : "Polling Paused"; // Pokaż "Paused" zamiast pustego
+            // --- KONIEC ZAKTUALIZOWANEGO KODU ---
+            lblDeviceStatus.ForeColor = Color.Black; // Użyj czarnego dla "Paused"
         }
+
+
+        // --- NOWY KOD: Metoda pomocnicza do formatowania błędów Modbus ---
+        /// <summary>
+        /// Formatuje wyjątek SlaveException na czytelny komunikat błędu.
+        /// </summary>
+        private string GetModbusErrorMessage(NModbus.SlaveException ex)
+        {
+            string errorName;
+            switch (ex.SlaveExceptionCode)
+            {
+                case 1: errorName = "Illegal Function"; break;
+                case 2: errorName = "Illegal Data Address"; break;
+                case 3: errorName = "Illegal Data Value"; break;
+                case 4: errorName = "Slave Device Failure"; break;
+                case 5: errorName = "Acknowledge"; break;
+                case 6: errorName = "Slave Device Busy"; break;
+                // Można dodać więcej kodów zgodnie ze specyfikacją Modbus
+                case 7: errorName = "Negative Acknowledge"; break;
+                case 8: errorName = "Memory Parity Error"; break;
+                case 10: errorName = "Gateway Path Unavailable"; break; // 0x0A
+                case 11: errorName = "Gateway Target Device Failed to Respond"; break; // 0x0B
+                default: errorName = $"Unknown Exception ({ex.SlaveExceptionCode})"; break;
+            }
+            // Kod funkcji w wyjątku to oryginalny kod + 0x80 (128)
+            byte originalFunctionCode = (byte)(ex.FunctionCode - 128);
+            return $"Modbus Error (FC:{originalFunctionCode}, Code:{ex.SlaveExceptionCode}) - {errorName}";
+        }
+        // --- KONIEC NOWEGO KODU ---
 
 
         private async Task PollDeviceOnce()
@@ -415,6 +457,12 @@ namespace MP_ModbusApp
 
             foreach (TabPage tabPage in tabPanel1.TabPages)
             {
+                // --- NOWY KOD: Sprawdzenie _isPolling przed przetworzeniem zakładki ---
+                // Jeśli użytkownik kliknął "Pause" podczas przetwarzania poprzedniej zakładki,
+                // nie chcemy kontynuować z kolejnymi.
+                if (!_isPolling) break;
+                // --- KONIEC NOWEGO KODU ---
+
                 if (tabPage.Controls[0] is not ReadingsTab readingsTab) continue;
 
                 int funcCode = 0;
@@ -426,15 +474,9 @@ namespace MP_ModbusApp
                     startAddr = (ushort)readingsTab.GetStartAddress();
                     quantity = (ushort)readingsTab.GetQuantity();
 
-                    // --- 1. LOGOWANIE TX (WYSŁANIE) ---
-                    // CAŁY TEN BLOK ZOSTAŁ USUNIĘTY 
-                    // LogFrame("TX", $"{fcName} (Slave: {slaveId}, Start: {startAddr}, Qty: {quantity})");
-
-                    // --- Operacja Modbus ---
                     ushort[] data;
                     switch (funcCode)
                     {
-                        // ... (bez zmian)
                         case 0: // 01 Coils
                             bool[] coils = await _modbusMaster.ReadCoilsAsync(slaveId, startAddr, quantity);
                             data = coils.Select(c => c ? (ushort)1 : (ushort)0).ToArray();
@@ -443,50 +485,62 @@ namespace MP_ModbusApp
                             bool[] inputs = await _modbusMaster.ReadInputsAsync(slaveId, startAddr, quantity);
                             data = inputs.Select(i => i ? (ushort)1 : (ushort)0).ToArray();
                             break;
-                        case 2: // 03 Holding Registers
+                        // --- ZAKTUALIZOWANY KOD: Poprawione mapowanie ComboBox na Function Code ---
+                        // 03 Holding Registers (4x) to indeks 2 w ComboBox
+                        // 04 Input Registers (3x) to indeks 3 w ComboBox
+                        case 2: // 03 Holding Registers (Indeks ComboBox = 2)
                             data = await _modbusMaster.ReadHoldingRegistersAsync(slaveId, startAddr, quantity);
                             break;
-                        case 3: // 04 Input Registers
+                        case 3: // 04 Input Registers (Indeks ComboBox = 3)
                             data = await _modbusMaster.ReadInputRegistersAsync(slaveId, startAddr, quantity);
                             break;
+                        // --- KONIEC ZAKTUALIZOWANEGO KODU ---
                         default:
-                            throw new Exception("Unknown function code");
+                            // To nie powinno się zdarzyć z ComboBox, ale na wszelki wypadek
+                            readingsTab.ShowTabError($"Unsupported Function Code Index: {funcCode}");
+                            continue; // Przejdź do następnej zakładki
                     }
 
-                    // --- 2. LOGOWANIE RX (POPRAWNA ODPOWIEDŹ) ---
-                     readingsTab.UpdateValues(data); 
+                    readingsTab.UpdateValues(data);
 
-                    // USUNĘLIŚMY TĘ LINIĘ:
-                    // LogFrame("RX", $"Success. Data: [{string.Join(", ", data)}]");
-
-                    readingsTab.ClearTabError();
-                    ClearDeviceError();
+                    readingsTab.ClearTabError(); // Wyczyść błąd, jeśli odczyt się udał
+                    ClearDeviceError(); // Wyczyść błąd na poziomie urządzenia
                 }
                 catch (NModbus.SlaveException modbusEx) // Błąd Modbus (np. zły adres)
                 {
-                    // --- 3. LOGOWANIE BŁĘDU (RX ERROR) ---
+                    // --- ZAKTUALIZOWANY KOD: Użycie nowej funkcji formatującej ---
+                    string userFriendlyError = GetModbusErrorMessage(modbusEx);
+                    readingsTab.ShowTabError(userFriendlyError);
+                    // Nie pokazujemy tego błędu na poziomie całego urządzenia (ShowDeviceError)
+                    // ani nie zatrzymujemy pollingu, bo może dotyczyć tylko jednej zakładki.
+                    // --- KONIEC ZAKTUALIZOWANEGO KODU ---
 
-                    // USUNĘLIŚMY RÓWNIEŻ TEN BLOK:
-                    // string errorMsg = $"Modbus Error (FC: {modbusEx.FunctionCode}, Code: {modbusEx.SlaveExceptionCode})";
-                    // LogFrame("RX", "Slave Exception", errorMsg); 
-
-                    readingsTab.ShowTabError($"Modbus Error: {modbusEx.Message}");
+                    // Logowanie w NModbusLogger nadal działa i pokazuje szczegóły ramki HEX
                 }
-                catch (Exception ex) // Błąd Komunikacji (np. Timeout)
+                catch (Exception ex) // Błąd Komunikacji (np. Timeout, rozłączenie)
                 {
-                    // --- 3. LOGOWANIE BŁĘDU (COMMS ERROR) ---
+                    // Loguj błąd komunikacji (ważne, bo logger NModbus go nie widzi)
+                    LogFrame("Error", $"Comms Error: {ex.GetType().Name} - {ex.Message}", ex.Message);
 
-                    // TEN BLOK ZOSTAWIAMY!
-                    // Jest ważny dla błędów połączenia (np. Timeout), 
-                    // których NModbusLogger nie widzi.
-                    LogFrame("Error", $"Comms Error: {ex.Message}", ex.Message);
-
+                    // Pokaż błąd w zakładce i na poziomie urządzenia
                     readingsTab.ShowTabError($"Comms Error: {ex.Message}");
-                    ShowDeviceError(ex.Message);
-                    stopToolStripMenuItem_Click(null, null);
-                    break;
+                    ShowDeviceError(ex.Message); // Pokaż błąd na poziomie urządzenia
+
+                    // Bezpiecznie zatrzymuje pętlę i aktualizuje UI
+                    this.StopPolling();
+
+                    break; // Przerwij pętlę po zakładkach, bo błąd dotyczy całego połączenia
                 }
+            } // Koniec pętli foreach po zakładkach
+
+            // --- NOWY KOD: Jeśli pętla się zakończyła, a polling jest wciąż aktywny, wyczyść błąd urządzenia ---
+            // To obsłuży przypadek, gdy ostatnia zakładka miała błąd SlaveException,
+            // ale poprzednie odczyty były OK - nie chcemy wtedy widzieć błędu na poziomie urządzenia.
+            if (_isPolling)
+            {
+                ClearDeviceError();
             }
+            // --- KONIEC NOWEGO KODU ---
         }
 
         private void LogFrame(string direction, string dataFrame, string error = "")
@@ -495,13 +549,16 @@ namespace MP_ModbusApp
             {
                 Timestamp = DateTime.Now,
                 Direction = direction,
-                TransactionID = 0, // NModbus (zwłaszcza TCP) zarządza tym wewnętrznie
+                TransactionID = 0,
                 DataFrame = dataFrame,
                 ErrorDescription = error
             };
             _mainWindow?.LogCommunicationEvent(logEntry);
         }
 
-        
+        private void ModbusDevice_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            this.StopPolling();
+        }
     }
 }

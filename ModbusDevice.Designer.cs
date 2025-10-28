@@ -210,6 +210,7 @@
             stopToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.P;
             stopToolStripMenuItem.Size = new Size(142, 22);
             stopToolStripMenuItem.Text = "Pause";
+            stopToolStripMenuItem.Click += stopToolStripMenuItem_Click;
             // 
             // txtRenameTab
             // 
@@ -230,6 +231,7 @@
             Controls.Add(txtRenameTab);
             Name = "ModbusDevice";
             Text = "New Device";
+            FormClosed += ModbusDevice_FormClosed;
             Load += ModbusGroup_Load;
             Resize += ModbusDevice_Resize;
             ((System.ComponentModel.ISupportInitialize)slaveId).EndInit();

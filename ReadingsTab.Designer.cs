@@ -510,7 +510,7 @@
             // 
             unsignedToolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem6, littleendianToolStripMenuItem6, toolStripSeparator6, bigendianByteSwapToolStripMenuItem4, littleendianByteSwapToolStripMenuItem4 });
             unsignedToolStripMenuItem2.Name = "unsignedToolStripMenuItem2";
-            unsignedToolStripMenuItem2.Size = new Size(180, 22);
+            unsignedToolStripMenuItem2.Size = new Size(124, 22);
             unsignedToolStripMenuItem2.Text = "Unsigned";
             // 
             // bigendianToolStripMenuItem6
@@ -550,7 +550,7 @@
             // 
             signedToolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem7, littleendianToolStripMenuItem7, toolStripSeparator7, bigendianByteSwapToolStripMenuItem5, littleendianByteSwapToolStripMenuItem5 });
             signedToolStripMenuItem2.Name = "signedToolStripMenuItem2";
-            signedToolStripMenuItem2.Size = new Size(180, 22);
+            signedToolStripMenuItem2.Size = new Size(124, 22);
             signedToolStripMenuItem2.Text = "Signed";
             // 
             // bigendianToolStripMenuItem7
@@ -590,7 +590,7 @@
             // 
             realToolStripMenuItem1.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem8, littleendianToolStripMenuItem8, toolStripSeparator8, bigendianByteSwapToolStripMenuItem6, littleendianByteSwapToolStripMenuItem6 });
             realToolStripMenuItem1.Name = "realToolStripMenuItem1";
-            realToolStripMenuItem1.Size = new Size(180, 22);
+            realToolStripMenuItem1.Size = new Size(124, 22);
             realToolStripMenuItem1.Text = "Real";
             // 
             // bigendianToolStripMenuItem8
@@ -630,7 +630,7 @@
             // 
             hexToolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem9, littleendianToolStripMenuItem9, toolStripSeparator9, bigendianByteSwapToolStripMenuItem7, littleendianByteSwapToolStripMenuItem7 });
             hexToolStripMenuItem2.Name = "hexToolStripMenuItem2";
-            hexToolStripMenuItem2.Size = new Size(180, 22);
+            hexToolStripMenuItem2.Size = new Size(124, 22);
             hexToolStripMenuItem2.Text = "Hex";
             // 
             // bigendianToolStripMenuItem9
@@ -670,7 +670,7 @@
             // 
             aSCIIToolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { bigendianToolStripMenuItem10, littleendianToolStripMenuItem10, toolStripSeparator10, bigendianByteSwapToolStripMenuItem8, littleendianByteSwapToolStripMenuItem8 });
             aSCIIToolStripMenuItem2.Name = "aSCIIToolStripMenuItem2";
-            aSCIIToolStripMenuItem2.Size = new Size(180, 22);
+            aSCIIToolStripMenuItem2.Size = new Size(124, 22);
             aSCIIToolStripMenuItem2.Text = "ASCII";
             // 
             // bigendianToolStripMenuItem10
@@ -715,7 +715,7 @@
             // 
             // RegisterNumber
             // 
-            RegisterNumber.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
+            RegisterNumber.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             RegisterNumber.HeaderText = "Register Number";
             RegisterNumber.Name = "RegisterNumber";
             RegisterNumber.ReadOnly = true;
@@ -724,20 +724,20 @@
             // 
             // Value
             // 
+            Value.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             Value.ContextMenuStrip = contextMenuStrip1;
             Value.HeaderText = "Value";
             Value.Name = "Value";
             Value.SortMode = DataGridViewColumnSortMode.NotSortable;
+            Value.Width = 41;
             // 
             // DisplayFormatColumn
             // 
-            DisplayFormatColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
             DisplayFormatColumn.HeaderText = "DisplayFormat";
             DisplayFormatColumn.Name = "DisplayFormatColumn";
             DisplayFormatColumn.ReadOnly = true;
             DisplayFormatColumn.SortMode = DataGridViewColumnSortMode.NotSortable;
             DisplayFormatColumn.Visible = false;
-            DisplayFormatColumn.Width = 89;
             // 
             // ReadingsTab
             // 
