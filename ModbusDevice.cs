@@ -420,33 +420,8 @@ namespace MP_ModbusApp
         }
 
 
-        // --- NOWY KOD: Metoda pomocnicza do formatowania błędów Modbus ---
-        /// <summary>
-        /// Formatuje wyjątek SlaveException na czytelny komunikat błędu.
-        /// </summary>
-        private string GetModbusErrorMessage(MP_modbus.MyModbusSlaveException ex)
-        {
-            string errorName;
-            switch (ex.SlaveExceptionCode)
-            {
-                case 1: errorName = "Illegal Function"; break;
-                case 2: errorName = "Illegal Data Address"; break;
-                case 3: errorName = "Illegal Data Value"; break;
-                case 4: errorName = "Slave Device Failure"; break;
-                case 5: errorName = "Acknowledge"; break;
-                case 6: errorName = "Slave Device Busy"; break;
-                // Można dodać więcej kodów zgodnie ze specyfikacją Modbus
-                case 7: errorName = "Negative Acknowledge"; break;
-                case 8: errorName = "Memory Parity Error"; break;
-                case 10: errorName = "Gateway Path Unavailable"; break; // 0x0A
-                case 11: errorName = "Gateway Target Device Failed to Respond"; break; // 0x0B
-                default: errorName = $"Unknown Exception ({ex.SlaveExceptionCode})"; break;
-            }
-            // Kod funkcji w wyjątku to oryginalny kod + 0x80 (128)
-            byte originalFunctionCode = (byte)(ex.FunctionCode - 128);
-            return $"Modbus Error (FC:{originalFunctionCode}, Code:{ex.SlaveExceptionCode}) - {errorName}";
-        }
-        // --- KONIEC NOWEGO KODU ---
+        // --- USUNIĘTA PRYWATNA METODA GetModbusErrorMessage ---
+        // (Metody z ModbusUtils.cs teraz ją zastępują)
 
 
         private async Task PollDeviceOnce()
@@ -506,34 +481,39 @@ namespace MP_ModbusApp
                     readingsTab.ClearTabError(); // Wyczyść błąd, jeśli odczyt się udał
                     ClearDeviceError(); // Wyczyść błąd na poziomie urządzenia
                 }
-                //catch (NModbus.SlaveException modbusEx) // Błąd Modbus (np. zły adres)
-                catch (MP_modbus.MyModbusSlaveException modbusEx) // Nowy kod
+                // --- POCZĄTEK ZMIAN ---
+                catch (MP_modbus.MyModbusSlaveException modbusEx) // Błąd Modbus (np. zły adres)
                 {
-                    // --- ZAKTUALIZOWANY KOD: Użycie nowej funkcji formatującej ---
-                    //string userFriendlyError = GetModbusErrorMessage(modbusEx);
-                    //readingsTab.ShowTabError(userFriendlyError);
+                    // Użyj ModbusUtils do pobrania wymaganego formatu błędu
+                    string fullError = MP_modbus.ModbusUtils.GetFullExceptionMessage(modbusEx.FunctionCode, modbusEx.SlaveExceptionCode);
+                    string simpleError = MP_modbus.ModbusUtils.GetExceptionName(modbusEx.SlaveExceptionCode);
+
+                    // Wyświetl prosty błąd w zakładce urządzenia (zgodnie z prośbą)
+                    readingsTab.ShowTabError(simpleError);
+
+                    // Zaloguj pełny błąd w oknie komunikacji (zgodnie z prośbą)
+                    LogFrame("Error", "", fullError);
+
                     // Nie pokazujemy tego błędu na poziomie całego urządzenia (ShowDeviceError)
                     // ani nie zatrzymujemy pollingu, bo może dotyczyć tylko jednej zakładki.
-                    // --- KONIEC ZAKTUALIZOWANEGO KODU ---
-                    string userFriendlyError = GetModbusErrorMessage(modbusEx);
-                    readingsTab.ShowTabError(userFriendlyError);
-
-                    // Logowanie w NModbusLogger nadal działa i pokazuje szczegóły ramki HEX
                 }
                 catch (Exception ex) // Błąd Komunikacji (np. Timeout, rozłączenie)
                 {
-                    // Loguj błąd komunikacji (ważne, bo logger NModbus go nie widzi)
-                    LogFrame("Error", $"Comms Error: {ex.GetType().Name} - {ex.Message}", ex.Message);
+                    string commsError = $"Comms Error: {ex.Message}";
+
+                    // Loguj błąd komunikacji
+                    LogFrame("Error", "", commsError); // Czysty błąd w kolumnie ErrorDescription
 
                     // Pokaż błąd w zakładce i na poziomie urządzenia
-                    readingsTab.ShowTabError($"Comms Error: {ex.Message}");
-                    ShowDeviceError(ex.Message); // Pokaż błąd na poziomie urządzenia
+                    readingsTab.ShowTabError(commsError);
+                    ShowDeviceError(commsError); // Pokaż błąd na poziomie urządzenia
 
                     // Bezpiecznie zatrzymuje pętlę i aktualizuje UI
                     this.StopPolling();
 
                     break; // Przerwij pętlę po zakładkach, bo błąd dotyczy całego połączenia
                 }
+                // --- KONIEC ZMIAN ---
             } // Koniec pętli foreach po zakładkach
 
             // --- NOWY KOD: Jeśli pętla się zakończyła, a polling jest wciąż aktywny, wyczyść błąd urządzenia ---
@@ -551,6 +531,9 @@ namespace MP_ModbusApp
             var logEntry = new ModbusFrameLog
             {
                 Timestamp = DateTime.Now,
+                // --- NOWY KOD: Dodaj nazwę urządzenia do logu ---
+                DeviceName = this.DeviceName,
+                // --- KONIEC NOWEGO KODU ---
                 Direction = direction,
                 DataFrame = dataFrame,
                 ErrorDescription = error

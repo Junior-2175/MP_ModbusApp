@@ -33,7 +33,7 @@ namespace MP_ModbusApp
             components = new System.ComponentModel.Container();
             TreeNode treeNode1 = new TreeNode("Group1", 2, 2);
             TreeNode treeNode2 = new TreeNode("Device1", 1, 1, new TreeNode[] { treeNode1 });
-            TreeNode treeNode3 = new TreeNode("Saved Devices", 0, 0, new TreeNode[] { treeNode2 });
+            TreeNode treeNode3 = new TreeNode("Devices List", 0, 0, new TreeNode[] { treeNode2 });
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWindow));
             sidePanel = new Panel();
             treeView = new TreeView();
@@ -147,7 +147,7 @@ namespace MP_ModbusApp
             treeNode3.Name = "Saved_Devices";
             treeNode3.SelectedImageIndex = 0;
             treeNode3.StateImageIndex = 0;
-            treeNode3.Text = "Saved Devices";
+            treeNode3.Text = "Devices List";
             treeView.Nodes.AddRange(new TreeNode[] { treeNode3 });
             treeView.SelectedImageIndex = 0;
             treeView.Size = new Size(350, 82);
@@ -198,11 +198,13 @@ namespace MP_ModbusApp
             imageList1.ColorDepth = ColorDepth.Depth32Bit;
             imageList1.ImageStream = (ImageListStreamer)resources.GetObject("imageList1.ImageStream");
             imageList1.TransparentColor = Color.Transparent;
-            imageList1.Images.SetKeyName(0, "icons8-database-50.png");
-            imageList1.Images.SetKeyName(1, "icons8-voltmeter-50.png");
+            imageList1.Images.SetKeyName(0, "icons8-networking-manager-50.png");
+            imageList1.Images.SetKeyName(1, "icons8-individual-server-50.png");
             imageList1.Images.SetKeyName(2, "icons8-circle-30.png");
             imageList1.Images.SetKeyName(3, "icons8-connected-50.png");
             imageList1.Images.SetKeyName(4, "icons8-disconnected-50.png");
+            imageList1.Images.SetKeyName(5, "icons8-database-50.png");
+            imageList1.Images.SetKeyName(6, "icons8-voltmeter-50.png");
             // 
             // setupPanel
             // 

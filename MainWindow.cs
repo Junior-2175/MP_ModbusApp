@@ -22,7 +22,6 @@ namespace MP_ModbusApp
 {
     public partial class MainWindow : Form
     {
-        //public IModbusMaster ModbusMaster => _modbusMaster;
         private MP_modbus.IMyModbusMaster _modbusMaster;
 
         private SerialPort serialPort;
@@ -32,7 +31,6 @@ namespace MP_ModbusApp
         bool sidePanelHidden = false;
         private readonly ToolTip toolTip1 = new ToolTip();
 
-        //private IModbusMaster _modbusMaster;
         public MP_modbus.IMyModbusMaster ModbusMaster => _modbusMaster;
 
         public int GetPollDelay()
@@ -201,6 +199,8 @@ namespace MP_ModbusApp
                 setupPanel.Visible = false;
                 treeView.Visible = true;
                 sidePanelHidden = false;
+                TreeNode rootNode = treeView.Nodes[0];
+                rootNode.Expand();
             }
             else
             {
@@ -227,6 +227,8 @@ namespace MP_ModbusApp
                     setupPanel.Visible = false;
                     treeView.Visible = true;
                     sidePanelHidden = false;
+                    TreeNode rootNode = treeView.Nodes[0];
+                    rootNode.Expand();
                 }
                 else
                 {
@@ -249,6 +251,8 @@ namespace MP_ModbusApp
                     setupPanel.Visible = false;
                     treeView.Visible = false;
                     sidePanelHidden = true;
+                    TreeNode rootNode = treeView.Nodes[0];
+                    rootNode.Collapse();
                 }
             }
             this.Refresh();
@@ -419,13 +423,9 @@ namespace MP_ModbusApp
                 {
                     _commsLogWindow = new CommunicationLogWindow();
                     _commsLogWindow.MdiParent = this;
-                    // Ważne: NIE pokazuj okna, tylko stwórz instancje w tle.
-                    // _commsLogWindow.Show(); <-- Celowo pominięte
                 }
 
 
-                // (IEnumerable<IModbusFunctionService> functionServices, bool useOldStyleReadFunction, ILoggerFactory loggerFactory)
-                //var factory = new ModbusFactory(null, false, _nmodbusLogger);
                 MP_modbus.IMyModbusTransport transport; // Nowy kod
                 if (cboxConnection.SelectedIndex == 0) // Serial Port
                 {
@@ -441,42 +441,30 @@ namespace MP_ModbusApp
                     connectionPort = portName.ToString() + "/" + baudRate.ToString() + "/" + parity.ToString() + "/" + dataBits.ToString() + "/" + stopBits.ToString();
                     serialPort = new SerialPort(portName, baudRate, parity, dataBits, stopBits);
                     serialPort.Open();
-                    transport = new MP_modbus.MyModbusSerialTransport(serialPort, rBtnRTU.Checked /*, this*/); // Nowy kod
+                    transport = new MP_modbus.MyModbusSerialTransport(serialPort, rBtnRTU.Checked, this); // Nowy kod
                     connectionPort = portName + "/" + baudRate + "/" + parity.ToString() + "/" + dataBits.ToString() + "/" + stopBits.ToString();
 
-                    // *** POCZĄTEK POPRAWNEGO KODU ***
-                    // Tworzymy adapter, który opakowuje port.
-                    // Klasa SerialPortAdapter jest teraz dostępna dzięki paczce NModbus.SerialPort
-                    //var adapter = new NModbus.IO.SerialPortAdapter(serialPort);
-
-                    //_modbusMaster = rBtnRTU.Checked
-                    //? factory.CreateRtuMaster(adapter)  // Przekazujemy adapter
-                    //: factory.CreateAsciiMaster(adapter);
                 }
-                else // TCP/IP (Obsługuje indeks 1 i 2)
+                else
                 {
                     tcpClient = new System.Net.Sockets.TcpClient();
                     await tcpClient.ConnectAsync(cboxIPAddress.Text, (int)numIPPort.Value);
 
-                    if (cboxConnection.SelectedIndex == 1) // Czysty TCP/IP
+                    if (cboxConnection.SelectedIndex == 1)
                     {
-                        // Używamy klas z MiniModbus (dzięki 'using' na górze pliku)
-                        transport = new MyModbusTcpTransport(tcpClient, this); // Nowy kod
+                        transport = new MyModbusTcpTransport(tcpClient, this);
                     }
-                    else // RTU/ASCII over TCP (Indeks 2)
+                    else
                     {
-                        // Używamy klas z MiniModbus
-                        transport = new MyModbusTcpSerialTransport(tcpClient, rBtnRTU.Checked, this); // Nowy kod
+                        transport = new MyModbusTcpSerialTransport(tcpClient, rBtnRTU.Checked, this);
                     }
                     connectionPort = cboxIPAddress.Text + ":" + numIPPort.Value.ToString();
                 }
 
-                // Ustaw timeouty w transporcie, a nie w masterze
                 transport.ReadTimeout = (int)numResponseTimeout.Value;
                 transport.WriteTimeout = (int)numResponseTimeout.Value;
 
-                // Stwórz naszego nowego mastera
-                _modbusMaster = new MP_modbus.MyModbusMaster(transport); // Nowy kod
+                _modbusMaster = new MP_modbus.MyModbusMaster(transport);
 
                 UpdateUiState(true);
                 toolStripStatusLabel1.Text = "Connected:" + connectionPort;
@@ -488,25 +476,17 @@ namespace MP_ModbusApp
             }
         }
 
-        // --- ZAKTUALIZOWANY KOD ---
         private void Disconnect()
         {
-            // --- NOWY KOD ---
-            // Zatrzymaj polling we wszystkich otwartych oknach urządzeń
-            // Musi to być ZANIM _modbusMaster zostanie ustawiony na null
             foreach (Form childForm in this.MdiChildren)
             {
-                // Sprawdź, czy formularz jest typu ModbusDevice
                 if (childForm is ModbusDevice deviceWindow)
                 {
-                    // Wywołaj publiczną metodę zatrzymania pollingu
                     deviceWindow.StopPolling();
                 }
             }
-            // --- KONIEC NOWEGO KODU ---
 
-
-            _modbusMaster?.Dispose(); // Ważne!
+            _modbusMaster?.Dispose();
             _modbusMaster = null;
 
             serialPort?.Close();
@@ -515,7 +495,6 @@ namespace MP_ModbusApp
             tcpClient = null;
             UpdateUiState(false);
         }
-        // --- KONIEC ZAKTUALIZOWANEGO KODU ---
 
         private void UpdateUiState(bool isConnected)
         {
@@ -609,7 +588,7 @@ namespace MP_ModbusApp
                     }
                 }
             }
-            //rootNode.Expand();
+            //
         }
 
         private void treeView_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
@@ -678,27 +657,20 @@ namespace MP_ModbusApp
                             {
                                 while (regReader.Read())
                                 {
-                                    // ---- ZAKTUALIZOWANA LOGIKA WCZYTYWANIA ----
                                     int regNum;
                                     string regNumString = regReader.GetValue(0).ToString();
 
-                                    // Próbujemy sparsować numer rejestru
                                     if (!int.TryParse(regNumString, out regNum))
                                     {
-                                        // Jeśli się nie uda (bo to np. "100 - 103"),
-                                        // próbujemy odzyskać pierwszą liczbę.
                                         string[] parts = regNumString.Split(' ');
                                         if (parts.Length > 0 && int.TryParse(parts[0], out regNum))
                                         {
-                                            // Sukces, odzyskaliśmy "100"
                                         }
                                         else
                                         {
-                                            // Całkowicie uszkodzone dane, pomiń ten rejestr
                                             continue;
                                         }
                                     }
-                                    // ---- KONIEC ZAKTUALIZOWANEJ LOGIKI ----
 
                                     string regName = regReader.GetString(1);
                                     string regFormat = regReader.IsDBNull(2) ? "Unsigned16" : regReader.GetString(2);
@@ -1081,8 +1053,6 @@ namespace MP_ModbusApp
         public void LogCommunicationEvent(ModbusFrameLog logEntry)
         {
             _commsLogWindow?.LogFrame(logEntry);
-        }
-
-   
-    } // Ostatnia klamra zamykająca namespace
+        }   
+    }
 }

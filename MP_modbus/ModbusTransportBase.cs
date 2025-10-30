@@ -106,6 +106,36 @@ namespace MP_ModbusApp.MP_modbus
         }
 
 
+        // --- POCZĄTEK NOWEGO KODU ---
+        /// <summary>
+        /// Loguje ramkę do okna CommunicationLogWindow.
+        /// </summary>
+        protected void LogFrame(byte[] adu, string direction, byte slaveId)
+        {
+            // Sprawdzamy, czy _mainWindow (i okno logowania) w ogóle istnieją
+            if (_mainWindow == null) return;
+
+            // Konwertuj byte[] na czytelny string HEX
+            string dataFrame = BitConverter.ToString(adu).Replace("-", " ");
+
+            var logEntry = new ModbusFrameLog
+            {
+                Timestamp = DateTime.Now,
+                // Na tym poziomie nie znamy nazwy urządzenia, ale znamy SlaveID.
+                // Użyjemy go, aby filtrowanie w oknie logów działało.
+                // LogFrame w ModbusDevice.cs (dla błędów) użyje pełnej nazwy.
+                DeviceName = $"Slave {slaveId}",
+                Direction = direction,
+                DataFrame = dataFrame,
+                ErrorDescription = string.Empty
+            };
+
+            // Wywołaj metodę w MainWindow, która przekaże log do okna logowania
+            _mainWindow.LogCommunicationEvent(logEntry);
+        }
+        // --- KONIEC NOWEGO KODU ---
+
+
         public virtual void Dispose()
         {
             _stream?.Dispose();
