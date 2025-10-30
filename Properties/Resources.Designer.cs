@@ -443,6 +443,16 @@ namespace MP_ModbusApp.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap icons8_horizontal_docking_48 {
+            get {
+                object obj = ResourceManager.GetObject("icons8-horizontal-docking-48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap icons8_increase_50 {
             get {
                 object obj = ResourceManager.GetObject("icons8-increase-50", resourceCulture);
@@ -733,6 +743,16 @@ namespace MP_ModbusApp.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap icons8_static_view_level2_48 {
+            get {
+                object obj = ResourceManager.GetObject("icons8-static-view-level2-48", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap icons8_stop_48 {
             get {
                 object obj = ResourceManager.GetObject("icons8-stop-48", resourceCulture);
@@ -816,6 +836,16 @@ namespace MP_ModbusApp.Properties {
         internal static System.Drawing.Bitmap icons8_usb_on_50 {
             get {
                 object obj = ResourceManager.GetObject("icons8-usb-on-50", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap icons8_vertical_docking_48 {
+            get {
+                object obj = ResourceManager.GetObject("icons8-vertical-docking-48", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

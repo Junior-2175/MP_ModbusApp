@@ -1233,5 +1233,24 @@ namespace MP_ModbusApp
                 _commsLogWindow?.NotifyCommunicationError();
             }
         }
+
+        // --- Window layout functions ---
+        private void cascadeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Arrange all MDI child windows in a cascade layout
+            this.LayoutMdi(MdiLayout.Cascade);
+        }
+
+        private void splitHorizontalToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Tile all MDI child windows horizontally
+            this.LayoutMdi(MdiLayout.TileHorizontal);
+        }
+
+        private void splitVerticalToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            // Tile all MDI child windows vertically
+            this.LayoutMdi(MdiLayout.TileVertical);
+        }
     }
 }

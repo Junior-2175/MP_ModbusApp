@@ -91,6 +91,10 @@ namespace MP_ModbusApp
             newToolStripMenuItem = new ToolStripMenuItem();
             viewToolStripMenuItem = new ToolStripMenuItem();
             communicationToolStripMenuItem = new ToolStripMenuItem();
+            layoutToolStripMenuItem = new ToolStripMenuItem();
+            cascadeToolStripMenuItem = new ToolStripMenuItem();
+            splitHorizontalToolStripMenuItem = new ToolStripMenuItem();
+            splitVerticalToolStripMenuItem = new ToolStripMenuItem();
             sidePanel.SuspendLayout();
             treeViewContextMenu.SuspendLayout();
             setupPanel.SuspendLayout();
@@ -696,7 +700,7 @@ namespace MP_ModbusApp
             // 
             // menuStrip1
             // 
-            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, viewToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, viewToolStripMenuItem, layoutToolStripMenuItem });
             menuStrip1.Location = new Point(350, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Size = new Size(321, 24);
@@ -734,6 +738,37 @@ namespace MP_ModbusApp
             communicationToolStripMenuItem.Size = new Size(199, 22);
             communicationToolStripMenuItem.Text = "Communication";
             communicationToolStripMenuItem.Click += communicationToolStripMenuItem_Click;
+            // 
+            // layoutToolStripMenuItem
+            // 
+            layoutToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { cascadeToolStripMenuItem, splitHorizontalToolStripMenuItem, splitVerticalToolStripMenuItem });
+            layoutToolStripMenuItem.Name = "layoutToolStripMenuItem";
+            layoutToolStripMenuItem.Size = new Size(55, 20);
+            layoutToolStripMenuItem.Text = "Layout";
+            // 
+            // cascadeToolStripMenuItem
+            // 
+            cascadeToolStripMenuItem.Image = Properties.Resources.icons8_static_view_level2_48;
+            cascadeToolStripMenuItem.Name = "cascadeToolStripMenuItem";
+            cascadeToolStripMenuItem.Size = new Size(180, 22);
+            cascadeToolStripMenuItem.Text = "Cascade";
+            cascadeToolStripMenuItem.Click += cascadeToolStripMenuItem_Click;
+            // 
+            // splitHorizontalToolStripMenuItem
+            // 
+            splitHorizontalToolStripMenuItem.Image = Properties.Resources.icons8_vertical_docking_48;
+            splitHorizontalToolStripMenuItem.Name = "splitHorizontalToolStripMenuItem";
+            splitHorizontalToolStripMenuItem.Size = new Size(180, 22);
+            splitHorizontalToolStripMenuItem.Text = "Split Horizontal";
+            splitHorizontalToolStripMenuItem.Click += splitHorizontalToolStripMenuItem_Click;
+            // 
+            // splitVerticalToolStripMenuItem
+            // 
+            splitVerticalToolStripMenuItem.Image = Properties.Resources.icons8_horizontal_docking_48;
+            splitVerticalToolStripMenuItem.Name = "splitVerticalToolStripMenuItem";
+            splitVerticalToolStripMenuItem.Size = new Size(180, 22);
+            splitVerticalToolStripMenuItem.Text = "Split Vertical";
+            splitVerticalToolStripMenuItem.Click += splitVerticalToolStripMenuItem_Click;
             // 
             // MainWindow
             // 
@@ -837,5 +872,9 @@ namespace MP_ModbusApp
         private ToolStripMenuItem exportDeviceContextMenuItem;
         private ToolStripSeparator toolStripSeparator1;
         private ToolStripMenuItem deleteDeviceContextMenuItem;
+        private ToolStripMenuItem layoutToolStripMenuItem;
+        private ToolStripMenuItem cascadeToolStripMenuItem;
+        private ToolStripMenuItem splitHorizontalToolStripMenuItem;
+        private ToolStripMenuItem splitVerticalToolStripMenuItem;
     }
 }
