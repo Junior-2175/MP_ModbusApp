@@ -484,6 +484,14 @@ namespace MP_ModbusApp
         {
             if (!_isPolling || _modbusMaster == null) return;
 
+            // Set the custom device name in the transport layer *before* polling.
+            // This ensures all TX/RX logs generated during this poll cycle
+            // use this device's friendly name (this.DeviceName).
+            if (_modbusMaster.Transport is MP_modbus.ModbusTransportBase transport)
+            {
+                transport.LoggingDeviceName = this.DeviceName + " (" + this.slaveId.Value.ToString() + ")";
+            }
+
             byte slaveId = (byte)this.SlaveId;
 
             foreach (TabPage tabPage in tabPanel1.TabPages)
@@ -581,7 +589,7 @@ namespace MP_ModbusApp
             var logEntry = new ModbusFrameLog
             {
                 Timestamp = DateTime.Now,
-                DeviceName = this.DeviceName, // Add device name to the log
+                DeviceName = this.DeviceName + " (" + slaveId.Value.ToString() + ")", // Add device name to the log
                 Direction = direction,
                 DataFrame = dataFrame,
                 ErrorDescription = error

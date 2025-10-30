@@ -20,7 +20,7 @@ namespace MP_ModbusApp
         /// This is crucial for allowing filtering (via the 'Filter' property) without
         /// modifying the underlying complete list of logs.
         /// </summary>
-        private readonly BindingSource _bindingSource = new BindingSource();
+        //private readonly BindingSource _bindingSource = new BindingSource();
 
         public CommunicationLogWindow()
         {
@@ -53,10 +53,6 @@ namespace MP_ModbusApp
 
             dgvLog.Columns["ErrorDescription"].HeaderText = "Error";
             dgvLog.Columns["ErrorDescription"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-
-            // Attach handlers (was in designer, good to have here explicitly)
-            this.cboDeviceFilter.SelectedIndexChanged += new System.EventHandler(this.cboDeviceFilter_SelectedIndexChanged);
-            this.btnClearFilter.Click += new System.EventHandler(this.btnClearFilter_Click);
         }
 
         /// <summary>
@@ -268,11 +264,6 @@ namespace MP_ModbusApp
         {
             _bindingSource.Filter = null;
             cboDeviceFilter.SelectedItem = "(Show All)";
-        }
-
-        private void toolStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
-        {
-            // This event handler is connected in the designer but is not used.
         }
     }
 }

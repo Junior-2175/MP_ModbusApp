@@ -17,7 +17,12 @@ namespace MP_ModbusApp.MP_modbus
         protected readonly NetworkStream _stream;
         protected readonly MainWindow _mainWindow; // For logging
         private readonly object _streamLock = new object();
-
+        /// <summary>
+        /// Gets or sets the custom device name to be used for logging.
+        /// This is set by the ModbusDevice instance to override the default "Slave X" log name
+        /// for TX/RX frames.
+        /// </summary>
+        public string LoggingDeviceName { get; set; } = null;
         public int ReadTimeout { get; set; } = 1000;
         public int WriteTimeout { get; set; } = 1000;
 
@@ -124,13 +129,21 @@ namespace MP_ModbusApp.MP_modbus
             // Convert byte[] to a readable HEX string
             string dataFrame = BitConverter.ToString(adu).Replace("-", " ");
 
+            // Determine the device name for this log entry.
+            // Use the custom name if it has been provided by the ModbusDevice instance.
+            string deviceNameForLog = this.LoggingDeviceName;
+
+            // If no custom name is set, fall back to the default "Slave X" format.
+            if (string.IsNullOrEmpty(deviceNameForLog))
+            {
+                deviceNameForLog = $"Slave {slaveId}"; // Fallback behavior
+            }
+
             var logEntry = new ModbusFrameLog
             {
                 Timestamp = DateTime.Now,
-                // At this level, we don't know the device name, but we know the SlaveID.
-                // We use this so that filtering in the log window works.
-                // LogFrame in ModbusDevice.cs (for errors) will use the full name.
-                DeviceName = $"Slave {slaveId}",
+                // Use the determined name (either custom or fallback)
+                DeviceName = deviceNameForLog,
                 Direction = direction,
                 DataFrame = dataFrame,
                 ErrorDescription = string.Empty

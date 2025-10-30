@@ -46,9 +46,11 @@
             cboDeviceFilter = new ToolStripComboBox();
             btnClearFilter = new ToolStripButton();
             toolStripSeparator4 = new ToolStripSeparator();
+            _bindingSource = new BindingSource(components);
             ((System.ComponentModel.ISupportInitialize)dgvLog).BeginInit();
             contextMenuStrip1.SuspendLayout();
             toolStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)_bindingSource).BeginInit();
             SuspendLayout();
             // 
             // dgvLog
@@ -153,7 +155,6 @@
             toolStrip1.Size = new Size(599, 25);
             toolStrip1.TabIndex = 1;
             toolStrip1.Text = "toolStrip1";
-            toolStrip1.ItemClicked += toolStrip1_ItemClicked;
             // 
             // lblFilter
             // 
@@ -183,6 +184,10 @@
             toolStripSeparator4.Name = "toolStripSeparator4";
             toolStripSeparator4.Size = new Size(6, 25);
             // 
+            // _bindingSource
+            // 
+            _bindingSource.Filter = "True";
+            // 
             // CommunicationLogWindow
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -198,6 +203,7 @@
             contextMenuStrip1.ResumeLayout(false);
             toolStrip1.ResumeLayout(false);
             toolStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)_bindingSource).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -220,5 +226,6 @@
         private ToolStripComboBox cboDeviceFilter;
         private ToolStripButton btnClearFilter;
         private ToolStripSeparator toolStripSeparator4;
+        private BindingSource _bindingSource;
     }
 }
