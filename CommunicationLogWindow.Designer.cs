@@ -42,10 +42,10 @@
             btnExportToCsv = new ToolStripButton();
             toolStripSeparator3 = new ToolStripSeparator();
             toolStrip1 = new ToolStrip();
-            toolStripSeparator4 = new ToolStripSeparator();
-            btnClearFilter = new ToolStripButton();
             lblFilter = new ToolStripLabel();
             cboDeviceFilter = new ToolStripComboBox();
+            btnClearFilter = new ToolStripButton();
+            toolStripSeparator4 = new ToolStripSeparator();
             ((System.ComponentModel.ISupportInitialize)dgvLog).BeginInit();
             contextMenuStrip1.SuspendLayout();
             toolStrip1.SuspendLayout();
@@ -155,21 +155,6 @@
             toolStrip1.Text = "toolStrip1";
             toolStrip1.ItemClicked += toolStrip1_ItemClicked;
             // 
-            // toolStripSeparator4
-            // 
-            toolStripSeparator4.Name = "toolStripSeparator4";
-            toolStripSeparator4.Size = new Size(6, 25);
-            // 
-            // btnClearFilter
-            // 
-            btnClearFilter.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            btnClearFilter.Image = (Image)resources.GetObject("btnClearFilter.Image");
-            btnClearFilter.ImageTransparentColor = Color.Magenta;
-            btnClearFilter.Name = "btnClearFilter";
-            btnClearFilter.Size = new Size(38, 22);
-            btnClearFilter.Text = "Clear";
-            btnClearFilter.ToolTipText = "Clear";
-            // 
             // lblFilter
             // 
             lblFilter.Name = "lblFilter";
@@ -180,6 +165,23 @@
             // 
             cboDeviceFilter.Name = "cboDeviceFilter";
             cboDeviceFilter.Size = new Size(121, 25);
+            cboDeviceFilter.SelectedIndexChanged += cboDeviceFilter_SelectedIndexChanged;
+            // 
+            // btnClearFilter
+            // 
+            btnClearFilter.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            btnClearFilter.Image = (Image)resources.GetObject("btnClearFilter.Image");
+            btnClearFilter.ImageTransparentColor = Color.Magenta;
+            btnClearFilter.Name = "btnClearFilter";
+            btnClearFilter.Size = new Size(38, 22);
+            btnClearFilter.Text = "Clear";
+            btnClearFilter.ToolTipText = "Clear";
+            btnClearFilter.Click += btnClearFilter_Click;
+            // 
+            // toolStripSeparator4
+            // 
+            toolStripSeparator4.Name = "toolStripSeparator4";
+            toolStripSeparator4.Size = new Size(6, 25);
             // 
             // CommunicationLogWindow
             // 

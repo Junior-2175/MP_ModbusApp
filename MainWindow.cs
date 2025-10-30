@@ -1053,6 +1053,10 @@ namespace MP_ModbusApp
         public void LogCommunicationEvent(ModbusFrameLog logEntry)
         {
             _commsLogWindow?.LogFrame(logEntry);
+            if (logEntry.Direction == "Error")
+            {
+                _commsLogWindow?.NotifyCommunicationError();
+            }
         }   
     }
 }

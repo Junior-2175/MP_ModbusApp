@@ -46,9 +46,6 @@ namespace MP_ModbusApp
             }
             // --- KONIEC NOWEGO KODU ---
 
-            //dgvLog.Columns["TransactionID"].HeaderText = "Trans. ID";
-            //dgvLog.Columns["TransactionID"].Visible = false; // Ukryjmy ją, skoro nie jest używana
-
             dgvLog.Columns["Direction"].HeaderText = "Dir";
 
             dgvLog.Columns["DataFrame"].HeaderText = "Data Frame";
@@ -235,6 +232,7 @@ namespace MP_ModbusApp
             if (selectedDevice == "(Show All)")
             {
                 _bindingSource.Filter = null;
+                dgvLog.DataSource = _bindingSource;
             }
             else
             {
@@ -247,7 +245,9 @@ namespace MP_ModbusApp
         private void btnClearFilter_Click(object sender, EventArgs e)
         {
             _bindingSource.Filter = null;
+            dgvLog.DataSource = _bindingSource;
             cboDeviceFilter.SelectedItem = "(Show All)";
+
         }
 
         private void toolStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
