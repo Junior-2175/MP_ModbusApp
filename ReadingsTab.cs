@@ -171,9 +171,8 @@ namespace MP_ModbusApp
 
         private void ReadingsTab_Load(object sender, EventArgs e)
         {
-            //comboBox1.SelectedIndex = 2;
+            comboBox1.SelectedIndex = 2;
             dataGridView1.RowCount = (int)numOfRegisters.Value;
-            dataGridView1.RowTemplate.Height = 10;
             lblTabError.Visible = false;
         }
 
@@ -243,7 +242,6 @@ namespace MP_ModbusApp
             {
                 startRegister_1.Value = requestedFuncionNo * 100000 + startRegister.Value + 1;
             }
-
         }
 
         private void numOfRegisters_ValueChanged(object sender, EventArgs e)

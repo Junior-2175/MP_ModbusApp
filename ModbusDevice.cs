@@ -1,5 +1,4 @@
 ﻿using Microsoft.Data.Sqlite;
-using NModbus;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -16,7 +15,8 @@ namespace MP_ModbusApp
     {
 
         private MainWindow _mainWindow;
-        private IModbusMaster _modbusMaster;
+        //private IModbusMaster _modbusMaster;
+        private MP_modbus.IMyModbusMaster _modbusMaster;
         private bool _isPolling = false;
 
 
@@ -424,7 +424,7 @@ namespace MP_ModbusApp
         /// <summary>
         /// Formatuje wyjątek SlaveException na czytelny komunikat błędu.
         /// </summary>
-        private string GetModbusErrorMessage(NModbus.SlaveException ex)
+        private string GetModbusErrorMessage(MP_modbus.MyModbusSlaveException ex)
         {
             string errorName;
             switch (ex.SlaveExceptionCode)
@@ -506,14 +506,17 @@ namespace MP_ModbusApp
                     readingsTab.ClearTabError(); // Wyczyść błąd, jeśli odczyt się udał
                     ClearDeviceError(); // Wyczyść błąd na poziomie urządzenia
                 }
-                catch (NModbus.SlaveException modbusEx) // Błąd Modbus (np. zły adres)
+                //catch (NModbus.SlaveException modbusEx) // Błąd Modbus (np. zły adres)
+                catch (MP_modbus.MyModbusSlaveException modbusEx) // Nowy kod
                 {
                     // --- ZAKTUALIZOWANY KOD: Użycie nowej funkcji formatującej ---
-                    string userFriendlyError = GetModbusErrorMessage(modbusEx);
-                    readingsTab.ShowTabError(userFriendlyError);
+                    //string userFriendlyError = GetModbusErrorMessage(modbusEx);
+                    //readingsTab.ShowTabError(userFriendlyError);
                     // Nie pokazujemy tego błędu na poziomie całego urządzenia (ShowDeviceError)
                     // ani nie zatrzymujemy pollingu, bo może dotyczyć tylko jednej zakładki.
                     // --- KONIEC ZAKTUALIZOWANEGO KODU ---
+                    string userFriendlyError = GetModbusErrorMessage(modbusEx);
+                    readingsTab.ShowTabError(userFriendlyError);
 
                     // Logowanie w NModbusLogger nadal działa i pokazuje szczegóły ramki HEX
                 }

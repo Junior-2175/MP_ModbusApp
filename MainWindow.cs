@@ -1,11 +1,7 @@
 ﻿using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
-using NModbus;
-using NModbus.Device;
-using NModbus.Device;
-using NModbus.IO;
-using NModbus.Logging;
+using MP_ModbusApp.MP_modbus;
 using System;
 using System.Diagnostics;
 using System.Diagnostics;
@@ -26,19 +22,18 @@ namespace MP_ModbusApp
 {
     public partial class MainWindow : Form
     {
-        public IModbusMaster ModbusMaster => _modbusMaster;
-
+        //public IModbusMaster ModbusMaster => _modbusMaster;
+        private MP_modbus.IMyModbusMaster _modbusMaster;
 
         private SerialPort serialPort;
         private System.Net.Sockets.TcpClient tcpClient;
         private CommunicationLogWindow _commsLogWindow;
-        private NModbusLogger _nmodbusLogger;
         private Cursor _deviceDragCursor;
         bool sidePanelHidden = false;
         private readonly ToolTip toolTip1 = new ToolTip();
 
-        private IModbusMaster _modbusMaster;
-
+        //private IModbusMaster _modbusMaster;
+        public MP_modbus.IMyModbusMaster ModbusMaster => _modbusMaster;
 
         public int GetPollDelay()
         {
@@ -424,15 +419,14 @@ namespace MP_ModbusApp
                 {
                     _commsLogWindow = new CommunicationLogWindow();
                     _commsLogWindow.MdiParent = this;
-                    _nmodbusLogger = new NModbusLogger(_commsLogWindow);
                     // Ważne: NIE pokazuj okna, tylko stwórz instancje w tle.
                     // _commsLogWindow.Show(); <-- Celowo pominięte
                 }
 
 
                 // (IEnumerable<IModbusFunctionService> functionServices, bool useOldStyleReadFunction, ILoggerFactory loggerFactory)
-                var factory = new ModbusFactory(null, false, _nmodbusLogger);
-
+                //var factory = new ModbusFactory(null, false, _nmodbusLogger);
+                MP_modbus.IMyModbusTransport transport; // Nowy kod
                 if (cboxConnection.SelectedIndex == 0) // Serial Port
                 {
                     string fullPortName = cboxComPort.SelectedItem.ToString();
@@ -447,6 +441,8 @@ namespace MP_ModbusApp
                     connectionPort = portName.ToString() + "/" + baudRate.ToString() + "/" + parity.ToString() + "/" + dataBits.ToString() + "/" + stopBits.ToString();
                     serialPort = new SerialPort(portName, baudRate, parity, dataBits, stopBits);
                     serialPort.Open();
+                    transport = new MP_modbus.MyModbusSerialTransport(serialPort, rBtnRTU.Checked /*, this*/); // Nowy kod
+                    connectionPort = portName + "/" + baudRate + "/" + parity.ToString() + "/" + dataBits.ToString() + "/" + stopBits.ToString();
 
                     // *** POCZĄTEK POPRAWNEGO KODU ***
                     // Tworzymy adapter, który opakowuje port.
@@ -457,16 +453,30 @@ namespace MP_ModbusApp
                     //? factory.CreateRtuMaster(adapter)  // Przekazujemy adapter
                     //: factory.CreateAsciiMaster(adapter);
                 }
-                else // TCP/IP
+                else // TCP/IP (Obsługuje indeks 1 i 2)
                 {
                     tcpClient = new System.Net.Sockets.TcpClient();
                     await tcpClient.ConnectAsync(cboxIPAddress.Text, (int)numIPPort.Value);
-                    _modbusMaster = factory.CreateMaster(tcpClient);
+
+                    if (cboxConnection.SelectedIndex == 1) // Czysty TCP/IP
+                    {
+                        // Używamy klas z MiniModbus (dzięki 'using' na górze pliku)
+                        transport = new MyModbusTcpTransport(tcpClient, this); // Nowy kod
+                    }
+                    else // RTU/ASCII over TCP (Indeks 2)
+                    {
+                        // Używamy klas z MiniModbus
+                        transport = new MyModbusTcpSerialTransport(tcpClient, rBtnRTU.Checked, this); // Nowy kod
+                    }
                     connectionPort = cboxIPAddress.Text + ":" + numIPPort.Value.ToString();
                 }
 
-                _modbusMaster.Transport.ReadTimeout = (int)numResponseTimeout.Value;
-                _modbusMaster.Transport.WriteTimeout = (int)numResponseTimeout.Value;
+                // Ustaw timeouty w transporcie, a nie w masterze
+                transport.ReadTimeout = (int)numResponseTimeout.Value;
+                transport.WriteTimeout = (int)numResponseTimeout.Value;
+
+                // Stwórz naszego nowego mastera
+                _modbusMaster = new MP_modbus.MyModbusMaster(transport); // Nowy kod
 
                 UpdateUiState(true);
                 toolStripStatusLabel1.Text = "Connected:" + connectionPort;
@@ -532,17 +542,6 @@ namespace MP_ModbusApp
                 _commsLogWindow = new CommunicationLogWindow();
                 _commsLogWindow.MdiParent = this;
 
-                // --- ZMIENIONY KOD ---
-                // Tworzymy instancję naszego niestandardowego loggera NModbus
-                _nmodbusLogger = new NModbusLogger(_commsLogWindow);
-
-                if (_modbusMaster != null)
-                {
-                    MessageBox.Show("Logger ramek HEX aktywowany. \nProszę się rozłączyć i połączyć ponownie, aby rozpocząć przechwytywanie.", "Logger Aktywowany",
-                                    MessageBoxButtons.OK,
-                                    MessageBoxIcon.Information);
-                }
-                // --- KONIEC ZMIENIONEGO KODU ---
             }
             _commsLogWindow.Show();
             _commsLogWindow.Activate();
@@ -1084,125 +1083,6 @@ namespace MP_ModbusApp
             _commsLogWindow?.LogFrame(logEntry);
         }
 
-        #region NModbus Logger Implementation
-
-        /// <summary>
-        /// Implementacja interfejsu NModbus.IModbusLogger, która przekazuje 
-        /// surowe ramki HEX do naszego okna CommunicationLogWindow.
-        /// (Wersja OSTATECZNA z parsowaniem błędów)
-        /// </summary>
-        public class NModbusLogger : IModbusLogger
-        {
-            private readonly CommunicationLogWindow _logWindow;
-
-            public NModbusLogger(CommunicationLogWindow logWindow)
-            {
-                _logWindow = logWindow;
-            }
-
-            public bool ShouldLog(LoggingLevel level)
-            {
-                return level == LoggingLevel.Trace;
-            }
-
-            // *** TO JEST ZMODYFIKOWANA METODA ***
-            public void Log(LoggingLevel level, string message)
-            {
-                if (!ShouldLog(level) || _logWindow == null || _logWindow.IsDisposed)
-                {
-                    return;
-                }
-
-                if (message.StartsWith("TX: ", StringComparison.OrdinalIgnoreCase) ||
-                    message.StartsWith("RX: ", StringComparison.OrdinalIgnoreCase))
-                {
-                    try
-                    {
-                        string direction = message.Substring(0, 2).ToUpper(); // "TX" lub "RX"
-                        string hexData = message.Substring(4); // "01 03 00 64..." (bez spacji na początku)
-                        string hexFrame = hexData;//.Replace(" ", ":"); // "01-03-00-..."
-                        string errorDesc = "";
-
-                        // --- NOWA LOGIKA PARSOWANIA BŁĘDÓW i SlaveID ---
-                        string[] bytes = hexData.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                        int fcIndex = -1;
-                        byte slaveId = 0;
-                        string deviceName = "Unknown"; // Domyślna nazwa
-
-                        if (bytes.Length > 7 && int.TryParse(bytes[0], System.Globalization.NumberStyles.HexNumber, null, out _))
-                        {
-                            // TCP: [MBAP: 6B] [SlaveID: 1B] [FC: 1B] [Dane/Błąd: NB]
-                            // Przykład błędu: 00 01 00 00 00 03 01 83 03
-                            fcIndex = 7;
-                            // Slave ID jest w 7. bajcie (indeks 6)
-                            if (bytes.Length > 6 && byte.TryParse(bytes[6], System.Globalization.NumberStyles.HexNumber, null, out slaveId))
-                            {
-                                deviceName = $"Slave {slaveId}";
-                            }
-                        }
-                        else if (bytes.Length > 1) // Zakładamy RTU/ASCII
-                        {
-                            // RTU: [SlaveID: 1B] [FC: 1B] [Dane/Błąd: NB] [CRC: 2B]
-                            fcIndex = 1;
-                            // Slave ID jest w 1. bajcie (indeks 0)
-                            if (byte.TryParse(bytes[0], System.Globalization.NumberStyles.HexNumber, null, out slaveId))
-                            {
-                                deviceName = $"Slave {slaveId}";
-                            }
-                        }
-
-                        if (fcIndex != -1 && bytes.Length > fcIndex)
-                        {
-                            // Sprawdź kod funkcji (FC)
-                            if (direction == "RX") // Błędy są tylko w odpowiedziach (RX)
-                            {
-                                if (int.TryParse(bytes[fcIndex], System.Globalization.NumberStyles.HexNumber, null, out int fc) && fc > 128)
-                                {
-                                    // To jest ramka błędu! (FC > 0x80)
-                                    int originalFc = fc - 128;
-                                    string exceptionCode = "??";
-                                    if (bytes.Length > fcIndex + 1)
-                                    {
-                                        exceptionCode = bytes[fcIndex + 1]; // Kod błędu (np. 03)
-                                    }
-
-                                    string errorName;
-                                    switch (exceptionCode)
-                                    {
-                                        case "01": errorName = "Illegal Function"; break;
-                                        case "02": errorName = "Illegal Data Address"; break;
-                                        case "03": errorName = "Illegal Data Value"; break; // Pana błąd
-                                        case "04": errorName = "Slave Device Failure"; break;
-                                        case "05": errorName = "Acknowledge"; break;
-                                        case "06": errorName = "Slave Device Busy"; break;
-                                        default: errorName = $"Unknown Exception"; break;
-                                    }
-                                    errorDesc = $"Modbus Error (FC: {fc}, Code: {exceptionCode}) - {errorName}";
-                                }
-                            }
-                        }
-                        // --- KONIEC NOWEJ LOGIKI ---
-
-                        var logEntry = new ModbusFrameLog
-                        {
-                            Timestamp = DateTime.Now,
-                            Direction = direction,
-                            DataFrame = hexFrame,
-                            ErrorDescription = errorDesc, // Wypełniamy kolumnę błędu
-                            DeviceName = deviceName // <-- WAŻNA ZMIANA
-                        };
-
-                        _logWindow.LogFrame(logEntry);
-                    }
-                    catch (Exception)
-                    {
-                        // Ignoruj błędy parsowania logów, aby nie zawiesić aplikacji
-                    }
-                }
-            }
-        }
-
-        #endregion
+   
     } // Ostatnia klamra zamykająca namespace
 }
