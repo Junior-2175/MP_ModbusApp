@@ -9,24 +9,28 @@ namespace MP_ModbusApp
     public partial class CommunicationLogWindow : Form
     {
         private bool _isLoggingActive = true;
+
+        /// <summary>
+        /// The master list of all log entries.
+        /// </summary>
         private readonly BindingList<ModbusFrameLog> _frameLogs = new BindingList<ModbusFrameLog>();
 
-        // --- NOWY KOD ---
+        /// <summary>
+        /// The BindingSource acts as a proxy between the DataGridView and the master list (_frameLogs).
+        /// This is crucial for allowing filtering (via the 'Filter' property) without
+        /// modifying the underlying complete list of logs.
+        /// </summary>
         private readonly BindingSource _bindingSource = new BindingSource();
-        // --- KONIEC NOWEGO KODU ---
 
         public CommunicationLogWindow()
         {
             InitializeComponent();
 
-            // --- ZMIENIONY KOD ---
-            // Użyj BindingSource jako pośrednika
+            // Set the BindingSource as the intermediary
             _bindingSource.DataSource = _frameLogs;
             dgvLog.DataSource = _bindingSource;
-            // --- KONIEC ZMIENIONEGO KODU ---
 
-
-            // Konfiguracja DataGridView
+            // DataGridView Configuration
             dgvLog.AllowUserToAddRows = false;
             dgvLog.AllowUserToResizeColumns = true;
             dgvLog.ReadOnly = true;
@@ -34,54 +38,54 @@ namespace MP_ModbusApp
             dgvLog.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
             dgvLog.RowHeadersVisible = false;
 
-            // Ustawienia poszczególnych kolumn
+            // Individual column settings
             dgvLog.Columns["Timestamp"].HeaderText = "Time";
             dgvLog.Columns["Timestamp"].DefaultCellStyle.Format = "HH:mm:ss.fff";
 
-            // --- NOWY KOD DLA KOLUMNY DEVICENAME ---
             if (dgvLog.Columns["DeviceName"] != null)
             {
                 dgvLog.Columns["DeviceName"].HeaderText = "Device";
                 dgvLog.Columns["DeviceName"].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             }
-            // --- KONIEC NOWEGO KODU ---
 
             dgvLog.Columns["Direction"].HeaderText = "Dir";
-
             dgvLog.Columns["DataFrame"].HeaderText = "Data Frame";
 
             dgvLog.Columns["ErrorDescription"].HeaderText = "Error";
             dgvLog.Columns["ErrorDescription"].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
-            // --- NOWY KOD: Podłączenie handlerów ---
+            // Attach handlers (was in designer, good to have here explicitly)
             this.cboDeviceFilter.SelectedIndexChanged += new System.EventHandler(this.cboDeviceFilter_SelectedIndexChanged);
             this.btnClearFilter.Click += new System.EventHandler(this.btnClearFilter_Click);
-            // --- KONIEC NOWEGO KODU ---
         }
 
-        // --- ZMIENIONA METODA ---
-        // Ta metoda jest teraz wywoływana bezpiecznie w wątku UI
+        /// <summary>
+        /// Adds a log entry to the list. 
+        /// This method MUST be called on the UI thread.
+        /// </summary>
         private void AddLogEntry(ModbusFrameLog logEntry)
         {
-            if (this.IsDisposed) return; // Zabezpieczenie
+            if (this.IsDisposed) return; // Safeguard
 
-            _frameLogs.Add(logEntry); // Dodaj do głównej listy
+            _frameLogs.Add(logEntry); // Add to the master list
 
-            // Dodaj urządzenie do filtra, jeśli jest nowe
+            // Add the device to the filter dropdown if it's new
             if (!string.IsNullOrEmpty(logEntry.DeviceName) && !cboDeviceFilter.Items.Contains(logEntry.DeviceName))
             {
                 cboDeviceFilter.Items.Add(logEntry.DeviceName);
             }
         }
 
-        // --- ZMIENIONA METODA ---
+        /// <summary>
+        /// Public, thread-safe method to add a log entry to the window.
+        /// </summary>
         public void LogFrame(ModbusFrameLog logEntry)
         {
             if (!_isLoggingActive) return;
 
             if (InvokeRequired)
             {
-                // Użyj Invoke, aby zachować kolejność logów i bezpiecznie zaktualizować UI
+                // Use Invoke to maintain log order and safely update the UI collection
                 Invoke(new Action(() => AddLogEntry(logEntry)));
             }
             else
@@ -90,11 +94,15 @@ namespace MP_ModbusApp
             }
         }
 
+        /// <summary>
+        /// Public, thread-safe method to notify the window of an error.
+        /// If "Stop on Error" is checked, logging will be halted.
+        /// </summary>
         public void NotifyCommunicationError()
         {
             if (chkStopOnError.Checked && _isLoggingActive)
             {
-                // Użyj Invoke, aby bezpiecznie zaktualizować UI z innego wątku
+                // Use Invoke to safely update UI from another thread
                 if (InvokeRequired)
                 {
                     Invoke(new Action(StopLoggingDueToError));
@@ -106,6 +114,9 @@ namespace MP_ModbusApp
             }
         }
 
+        /// <summary>
+        /// Stops logging and shows a notification. Must be called on the UI thread.
+        /// </summary>
         private void StopLoggingDueToError()
         {
             _isLoggingActive = false;
@@ -136,11 +147,10 @@ namespace MP_ModbusApp
             cboDeviceFilter.SelectedItem = "(Show All)";
         }
 
-        // --- ZMIENIONA METODA ---
         private void btnExportToCsv_Click(object sender, EventArgs e)
         {
-            // Zmieniono dgvLog.Rows.Count na _bindingSource.List.Count
-            if (_bindingSource.List.Count == 0)
+            // Check the underlying list, not the (potentially filtered) BindingSource
+            if (_frameLogs.Count == 0)
             {
                 MessageBox.Show("No data to export.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
@@ -155,16 +165,16 @@ namespace MP_ModbusApp
                     try
                     {
                         var sb = new StringBuilder();
-                        // --- NOWY KOD: Dodano kolumnę DeviceName ---
-                        sb.AppendLine("Timestamp,DeviceName,TransactionID,Direction,Frame,ErrorDescription");
-                        // --- KONIEC NOWEGO KODU ---
+                        // CSV Header
+                        sb.AppendLine("Timestamp,DeviceName,Direction,DataFrame,ErrorDescription");
 
-                        // Użyj _frameLogs, aby eksportować wszystko,
-                        // a nie _bindingSource.List (które zawiera tylko przefiltrowane)
+                        // Iterate over the master list (_frameLogs) to ensure all data is exported,
+                        // not just the filtered data currently in _bindingSource.List.
                         foreach (var log in _frameLogs)
                         {
                             sb.AppendLine($"{log.Timestamp:yyyy-MM-dd HH:mm:ss.fff},{log.DeviceName},{log.Direction},\"{log.DataFrame}\",\"{log.ErrorDescription}\"");
                         }
+
                         File.WriteAllText(saveFileDialog.FileName, sb.ToString());
                         MessageBox.Show("Export completed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
@@ -176,22 +186,24 @@ namespace MP_ModbusApp
             }
         }
 
-        // --- ZMIENIONA METODA ---
         private void CommunicationLogWindow_Load(object sender, EventArgs e)
         {
             btnStartLogging.Enabled = false;
             btnStopLogging.Enabled = true;
 
-            // --- NOWY KOD FILTROWANIA ---
+            // Initialize the filter ComboBox
             cboDeviceFilter.Items.Add("(Show All)");
             cboDeviceFilter.SelectedItem = "(Show All)";
-            // --- KONIEC NOWEGO KODU ---
         }
 
+        /// <summary>
+        /// Handles mouse clicks on the DataGridView, primarily for the context menu.
+        /// </summary>
         private void dgvLog_MouseDown(object sender, MouseEventArgs e)
         {
             var hitTestInfo = dgvLog.HitTest(e.X, e.Y);
 
+            // If clicking outside the cells, clear selection
             if (e.Button == MouseButtons.Left && hitTestInfo.Type == DataGridViewHitTestType.None)
             {
                 dgvLog.ClearSelection();
@@ -201,6 +213,7 @@ namespace MP_ModbusApp
             {
                 if (hitTestInfo.RowIndex >= 0 && hitTestInfo.ColumnIndex >= 0)
                 {
+                    // Select the cell that was right-clicked
                     if (!dgvLog.Rows[hitTestInfo.RowIndex].Cells[hitTestInfo.ColumnIndex].Selected)
                     {
                         dgvLog.ClearSelection();
@@ -212,6 +225,9 @@ namespace MP_ModbusApp
             }
         }
 
+        /// <summary>
+        /// Copies the selected DataGridView content to the clipboard.
+        /// </summary>
         private void copyToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (this.dgvLog.GetClipboardContent() == null)
@@ -222,7 +238,11 @@ namespace MP_ModbusApp
             Clipboard.SetDataObject(dataObj);
         }
 
-        // --- NOWE METODY HANDLERÓW FILTROWANIA ---
+        // --- Filter Handler Methods ---
+
+        /// <summary>
+        /// Applies a filter to the BindingSource when the ComboBox selection changes.
+        /// </summary>
         private void cboDeviceFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (cboDeviceFilter.SelectedItem == null) return;
@@ -232,28 +252,27 @@ namespace MP_ModbusApp
             if (selectedDevice == "(Show All)")
             {
                 _bindingSource.Filter = null;
-                dgvLog.DataSource = _bindingSource;
             }
             else
             {
-                // Budujemy filtr. Używamy string.Format, aby poprawnie obsłużyć
-                // nazwy, które mogłyby zawierać apostrof.
+                // Build the filter. Use string.Format to correctly handle
+                // names that might contain an apostrophe (e.g., "Device's Log").
                 _bindingSource.Filter = string.Format("DeviceName = '{0}'", selectedDevice.Replace("'", "''"));
             }
         }
 
+        /// <summary>
+        /// Clears the filter on the BindingSource.
+        /// </summary>
         private void btnClearFilter_Click(object sender, EventArgs e)
         {
             _bindingSource.Filter = null;
-            dgvLog.DataSource = _bindingSource;
             cboDeviceFilter.SelectedItem = "(Show All)";
-
         }
 
         private void toolStrip1_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
-
+            // This event handler is connected in the designer but is not used.
         }
-        // --- KONIEC NOWYCH METOD ---
     }
 }

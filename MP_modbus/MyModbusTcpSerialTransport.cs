@@ -9,7 +9,8 @@ using System.Threading.Tasks;
 namespace MP_ModbusApp.MP_modbus
 {
     /// <summary>
-    /// Implementacja transportu dla RTU/ASCII over TCP (bez nagłówka MBAP).
+    /// Implementation of the transport for RTU/ASCII over TCP (without MBAP header).
+    /// This transport wraps raw RTU/ASCII frames in a TCP stream.
     /// </summary>
     public sealed class MyModbusTcpSerialTransport : ModbusTransportBase
     {
@@ -22,14 +23,17 @@ namespace MP_ModbusApp.MP_modbus
             _isRtu = isRtu;
             if (!_isRtu)
             {
-                // Używamy StreamReader do łatwego odczytu linii ASCII
+                // We use a StreamReader for easy reading of ASCII lines
                 _asciiReader = new StreamReader(_stream, Encoding.ASCII);
             }
         }
 
+        /// <summary>
+        /// Sends a Modbus request over the TCP stream, handling RTU/ASCII framing.
+        /// </summary>
         public override async Task<byte[]> SendRequestAsync(byte slaveId, byte functionCode, byte[] pduData)
         {
-            // 1. Zbuduj PDU (SlaveID + FC + Data)
+            // 1. Build PDU (SlaveID + FC + Data)
             byte[] pdu = new byte[2 + pduData.Length];
             pdu[0] = slaveId;
             pdu[1] = functionCode;
@@ -40,36 +44,36 @@ namespace MP_ModbusApp.MP_modbus
 
             if (_isRtu)
             {
-                // ---- Logika RTU ----
+                // ---- RTU Logic ----
 
-                // 2a. Zbuduj ramkę RTU (PDU + CRC)
+                // 2a. Build RTU frame (PDU + CRC)
                 ushort crc = ModbusUtils.ComputeCrc(pdu);
                 adu = new byte[pdu.Length + 2];
                 Array.Copy(pdu, 0, adu, 0, pdu.Length);
-                BinaryPrimitives.WriteUInt16LittleEndian(adu.AsSpan(pdu.Length, 2), crc); // RTU CRC jest Little Endian
+                BinaryPrimitives.WriteUInt16LittleEndian(adu.AsSpan(pdu.Length, 2), crc); // RTU CRC is Little Endian
 
-                // 3a. Wyślij
+                // 3a. Send
                 LogFrame(adu, "TX", slaveId);
                 await WriteAsync(adu);
 
-                // 4a. Odbierz ramkę RTU
+                // 4a. Receive RTU frame
                 byte[] responseAdu = await ReadRtuFrameAsync();
                 LogFrame(responseAdu, "RX", slaveId);
 
-                // 5a. Waliduj CRC
-                if (responseAdu.Length < 4) throw new IOException("Ramka RTU zbyt krótka.");
+                // 5a. Validate CRC
+                if (responseAdu.Length < 4) throw new IOException("RTU frame is too short.");
                 ushort receivedCrc = BinaryPrimitives.ReadUInt16LittleEndian(responseAdu.AsSpan(responseAdu.Length - 2, 2));
                 ushort computedCrc = ModbusUtils.ComputeCrc(responseAdu.AsSpan(0, responseAdu.Length - 2).ToArray());
 
-                if (receivedCrc != computedCrc) throw new IOException("Błąd sumy kontrolnej CRC.");
+                if (receivedCrc != computedCrc) throw new IOException("CRC checksum error.");
 
                 pduResponse = responseAdu.AsSpan(0, responseAdu.Length - 2).ToArray();
             }
             else
             {
-                // ---- Logika ASCII ----
+                // ---- ASCII Logic ----
 
-                // 2b. Zbuduj ramkę ASCII (Start + PDU_ASCII + LRC_ASCII + End)
+                // 2b. Build ASCII frame (Start + PDU_ASCII + LRC_ASCII + End)
                 byte[] pduAscii = ModbusUtils.PduToAscii(pdu);
                 byte lrc = ModbusUtils.ComputeLrc(pdu);
                 byte[] lrcAscii = ModbusUtils.PduToAscii(new[] { lrc });
@@ -82,43 +86,43 @@ namespace MP_ModbusApp.MP_modbus
                 adu[adu.Length - 2] = (byte)'\r';
                 adu[adu.Length - 1] = (byte)'\n';
 
-                // 3b. Wyślij
+                // 3b. Send
                 LogFrame(adu, "TX", slaveId);
                 await WriteAsync(adu);
 
-                // 4b. Odbierz linię ASCII
+                // 4b. Receive ASCII line
                 string responseLine = await ReadAsciiLineAsync();
                 LogFrame(Encoding.ASCII.GetBytes(responseLine), "RX", slaveId);
 
-                // 5b. Waliduj ramkę ASCII
+                // 5b. Validate ASCII frame
                 if (!responseLine.StartsWith(":") || !responseLine.EndsWith("\r\n"))
                 {
-                    throw new IOException("Nieprawidłowy format ramki ASCII.");
+                    throw new IOException("Invalid ASCII frame format.");
                 }
 
-                // Usuń znaczniki : i \r\n
+                // Remove markers : and \r\n
                 string hexData = responseLine.Substring(1, responseLine.Length - 3);
 
-                // Konwertuj z hex na bajty
+                // Convert from hex string to bytes
                 byte[] responseAduRaw = ModbusUtils.AsciiToPdu(Encoding.ASCII.GetBytes(hexData));
 
-                // Podziel na PDU i LRC
+                // Split into PDU and LRC
                 byte[] pduPlusLrc = responseAduRaw;
-                if (pduPlusLrc.Length < 2) throw new IOException("Ramka ASCII zbyt krótka.");
+                if (pduPlusLrc.Length < 2) throw new IOException("ASCII frame is too short.");
 
                 pduResponse = pduPlusLrc.AsSpan(0, pduPlusLrc.Length - 1).ToArray();
                 byte receivedLrc = pduPlusLrc[pduPlusLrc.Length - 1];
                 byte computedLrc = ModbusUtils.ComputeLrc(pduResponse);
 
-                if (receivedLrc != computedLrc) throw new IOException("Błąd sumy kontrolnej LRC.");
+                if (receivedLrc != computedLrc) throw new IOException("LRC checksum error.");
             }
 
-            // 6. Wspólna walidacja PDU (z UnitID) i zwrot [FC] + [Data]
+            // 6. Common PDU validation (with UnitID) and return [FC] + [Data]
             return ValidateAndExtractPdu(pduResponse, slaveId, functionCode);
         }
 
         /// <summary>
-        /// Odczytuje ramkę RTU, wykrywając koniec za pomocą timeoutu.
+        /// Reads an RTU frame from the TCP stream, detecting the end of the frame using an inter-byte timeout.
         /// </summary>
         private async Task<byte[]> ReadRtuFrameAsync()
         {
@@ -128,26 +132,26 @@ namespace MP_ModbusApp.MP_modbus
                 {
                     try
                     {
-                        // Ustawiamy główny timeout na odczyt pierwszego bajtu
+                        // Set the main timeout for reading the first byte
                         _stream.ReadTimeout = ReadTimeout;
                         byte[] buffer = new byte[1];
                         int bytesRead = await _stream.ReadAsync(buffer, 0, 1);
 
-                        if (bytesRead == 0) break; // Koniec strumienia
+                        if (bytesRead == 0) break; // End of stream
                         ms.WriteByte(buffer[0]);
 
-                        // Po pierwszym bajcie, ustawiamy krótki timeout międzybajtowy (T3.5)
-                        // 50ms to bezpieczna, choć hojna wartość.
+                        // After the first byte, set a short inter-byte timeout (T3.5)
+                        // 50ms is a safe, though generous, value.
                         _stream.ReadTimeout = 50;
                     }
                     catch (IOException ex) when (ex.InnerException is SocketException sockEx && sockEx.SocketErrorCode == SocketError.TimedOut)
                     {
-                        // Timeout między bajtami = koniec ramki RTU
+                        // Inter-byte timeout = end of RTU frame
                         break;
                     }
                     catch (Exception)
                     {
-                        throw; // Inny błąd
+                        throw; // Other error
                     }
                 }
                 return ms.ToArray();
@@ -155,7 +159,7 @@ namespace MP_ModbusApp.MP_modbus
         }
 
         /// <summary>
-        /// Odczytuje linię ASCII (kończącą się na \n).
+        /// Reads an ASCII line (terminating with \n) from the TCP stream.
         /// </summary>
         private async Task<string> ReadAsciiLineAsync()
         {
@@ -163,11 +167,15 @@ namespace MP_ModbusApp.MP_modbus
             string line = await _asciiReader.ReadLineAsync();
             if (line == null)
             {
-                throw new IOException("Połączenie zostało zamknięte podczas odczytu ramki ASCII.");
+                throw new IOException("The connection was closed while reading the ASCII frame.");
             }
-            return line + "\n"; // ReadLineAsync() usuwa \n, my go dodajemy dla spójności
+            // ReadLineAsync() removes \n, we add it back for consistency
+            return line + "\n";
         }
 
+        /// <summary>
+        /// Disposes of the StreamReader and calls the base Dispose.
+        /// </summary>
         public override void Dispose()
         {
             _asciiReader?.Dispose();

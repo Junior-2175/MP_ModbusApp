@@ -15,7 +15,6 @@ namespace MP_ModbusApp
     {
 
         private MainWindow _mainWindow;
-        //private IModbusMaster _modbusMaster;
         private MP_modbus.IMyModbusMaster _modbusMaster;
         private bool _isPolling = false;
 
@@ -45,10 +44,13 @@ namespace MP_ModbusApp
             removeToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+ - ";
             newReadingsToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+ + ";
 
-            // Podłączenie przycisku "Pause"
+            // Connect the "Pause" button event
             this.stopToolStripMenuItem.Click += new System.EventHandler(this.stopToolStripMenuItem_Click);
         }
 
+        /// <summary>
+        /// Handles the form load event. Initializes tabs and starts polling.
+        /// </summary>
         private async void ModbusGroup_Load(object sender, EventArgs e)
         {
             if (this.MdiParent is MainWindow mw)
@@ -69,11 +71,14 @@ namespace MP_ModbusApp
             }
             txtRenameTab.Visible = false;
 
-            // Automatyczne uruchomienie pollingu
+            // Automatically start polling after a short delay
             await Task.Delay(100);
             startToolStripMenuItem_Click(sender, e);
         }
 
+        /// <summary>
+        /// Adds a new readings tab.
+        /// </summary>
         private void addToolStripMenuItem_Click(object sender, EventArgs e)
         {
             TabPage newTab = new TabPage();
@@ -84,6 +89,9 @@ namespace MP_ModbusApp
             tabPanel1.TabPages.Add(newTab);
         }
 
+        /// <summary>
+        /// Removes the currently selected tab.
+        /// </summary>
         private void removeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (tabPanel1.SelectedTab != null)
@@ -92,6 +100,9 @@ namespace MP_ModbusApp
             }
         }
 
+        /// <summary>
+        /// Initiates the tab rename process by showing a TextBox over the tab.
+        /// </summary>
         private void renameToolStripMenuItem_Click(object sender, EventArgs e)
         {
             tabToRename = tabPanel1.SelectedTab;
@@ -111,6 +122,9 @@ namespace MP_ModbusApp
             txtRenameTab.SelectAll();
         }
 
+        /// <summary>
+        /// Handles right-clicking on the tab control to show the context menu.
+        /// </summary>
         private void tabPanel1_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
@@ -128,6 +142,9 @@ namespace MP_ModbusApp
             }
         }
 
+        /// <summary>
+        /// Handles key presses in the rename TextBox (Enter to confirm, Escape to cancel).
+        /// </summary>
         private void txtRenameTab_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
@@ -141,6 +158,9 @@ namespace MP_ModbusApp
             }
         }
 
+        /// <summary>
+        /// Applies the new name to the tab and hides the rename TextBox.
+        /// </summary>
         private void AllowRename()
         {
             if (tabToRename == null) return;
@@ -154,6 +174,9 @@ namespace MP_ModbusApp
             txtRenameTab.Parent = this;
         }
 
+        /// <summary>
+        /// Cancels the tab rename process.
+        /// </summary>
         private void CancelRename()
         {
             txtRenameTab.Visible = false;
@@ -166,6 +189,9 @@ namespace MP_ModbusApp
             CancelRename();
         }
 
+        /// <summary>
+        /// Handles the "New readings" menu item click (same as addToolStripMenuItem_Click).
+        /// </summary>
         private void newReadingsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             TabPage newTab = new TabPage();
@@ -176,6 +202,9 @@ namespace MP_ModbusApp
             tabPanel1.TabPages.Add(newTab);
         }
 
+        /// <summary>
+        /// Handles double-clicking on a tab to initiate rename.
+        /// </summary>
         private void tabPanel1_DoubleClick(object sender, EventArgs e)
         {
             tabToRename = tabPanel1.SelectedTab;
@@ -196,6 +225,9 @@ namespace MP_ModbusApp
 
         }
 
+        /// <summary>
+        /// Handles the "Save" menu item click, prompting for a device name.
+        /// </summary>
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
 
@@ -211,7 +243,7 @@ namespace MP_ModbusApp
                 }
                 else
                 {
-                    return;
+                    return; // User cancelled
                 }
             }
 
@@ -239,6 +271,10 @@ namespace MP_ModbusApp
         }
 
 
+        /// <summary>
+        /// Saves the entire device configuration (device, groups, registers) to the database.
+        /// This performs an "upsert" logic: updates if the name exists, inserts if it's new.
+        /// </summary>
         private void SaveDeviceConfiguration()
         {
             using (var connection = new SqliteConnection($"Data Source={DatabaseHelper.GetDbPath()}"))
@@ -248,6 +284,7 @@ namespace MP_ModbusApp
                 {
                     long deviceId;
 
+                    // Check if a device with this name already exists
                     var checkCmd = connection.CreateCommand();
                     checkCmd.Transaction = transaction;
                     checkCmd.CommandText = "SELECT DeviceId FROM Devices WHERE DeviceName = $name;";
@@ -257,14 +294,17 @@ namespace MP_ModbusApp
 
                     if (existingIdResult != null)
                     {
+                        // --- UPDATE path ---
                         deviceId = (long)existingIdResult;
 
+                        // Delete old groups and registers (they will be re-added)
                         var deleteGroupsCmd = connection.CreateCommand();
                         deleteGroupsCmd.Transaction = transaction;
                         deleteGroupsCmd.CommandText = "DELETE FROM ReadingGroups WHERE DeviceId = $deviceId;";
                         deleteGroupsCmd.Parameters.AddWithValue("$deviceId", deviceId);
                         deleteGroupsCmd.ExecuteNonQuery();
 
+                        // Update the device's SlaveId
                         var updateDeviceCmd = connection.CreateCommand();
                         updateDeviceCmd.Transaction = transaction;
                         updateDeviceCmd.CommandText = "UPDATE Devices SET SlaveId = $slaveId WHERE DeviceId = $deviceId;";
@@ -274,6 +314,7 @@ namespace MP_ModbusApp
                     }
                     else
                     {
+                        // --- INSERT path ---
                         var insertDeviceCmd = connection.CreateCommand();
                         insertDeviceCmd.Transaction = transaction;
                         insertDeviceCmd.CommandText = "INSERT INTO Devices (DeviceName, SlaveId) VALUES ($name, $slaveId) RETURNING DeviceId;";
@@ -283,10 +324,12 @@ namespace MP_ModbusApp
                         deviceId = (long)insertDeviceCmd.ExecuteScalar();
                     }
 
+                    // --- Save all tabs (ReadingGroups) and their registers ---
                     foreach (TabPage tabPage in tabPanel1.TabPages)
                     {
                         if (tabPage.Controls[0] is ReadingsTab readingsTab)
                         {
+                            // Insert the ReadingGroup
                             var groupCmd = connection.CreateCommand();
                             groupCmd.Transaction = transaction;
                             groupCmd.CommandText = @"
@@ -304,6 +347,7 @@ namespace MP_ModbusApp
 
                             int startAddrForThisTab = readingsTab.GetStartAddress();
 
+                            // Insert all RegisterDefinitions for this group
                             foreach (DataGridViewRow row in readingsTab.GetDataGridViewRows())
                             {
                                 if (row.IsNewRow) continue;
@@ -330,6 +374,10 @@ namespace MP_ModbusApp
                 }
             }
         }
+
+        /// <summary>
+        /// Handles the "Start" polling menu item click.
+        /// </summary>
         private async void startToolStripMenuItem_Click(object sender, EventArgs e)
         {
             _modbusMaster = _mainWindow?.ModbusMaster;
@@ -347,6 +395,10 @@ namespace MP_ModbusApp
 
             await PollDeviceLoop();
         }
+
+        /// <summary>
+        /// The main polling loop. Continues as long as _isPolling is true.
+        /// </summary>
         private async Task PollDeviceLoop()
         {
             while (_isPolling)
@@ -362,15 +414,15 @@ namespace MP_ModbusApp
         }
 
         /// <summary>
-        /// Publiczna metoda do zatrzymywania pollingu, wywoływana z zewnątrz (np. przez MainWindow).
-        /// Jest bezpieczna wątkowo.
+        /// Public, thread-safe method to stop polling.
+        /// Can be called from other threads (e.g., MainWindow).
         /// </summary>
         public void StopPolling()
         {
-            // Ustaw flagę zatrzymania
+            // Set the flag to stop the loop
             _isPolling = false;
 
-            // Aktualizacja UI musi być w wątku UI
+            // Update UI controls, ensuring it's on the UI thread
             if (this.InvokeRequired)
             {
                 this.Invoke(new Action(() =>
@@ -386,13 +438,18 @@ namespace MP_ModbusApp
             }
         }
 
-        // Ta funkcja jest podłączona do przycisku "Pause"
+        /// <summary>
+        /// Handles the "Pause" button click.
+        /// </summary>
         private void stopToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // Po prostu wywołuje nową, publiczną, bezpieczną wątkowo metodę
+            // It just calls the new, public, thread-safe method
             this.StopPolling();
         }
 
+        /// <summary>
+        /// Displays a device-level error message. Thread-safe.
+        /// </summary>
         private void ShowDeviceError(string message)
         {
             if (InvokeRequired)
@@ -405,6 +462,9 @@ namespace MP_ModbusApp
             lblDeviceStatus.ForeColor = Color.Red;
         }
 
+        /// <summary>
+        /// Clears the device-level error message. Thread-safe.
+        /// </summary>
         private void ClearDeviceError()
         {
             if (InvokeRequired)
@@ -412,18 +472,14 @@ namespace MP_ModbusApp
                 Invoke(new Action(ClearDeviceError));
                 return;
             }
-            lblDeviceStatus.Visible = false;
-            // --- ZAKTUALIZOWANY KOD: Lepszy komunikat o stanie ---
-            lblDeviceStatus.Text = _isPolling ? "Polling OK" : "Polling Paused"; // Pokaż "Paused" zamiast pustego
-            // --- KONIEC ZAKTUALIZOWANEGO KODU ---
-            lblDeviceStatus.ForeColor = Color.Black; // Użyj czarnego dla "Paused"
+            lblDeviceStatus.Visible = true;
+            lblDeviceStatus.Text = _isPolling ? " " : "Polling Paused"; // Show "Paused" instead of empty
+            lblDeviceStatus.ForeColor = _isPolling ? Color.Green : Color.Black; // Green for OK, Black for Paused
         }
 
-
-        // --- USUNIĘTA PRYWATNA METODA GetModbusErrorMessage ---
-        // (Metody z ModbusUtils.cs teraz ją zastępują)
-
-
+        /// <summary>
+        /// Performs a single polling cycle, iterating through all tabs.
+        /// </summary>
         private async Task PollDeviceOnce()
         {
             if (!_isPolling || _modbusMaster == null) return;
@@ -432,11 +488,9 @@ namespace MP_ModbusApp
 
             foreach (TabPage tabPage in tabPanel1.TabPages)
             {
-                // --- NOWY KOD: Sprawdzenie _isPolling przed przetworzeniem zakładki ---
-                // Jeśli użytkownik kliknął "Pause" podczas przetwarzania poprzedniej zakładki,
-                // nie chcemy kontynuować z kolejnymi.
+                // If the user clicked "Pause" while processing the previous tab,
+                // we don't want to continue with the next ones.
                 if (!_isPolling) break;
-                // --- KONIEC NOWEGO KODU ---
 
                 if (tabPage.Controls[0] is not ReadingsTab readingsTab) continue;
 
@@ -460,80 +514,74 @@ namespace MP_ModbusApp
                             bool[] inputs = await _modbusMaster.ReadInputsAsync(slaveId, startAddr, quantity);
                             data = inputs.Select(i => i ? (ushort)1 : (ushort)0).ToArray();
                             break;
-                        // --- ZAKTUALIZOWANY KOD: Poprawione mapowanie ComboBox na Function Code ---
-                        // 03 Holding Registers (4x) to indeks 2 w ComboBox
-                        // 04 Input Registers (3x) to indeks 3 w ComboBox
-                        case 2: // 03 Holding Registers (Indeks ComboBox = 2)
+                        // 03 Holding Registers (4x) is ComboBox index 2
+                        case 2: // 03 Holding Registers
                             data = await _modbusMaster.ReadHoldingRegistersAsync(slaveId, startAddr, quantity);
                             break;
-                        case 3: // 04 Input Registers (Indeks ComboBox = 3)
+                        // 04 Input Registers (3x) is ComboBox index 3
+                        case 3: // 04 Input Registers
                             data = await _modbusMaster.ReadInputRegistersAsync(slaveId, startAddr, quantity);
                             break;
-                        // --- KONIEC ZAKTUALIZOWANEGO KODU ---
                         default:
-                            // To nie powinno się zdarzyć z ComboBox, ale na wszelki wypadek
+                            // This shouldn't happen with a ComboBox, but just in case
                             readingsTab.ShowTabError($"Unsupported Function Code Index: {funcCode}");
-                            continue; // Przejdź do następnej zakładki
+                            continue; // Continue to the next tab
                     }
 
                     readingsTab.UpdateValues(data);
-
-                    readingsTab.ClearTabError(); // Wyczyść błąd, jeśli odczyt się udał
-                    ClearDeviceError(); // Wyczyść błąd na poziomie urządzenia
+                    readingsTab.ClearTabError(); // Clear the error if the read was successful
                 }
-                // --- POCZĄTEK ZMIAN ---
-                catch (MP_modbus.MyModbusSlaveException modbusEx) // Błąd Modbus (np. zły adres)
+                catch (MP_modbus.MyModbusSlaveException modbusEx) // Modbus Error (e.g., bad address)
                 {
-                    // Użyj ModbusUtils do pobrania wymaganego formatu błędu
+                    // Use ModbusUtils to get the required error format
                     string fullError = MP_modbus.ModbusUtils.GetFullExceptionMessage(modbusEx.FunctionCode, modbusEx.SlaveExceptionCode);
                     string simpleError = MP_modbus.ModbusUtils.GetExceptionName(modbusEx.SlaveExceptionCode);
 
-                    // Wyświetl prosty błąd w zakładce urządzenia (zgodnie z prośbą)
+                    // Display the simple error in the device tab
                     readingsTab.ShowTabError(simpleError);
 
-                    // Zaloguj pełny błąd w oknie komunikacji (zgodnie z prośbą)
+                    // Log the full error in the communication window
                     LogFrame("Error", "", fullError);
 
-                    // Nie pokazujemy tego błędu na poziomie całego urządzenia (ShowDeviceError)
-                    // ani nie zatrzymujemy pollingu, bo może dotyczyć tylko jednej zakładki.
+                    // We don't show this error at the device level (ShowDeviceError)
+                    // nor do we stop polling, as it might only affect one tab.
                 }
-                catch (Exception ex) // Błąd Komunikacji (np. Timeout, rozłączenie)
+                catch (Exception ex) // Communication Error (e.g., Timeout, disconnection)
                 {
                     string commsError = $"Comms Error: {ex.Message}";
 
-                    // Loguj błąd komunikacji
-                    LogFrame("Error", "", commsError); // Czysty błąd w kolumnie ErrorDescription
+                    // Log the communication error
+                    LogFrame("Error", "", commsError); // Clean error in the ErrorDescription column
 
-                    // Pokaż błąd w zakładce i na poziomie urządzenia
+                    // Show the error in the tab and at the device level
                     readingsTab.ShowTabError(commsError);
-                    ShowDeviceError(commsError); // Pokaż błąd na poziomie urządzenia
+                    ShowDeviceError(commsError); // Show device-level error
 
-                    // Bezpiecznie zatrzymuje pętlę i aktualizuje UI
+                    // Safely stops the loop and updates the UI
                     this.StopPolling();
 
-                    break; // Przerwij pętlę po zakładkach, bo błąd dotyczy całego połączenia
+                    break; // Break the tab loop because the error affects the entire connection
                 }
-                // --- KONIEC ZMIAN ---
-            } // Koniec pętli foreach po zakładkach
+            } // End of foreach loop for tabs
 
-            // --- NOWY KOD: Jeśli pętla się zakończyła, a polling jest wciąż aktywny, wyczyść błąd urządzenia ---
-            // To obsłuży przypadek, gdy ostatnia zakładka miała błąd SlaveException,
-            // ale poprzednie odczyty były OK - nie chcemy wtedy widzieć błędu na poziomie urządzenia.
+            // If the loop finished and polling is still active, clear the device error.
+            // This handles the case where the last tab had a SlaveException,
+            // but previous reads were OK - we don't want to see a device-level error then.
             if (_isPolling)
             {
                 ClearDeviceError();
             }
-            // --- KONIEC NOWEGO KODU ---
         }
 
+        /// <summary>
+        /// Logs a frame to the main communication window.
+        /// </summary>
         private void LogFrame(string direction, string dataFrame, string error = "")
         {
             var logEntry = new ModbusFrameLog
             {
                 Timestamp = DateTime.Now,
-                // --- NOWY KOD: Dodaj nazwę urządzenia do logu ---
-                DeviceName = this.DeviceName,
-                // --- KONIEC NOWEGO KODU ---
+                DeviceName = this.DeviceName, // Add device name to the log
                 Direction = direction,
                 DataFrame = dataFrame,
                 ErrorDescription = error
@@ -541,6 +589,9 @@ namespace MP_ModbusApp
             _mainWindow?.LogCommunicationEvent(logEntry);
         }
 
+        /// <summary>
+        /// Ensures polling is stopped when the form is closed.
+        /// </summary>
         private void ModbusDevice_FormClosed(object sender, FormClosedEventArgs e)
         {
             this.StopPolling();

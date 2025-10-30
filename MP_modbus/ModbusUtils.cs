@@ -2,10 +2,13 @@
 
 namespace MP_ModbusApp.MP_modbus
 {
+    /// <summary>
+    /// Provides static utility methods for Modbus RTU (CRC) and ASCII (LRC, conversions) protocols.
+    /// </summary>
     public static class ModbusUtils
     {
         /// <summary>
-        /// Oblicza sumę kontrolną CRC-16 dla Modbus RTU.
+        /// Computes the CRC-16 checksum for Modbus RTU.
         /// </summary>
         public static ushort ComputeCrc(byte[] data)
         {
@@ -29,7 +32,7 @@ namespace MP_ModbusApp.MP_modbus
         }
 
         /// <summary>
-        /// Oblicza sumę kontrolną LRC dla Modbus ASCII.
+        /// Computes the LRC checksum for Modbus ASCII.
         /// </summary>
         public static byte ComputeLrc(byte[] data)
         {
@@ -38,12 +41,12 @@ namespace MP_ModbusApp.MP_modbus
             {
                 lrc += b;
             }
-            // Zwraca 2's complement
+            // Returns the 2's complement
             return (byte)((-lrc) & 0xFF);
         }
 
         /// <summary>
-        /// Konwertuje ramkę PDU na reprezentację ASCII (bez sumy LRC i znaczników).
+        /// Converts a PDU frame to its ASCII (hex) representation (without LRC and markers).
         /// </summary>
         public static byte[] PduToAscii(byte[] pdu)
         {
@@ -53,7 +56,7 @@ namespace MP_ModbusApp.MP_modbus
         }
 
         /// <summary>
-        /// Konwertuje ramkę ASCII na PDU (bez sumy LRC i znaczników).
+        /// Converts an ASCII (hex) frame back to a PDU (without LRC and markers).
         /// </summary>
         public static byte[] AsciiToPdu(byte[] asciiFrame)
         {
@@ -67,14 +70,14 @@ namespace MP_ModbusApp.MP_modbus
         }
 
         /// <summary>
-        /// Tłumaczy kod błędu Modbus na samą nazwę (dla UI).
+        /// Translates a Modbus exception code into its name (for UI display).
         /// </summary>
         public static string GetExceptionName(byte exceptionCode)
         {
             switch (exceptionCode)
             {
                 case 1: return "Illegal Function";
-                case 2: return "Illegal Data Address"; // Błąd z Twojego zrzutu ekranu
+                case 2: return "Illegal Data Address";
                 case 3: return "Illegal Data Value";
                 case 4: return "Slave Device Failure";
                 case 5: return "Acknowledge";
@@ -88,12 +91,12 @@ namespace MP_ModbusApp.MP_modbus
         }
 
         /// <summary>
-        /// Tłumaczy kod błędu Modbus na pełny string (dla logów).
+        /// Translates a Modbus exception code into a full string (for logging).
         /// </summary>
         public static string GetFullExceptionMessage(byte functionCode, byte exceptionCode)
         {
             string errorName = GetExceptionName(exceptionCode);
-            // Kod funkcji w ramce błędu to już 0x80 + FC
+            // The function code in an error frame is already 0x80 + FC
             byte originalFunctionCode = (byte)(functionCode - 128);
             return $"Modbus Error (FC:{originalFunctionCode}, Code:{exceptionCode}) - {errorName}";
         }

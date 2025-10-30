@@ -4,16 +4,22 @@ using System.Windows.Forms;
 using System.Xml.Linq;
 using static System.ComponentModel.Design.ObjectSelectorEditor;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using System.Text; // Dodane dla obsługi ASCII
-using System.Collections.Generic; // Dodane dla Dictionary
+using System.Text; // Added for ASCII handling
+using System.Collections.Generic; // Added for Dictionary
 
 namespace MP_ModbusApp
 {
     public partial class ReadingsTab : UserControl
     {
+        // Flag to prevent recursive event loops when updating numeric up/down controls
         private bool _isUpdatingValues = false;
+
+        // Local cache of the most recent raw data from the poller
         private ushort[] _rawData = null;
 
+        /// <summary>
+        /// Defines all possible display formats for register values.
+        /// </summary>
         public enum DisplayFormat
         {
             // 16-bit
@@ -23,7 +29,7 @@ namespace MP_ModbusApp
             Binary16,
             ASCII,
 
-            // 32-bit (BE = Big-Endian, LE = Little-Endian)
+            // 32-bit (BE = Big-Endian, LE = Little-Endian, BS = Byte-Swapped)
             Unsigned32_BE,
             Signed32_BE,
             Float32_BE, // Real
@@ -40,14 +46,14 @@ namespace MP_ModbusApp
             ASCII32_LE,
             ASCII32_BE_BS,
             ASCII32_LE_BS,
-            // NOWE FORMATY HEX 32
+            // New 32-bit Hex formats
             Hex32_BE,
             Hex32_LE,
             Hex32_BE_BS,
             Hex32_LE_BS,
 
 
-            // 64-bit (analogicznie)
+            // 64-bit (analogous)
             Unsigned64_BE,
             Signed64_BE,
             Double64_BE, // Real (64-bit)
@@ -56,27 +62,27 @@ namespace MP_ModbusApp
             Double64_LE,
             Unsigned64_BE_BS,
             Signed64_BE_BS,
-            Float64_BE_BS, // Real (alias dla Double)
+            Float64_BE_BS, // Real (alias for Double)
             Unsigned64_LE_BS,
             Signed64_LE_BS,
-            Float64_LE_BS, // alias dla Double
+            Float64_LE_BS, // alias for Double
             ASCII64_BE,
             ASCII64_LE,
             ASCII64_BE_BS,
             ASCII64_LE_BS,
-            // NOWE FORMATY HEX 64
+            // New 64-bit Hex formats
             Hex64_BE,
             Hex64_LE,
             Hex64_BE_BS,
             Hex64_LE_BS
         }
+
         public ReadingsTab()
         {
-
             InitializeComponent();
 
-            // --- TAGOWANIE ELEMENTÓW MENU DLA CHECKBOXÓW ---
-            // (Ten kod jest taki sam jak w poprzedniej odpowiedzi)
+            // --- Link context menu items to DisplayFormat enums using the Tag property ---
+            // This allows a generic click handler to know which format to apply.
 
             // 16-bit
             this.unsignedToolStripMenuItem.Tag = DisplayFormat.Unsigned16;
@@ -117,8 +123,8 @@ namespace MP_ModbusApp
             this.littleendianByteSwapToolStripMenuItem8.Tag = DisplayFormat.ASCII64_LE_BS;
 
 
-            // --- PODŁĄCZENIE WSZYSTKICH HANDLERÓW Z DESIGNERA ---
-            // (Ten kod jest taki sam jak w poprzedniej odpowiedzi)
+            // --- Connect all event handlers from the designer ---
+            // (These are auto-generated but linked here for clarity)
 
             // 32-bit Unsigned BS
             this.bigendianToolStripMenuItem1.Click += new System.EventHandler(this.unsigned32BEBSToolStripMenuItem_Click);
@@ -171,7 +177,7 @@ namespace MP_ModbusApp
 
         private void ReadingsTab_Load(object sender, EventArgs e)
         {
-            comboBox1.SelectedIndex = 2;
+            comboBox1.SelectedIndex = 2; // Default to "03 Holding Registers (4x)"
             dataGridView1.RowCount = (int)numOfRegisters.Value;
             lblTabError.Visible = false;
         }
@@ -181,6 +187,9 @@ namespace MP_ModbusApp
             datagridUpdate();
         }
 
+        /// <summary>
+        /// Handles changes to the decimal start register, updating the Hex and 40001-style boxes.
+        /// </summary>
         private void startRegister_ValueChanged(object sender, EventArgs e)
         {
             if (_isUpdatingValues) return;
@@ -189,7 +198,7 @@ namespace MP_ModbusApp
             try
             {
                 startRegisterHex.Value = startRegister.Value;
-                updateStertRegister();
+                updateStartAddressDisplay();
                 datagridUpdate();
             }
             finally
@@ -197,6 +206,10 @@ namespace MP_ModbusApp
                 _isUpdatingValues = false;
             }
         }
+
+        /// <summary>
+        /// Handles changes to the hex start register, updating the Decimal and 40001-style boxes.
+        /// </summary>
         private void startRegisterHex_ValueChanged(object sender, EventArgs e)
         {
             if (_isUpdatingValues) return;
@@ -205,7 +218,7 @@ namespace MP_ModbusApp
             try
             {
                 startRegister.Value = startRegisterHex.Value;
-                updateStertRegister();
+                updateStartAddressDisplay();
                 datagridUpdate();
             }
             finally
@@ -213,27 +226,32 @@ namespace MP_ModbusApp
                 _isUpdatingValues = false;
             }
         }
-        private void updateStertRegister()
+
+        /// <summary>
+        /// Updates the 40001-style register display based on the function code and start address.
+        /// </summary>
+        private void updateStartAddressDisplay()
         {
             decimal requestedFuncionNo = 0;
             switch (comboBox1.SelectedIndex)
             {
-                case 0:
+                case 0: // 01 Coils (0x)
                     requestedFuncionNo = 0;
                     break;
-                case 1:
+                case 1: // 02 Discrete Inputs (1x)
                     requestedFuncionNo = 1;
                     break;
-                case 2:
+                case 2: // 03 Holding Registers (4x)
                     requestedFuncionNo = 4;
                     break;
-                case 3:
+                case 3: // 04 Input Registers (3x)
                     requestedFuncionNo = 3;
                     break;
                 default:
                     break;
             }
 
+            // Use 5 or 6 digits based on register number
             if (startRegister.Value > 0 && startRegister.Value < 10000)
             {
                 startRegister_1.Value = requestedFuncionNo * 10000 + startRegister.Value + 1;
@@ -249,13 +267,17 @@ namespace MP_ModbusApp
             datagridUpdate();
         }
 
+        /// <summary>
+        /// Re-initializes the DataGridView when settings (like quantity or start address) change.
+        /// It preserves existing register names and display formats.
+        /// </summary>
         private void datagridUpdate()
         {
             dataGridView1.SuspendLayout();
 
             int newRowCount = (int)numOfRegisters.Value;
 
-            // Zapisz formaty przed zmianą rozmiaru (opcjonalne, ale dobre)
+            // Store existing formats by register number before resizing
             var formats = new Dictionary<int, DisplayFormat>();
             for (int i = 0; i < dataGridView1.Rows.Count; i++)
             {
@@ -263,7 +285,7 @@ namespace MP_ModbusApp
                 {
                     int regNum = 0;
                     string regVal = dataGridView1.Rows[i].Cells["RegisterNumber"].Value.ToString();
-                    // Pobierz pierwszy numer z "100" lub "100 - 103"
+                    // Get the first number from "100" or "100 - 103"
                     int.TryParse(regVal.Split(' ')[0], out regNum);
 
                     if (regNum != 0 && dataGridView1.Rows[i].Cells["DisplayFormatColumn"].Value != null)
@@ -273,9 +295,9 @@ namespace MP_ModbusApp
                 }
             }
 
-            dataGridView1.RowCount = newRowCount; // Zastosuj nową liczbę wierszy
+            dataGridView1.RowCount = newRowCount; // Apply the new row count
 
-            // Zainicjuj wszystkie wiersze (nowe i stare)
+            // Initialize all rows (new and old)
             for (int i = 0; i < dataGridView1.Rows.Count; i++)
             {
                 if (dataGridView1.Rows[i].IsNewRow) continue;
@@ -283,9 +305,9 @@ namespace MP_ModbusApp
                 int currentRegNum = i + (int)startRegister.Value;
                 dataGridView1.Rows[i].Cells["RegisterNumber"].Value = currentRegNum;
                 dataGridView1.Rows[i].Cells["Name"].Value = "Register_" + currentRegNum;
-                dataGridView1.Rows[i].Visible = true; // Zawsze resetuj widoczność
+                dataGridView1.Rows[i].Visible = true; // Always reset visibility
 
-                // Przywróć stary format, jeśli istnieje, lub ustaw domyślny
+                // Restore the old format if it existed, otherwise set default
                 if (formats.ContainsKey(currentRegNum))
                 {
                     dataGridView1.Rows[i].Cells["DisplayFormatColumn"].Value = formats[currentRegNum];
@@ -298,42 +320,42 @@ namespace MP_ModbusApp
 
             dataGridView1.ResumeLayout();
 
-            // Na koniec, zastosuj całą logikę formatowania i ukrywania
+            // Finally, apply all formatting logic (hiding rows, etc.)
             RefreshDisplayValues();
         }
 
         /// <summary>
-        /// Funkcja pomocnicza do stosowania formatu na wszystkich zaznaczonych komórkach.
+        /// Applies the selected DisplayFormat to all selected "Value" cells.
         /// </summary>
         private void ApplyFormatToSelected(DisplayFormat format)
         {
             if (dataGridView1.SelectedCells.Count == 0) return;
 
-            // Sprawdź, czy można zastosować format (Feature 3)
+            // Check if the format can be applied to all selected cells without going out of bounds
             int regsNeeded = GetRegistersForFormat(format);
             foreach (DataGridViewCell cell in dataGridView1.SelectedCells)
             {
-                // Stosuj tylko do komórek w kolumnie "Value"
+                // Only apply to cells in the "Value" column
                 if (cell.ColumnIndex == Value.Index)
                 {
-                    // Sprawdź, czy format nie wyjdzie poza siatkę
+                    // Check if the format would read past the end of the grid
                     if (cell.RowIndex + regsNeeded > dataGridView1.Rows.Count)
                     {
-                        MessageBox.Show($"Nie można zastosować formatu wymagającego {regsNeeded} rejestrów w wierszu {cell.RowIndex}. Niewystarczająca liczba kolejnych rejestrów.", "Błąd formatowania", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return; // Przerwij operację
+                        MessageBox.Show($"Cannot apply format requiring {regsNeeded} registers at row {cell.RowIndex}. Not enough subsequent registers.", "Formatting Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return; // Abort operation
                     }
                 }
             }
 
-            // Zastosuj format
+            // Apply the format
             foreach (DataGridViewCell cell in dataGridView1.SelectedCells)
             {
                 if (cell.ColumnIndex == Value.Index)
                 {
-                    // Ustaw format dla *pierwszego* wiersza
+                    // Set the format for the *first* row
                     dataGridView1.Rows[cell.RowIndex].Cells["DisplayFormatColumn"].Value = format;
 
-                    // Zresetuj formaty dla "ukrytych" wierszy, które teraz będą częścią tego
+                    // Reset the formats for any "hidden" rows that will now be part of this one
                     for (int i = 1; i < regsNeeded; i++)
                     {
                         if (cell.RowIndex + i < dataGridView1.Rows.Count)
@@ -344,16 +366,15 @@ namespace MP_ModbusApp
                 }
             }
 
-            // Odśwież całą siatkę, aby pokazać zmiany (ukryć wiersze itp.)
+            // Refresh the entire grid to show changes (hide rows, update values)
             RefreshDisplayValues();
         }
 
-        // --- ZAKTUALIZOWANY KOD ---
         /// <summary>
-        /// Rekursywnie przeszukuje elementy menu i ustawia 'Checked' na tym,
-        /// który pasuje do bieżącego formatu komórki, ORAZ na jego rodzicach.
+        /// Recursively searches menu items to set the 'Checked' state on the
+        /// currently active format and any of its parent menus.
         /// </summary>
-        /// <returns>Zwraca 'true', jeśli ten element lub jego potomek jest zaznaczony.</returns>
+        /// <returns>Returns 'true' if this item or any of its children are checked.</returns>
         private bool UpdateMenuChecks(ToolStripItemCollection items, DisplayFormat currentFormat)
         {
             bool anyChildInThisListIsChecked = false;
@@ -365,54 +386,54 @@ namespace MP_ModbusApp
                     bool isThisItemTheOne = false;
                     bool isDescendantChecked = false;
 
-                    // 1. Sprawdź, czy ten element jest finalnym wyborem (ma Tag)
+                    // 1. Check if this item is the final selection (has a Tag)
                     if (menuItem.Tag is DisplayFormat itemFormat)
                     {
                         if (itemFormat == currentFormat)
                         {
                             isThisItemTheOne = true;
-                            anyChildInThisListIsChecked = true; // Sygnał dla rodzica
+                            anyChildInThisListIsChecked = true; // Signal to parent
                         }
                     }
 
-                    // 2. Rekurencja, jeśli element ma pod-menu
+                    // 2. Recurse if the item has a sub-menu
                     if (menuItem.HasDropDownItems)
                     {
-                        // Jeśli potomek jest zaznaczony, ten rodzic też musi być
+                        // If a descendant is checked, this parent must also be
                         isDescendantChecked = UpdateMenuChecks(menuItem.DropDownItems, currentFormat);
                         if (isDescendantChecked)
                         {
-                            anyChildInThisListIsChecked = true; // Sygnał dla rodzica
+                            anyChildInThisListIsChecked = true; // Signal to parent
                         }
                     }
 
-                    // 3. Ustaw stan zaznaczenia
-                    // Element jest zaznaczony, jeśli:
-                    // A) Jest to dokładnie ten element, który wybrał użytkownik (isThisItemTheOne)
-                    // LUB
-                    // B) Jest rodzicem dla elementu, który wybrał użytkownik (isDescendantChecked)
+                    // 3. Set the check state
+                    // The item is checked if:
+                    // A) It is the exact item the user selected (isThisItemTheOne)
+                    // OR
+                    // B) It is a parent of the item the user selected (isDescendantChecked)
                     menuItem.Checked = (isThisItemTheOne || isDescendantChecked);
                 }
             }
 
-            // Zwróć status do wywołania nadrzędnego
+            // Return status to the parent call
             return anyChildInThisListIsChecked;
         }
-        // --- KONIEC ZAKTUALIZOWANEGO KODU ---
 
 
         /// <summary>
-        /// Obsługa zdarzenia 'Opening' menu kontekstowego (Feature 3)
+        /// Handles the opening of the context menu.
+        /// Sets the checked state and enables/disables items based on selection.
         /// </summary>
         private void contextMenuStrip1_Opening(object sender, System.ComponentModel.CancelEventArgs e)
         {
             if (dataGridView1.SelectedCells.Count == 0)
             {
-                e.Cancel = true; // Nie pokazuj menu, jeśli nic nie zaznaczono
+                e.Cancel = true; // Don't show the menu if no cells are selected
                 return;
             }
 
-            // --- Logika zaznaczania (taka sama jak w poprzedniej odpowiedzi) ---
+            // --- Set Check Marks ---
             DataGridViewCell firstSelectedCell = null;
             foreach (DataGridViewCell cell in dataGridView1.SelectedCells)
             {
@@ -423,7 +444,7 @@ namespace MP_ModbusApp
                 }
             }
 
-            DisplayFormat currentFormat = DisplayFormat.Unsigned16; // Domyślnie
+            DisplayFormat currentFormat = DisplayFormat.Unsigned16; // Default
 
             if (firstSelectedCell != null &&
                 dataGridView1.Rows[firstSelectedCell.RowIndex].Cells["DisplayFormatColumn"].Value != null)
@@ -431,11 +452,10 @@ namespace MP_ModbusApp
                 currentFormat = (DisplayFormat)dataGridView1.Rows[firstSelectedCell.RowIndex].Cells["DisplayFormatColumn"].Value;
             }
 
-            // Zaktualizuj "check" status dla wszystkich itemów w menu
-            // Wywołanie jest takie samo, ale teraz funkcja robi więcej
+            // Update the check status for all items in the menu
             UpdateMenuChecks(contextMenuStrip1.Items, currentFormat);
 
-            // --- Logika włączania/wyłączania (taka sama jak w poprzedniej odpowiedzi) ---
+            // --- Enable/Disable Items ---
             int maxRowIndex = -1;
             foreach (DataGridViewCell cell in dataGridView1.SelectedCells)
             {
@@ -447,12 +467,14 @@ namespace MP_ModbusApp
 
             if (maxRowIndex == -1)
             {
+                // No "Value" cell is selected, disable all
                 toolStripMenuItem2.Enabled = false; // 16-bit
                 toolStripMenuItem3.Enabled = false; // 32-bit
                 toolStripMenuItem4.Enabled = false; // 64-bit
                 return;
             }
 
+            // Enable/disable based on the number of rows available *after* the last selected cell
             int rowsAvailable = dataGridView1.Rows.Count - maxRowIndex;
 
             toolStripMenuItem2.Enabled = (rowsAvailable >= 1); // 16-bit
@@ -461,7 +483,7 @@ namespace MP_ModbusApp
         }
 
 
-        // ZASTĄP puste metody Click dla menu 16-bit
+        // --- 16-bit Format Click Handlers ---
         private void unsignedToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ApplyFormatToSelected(DisplayFormat.Unsigned16);
@@ -488,7 +510,7 @@ namespace MP_ModbusApp
         }
 
 
-        // Metody Click dla menu 32-bit.
+        // --- 32-bit Format Click Handlers ---
         private void unsigned32BEToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ApplyFormatToSelected(DisplayFormat.Unsigned32_BE);
@@ -571,8 +593,6 @@ namespace MP_ModbusApp
             ApplyFormatToSelected(DisplayFormat.ASCII32_LE_BS);
         }
 
-
-
         // 32-bit Hex
         private void hex32BEToolStripMenuItem_Click(object sender, EventArgs e)
         {
@@ -595,8 +615,9 @@ namespace MP_ModbusApp
         }
 
 
-        // ... i analogicznie dla 64-bit ...
-
+        /// <summary>
+        /// Handles changes to the 40001-style register box, updating the decimal/hex boxes.
+        /// </summary>
         private void startRegister_1_ValueChanged(object sender, EventArgs e)
         {
             if (_isUpdatingValues) return;
@@ -605,43 +626,55 @@ namespace MP_ModbusApp
             try
             {
                 string originalString = (startRegister_1.Value - 1).ToString();
+                if (originalString.Length == 0)
+                {
+                    _isUpdatingValues = false;
+                    return;
+                }
+
                 string functionString = originalString.Substring(0, 1);
                 string registerString = originalString.Substring(1);
-                decimal registerStringDouble = Convert.ToDecimal(registerString);
-                string requestedFuncionNo = "";
+                decimal registerStringDecimal = Convert.ToDecimal(registerString);
+                string requestedFunctionPrefix = "";
+
                 switch (comboBox1.SelectedIndex)
                 {
-                    case 0:
+                    case 0: // 01 Coils (0x)
                         if (startRegister_1.Value > 65536 || startRegister_1.Value < 1)
                         {
                             MessageBox.Show("Invalid Register Number. Register Number must be 1-65536");
+                            _isUpdatingValues = false;
                             return;
                         }
                         else
                         {
-                            registerStringDouble = startRegister_1.Value - 1;
+                            // For coils, the address is just the value
+                            registerStringDecimal = startRegister_1.Value - 1;
                         }
                         break;
 
-                    case 1:
-                        requestedFuncionNo = "1";
+                    case 1: // 02 Discrete Inputs (1x)
+                        requestedFunctionPrefix = "1";
                         break;
-                    case 2:
-                        requestedFuncionNo = "4";
+                    case 2: // 03 Holding Registers (4x)
+                        requestedFunctionPrefix = "4";
                         break;
-                    case 3:
-                        requestedFuncionNo = "3";
+                    case 3: // 04 Input Registers (3x)
+                        requestedFunctionPrefix = "3";
                         break;
                     default:
                         break;
                 }
-                if (functionString != requestedFuncionNo && comboBox1.SelectedIndex != 0 || (registerStringDouble < 0 && registerStringDouble > 65535))
+
+                // Validate the prefix for non-coil types
+                if (functionString != requestedFunctionPrefix && comboBox1.SelectedIndex != 0 || (registerStringDecimal < 0 || registerStringDecimal > 65535))
                 {
                     MessageBox.Show("Invalid Register Number for the selected Function Code. Adjusting to match Function Code.");
-                    return;
+                    // Don't return, just let it correct the value
                 }
-                startRegister.Value = registerStringDouble;
-                startRegisterHex.Value = registerStringDouble;
+
+                startRegister.Value = registerStringDecimal;
+                startRegisterHex.Value = registerStringDecimal;
                 datagridUpdate();
             }
             finally
@@ -650,6 +683,7 @@ namespace MP_ModbusApp
             }
         }
 
+        #region Public Interface (for ModbusDevice form)
 
         public int GetFunctionCode()
         {
@@ -671,6 +705,9 @@ namespace MP_ModbusApp
             return dataGridView1.Rows;
         }
 
+        /// <summary>
+        /// Sets the tab's configuration when loading a device from the database.
+        /// </summary>
         public void SetConfiguration(int funcCode, int startAddr, int quantity)
         {
             _isUpdatingValues = true;
@@ -679,7 +716,7 @@ namespace MP_ModbusApp
                 comboBox1.SelectedIndex = funcCode;
                 startRegister.Value = startAddr;
                 numOfRegisters.Value = quantity;
-                datagridUpdate();
+                datagridUpdate(); // This will also update the hex/40001 boxes
             }
             finally
             {
@@ -687,6 +724,9 @@ namespace MP_ModbusApp
             }
         }
 
+        /// <summary>
+        /// Populates the register names and display formats from the database.
+        /// </summary>
         public void SetRegisterDefinitions(List<Tuple<int, string, string>> registers)
         {
             foreach (var regDef in registers) // (int RegNum, string RegName, string RegFormat)
@@ -695,37 +735,36 @@ namespace MP_ModbusApp
                 {
                     if (row.IsNewRow || row.Cells["RegisterNumber"].Value == null) continue;
 
-                    // Komórka "RegisterNumber" jest typu 'int' zaraz po 'datagridUpdate()'
+                    // The "RegisterNumber" cell value might be an int (e.g., 100) or a string (e.g., "100 - 103")
                     if (row.Cells["RegisterNumber"].Value is int regNumInCell)
                     {
                         if (regNumInCell == regDef.Item1) // Item1 = RegisterNumber
                         {
                             row.Cells["Name"].Value = regDef.Item2; // Item2 = RegisterName
 
-                            // NOWY KOD: Ustaw DisplayFormat
-                            // Próbujemy sparsować string z bazy (np. "Float32_BE") z powrotem na enum
+                            // Set the display format
                             if (Enum.TryParse<DisplayFormat>(regDef.Item3, out var displayFormat)) // Item3 = DisplayFormat (string)
                             {
                                 row.Cells["DisplayFormatColumn"].Value = displayFormat;
                             }
                             else
                             {
-                                // Wartość domyślna, jeśli format z bazy jest nieprawidłowy
-                                row.Cells["DisplayFormatColumn"].Value = DisplayFormat.Unsigned16;
+                                row.Cells["DisplayFormatColumn"].Value = DisplayFormat.Unsigned16; // Default
                             }
-                            break; // Znaleziono pasujący wiersz, przejdź do następnego rejestru
+                            break; // Found matching row, move to next register
                         }
                     }
                 }
             }
 
-            // Po ustawieniu WSZYSTKICH formatów, wywołujemy RefreshDisplayValues() JEDEN RAZ.
-            // To skonsoliduje wiersze (np. 32-bitowe) i ukryje te, które trzeba.
+            // After setting ALL formats, call RefreshDisplayValues() ONCE
+            // to consolidate multi-row formats and hide rows correctly.
             RefreshDisplayValues();
         }
 
-
-
+        /// <summary>
+        /// Displays an error message on this specific tab. Thread-safe.
+        /// </summary>
         public void ShowTabError(string message)
         {
             if (InvokeRequired)
@@ -737,6 +776,9 @@ namespace MP_ModbusApp
             lblTabError.Visible = true;
         }
 
+        /// <summary>
+        /// Clears the error message on this tab. Thread-safe.
+        /// </summary>
         public void ClearTabError()
         {
             if (InvokeRequired)
@@ -747,7 +789,9 @@ namespace MP_ModbusApp
             lblTabError.Visible = false;
         }
 
-        // Dodaj tę metodę w pliku ReadingsTab.cs
+        /// <summary>
+        /// Main entry point for new data from the polling loop. Thread-safe.
+        /// </summary>
         public void UpdateValues(ushort[] data)
         {
             if (InvokeRequired)
@@ -758,65 +802,69 @@ namespace MP_ModbusApp
 
             if (data == null) return;
 
-            _rawData = data; // Przechowaj surowe dane
+            _rawData = data; // Store the raw data
 
-            // Odśwież wyświetlanie w siatce
+            // Refresh the grid display using the new data
             RefreshDisplayValues();
         }
 
+        #endregion
+
+        #region Formatting Logic
+
         /// <summary>
-        /// Zwraca liczbę 16-bitowych rejestrów wymaganą przez dany format.
-        /// (ZAKTUALIZOWANA WERSJA)
+        /// Returns the number of 16-bit registers required for a given format.
         /// </summary>
         private int GetRegistersForFormat(DisplayFormat format)
         {
             string fmtStr = format.ToString();
 
-            // Format 64-bitowy (Double, Long, ASCII64, Hex64) wymaga 4 rejestrów
+            // 64-bit formats (Double, Long, ASCII64, Hex64) require 4 registers
             if (fmtStr.Contains("64"))
                 return 4;
 
-            // Format 32-bitowy (Float, Int, UInt, ASCII32, Hex32) wymaga 2 rejestrów
+            // 32-bit formats (Float, Int, UInt, ASCII32, Hex32) require 2 registers
             if (fmtStr.Contains("32"))
                 return 2;
 
-            // Domyślnie format 16-bitowy (lub ASCII 16-bit) wymaga 1 rejestru
+            // 16-bit formats (or 16-bit ASCII) require 1 register
             return 1;
         }
 
         /// <summary>
-        /// Buduje tablicę bajtów z surowych rejestrów Modbus (ushort)
-        /// uwzględniając kolejność (LE/BE) i zamianę bajtów (BS).
-        /// (NOWA METODA POMOCNICZA)
+        /// Builds a byte array from raw Modbus registers (ushort)
+        /// respecting Big/Little-Endian and Byte-Swap settings.
         /// </summary>
-        /// <param name="rowIndex">Indeks startowy w _rawData</param>
-        /// <param name="numRegisters">Liczba rejestrów (2 dla 32-bit, 4 dla 64-bit)</param>
-        /// <param name="isLE_Format">Czy format jest Little-Endian (zamieniona kolejność rejestrów)</param>
-        /// <param name="isBS_Format">Czy format wymaga zamiany bajtów wewnątrz każdego rejestru</param>
-        /// <returns>Tablica bajtów gotowa do konwersji (w kolejności Big-Endian)</returns>
+        /// <param name="rowIndex">The starting index in the _rawData array</param>
+        /// <param name="numRegisters">Number of registers to read (e.g., 2 for 32-bit, 4 for 64-bit)</param>
+        /// <param name="isLE_Format">True if the format is Little-Endian (register order is swapped)</param>
+        /// <param name="isBS_Format">True if the format requires byte-swapping within each register</param>
+        /// <returns>A byte array in Big-Endian order (MSB first)</returns>
         private byte[] BuildByteArray(int rowIndex, int numRegisters, bool isLE_Format, bool isBS_Format)
         {
             byte[] bytes = new byte[numRegisters * 2];
 
-            // 1. Pobierz rejestry i zastosuj zamianę bajtów (BS) jeśli trzeba
+            // 1. Get registers and apply byte-swapping (BS) if needed
             ushort[] regs = new ushort[numRegisters];
             for (int i = 0; i < numRegisters; i++)
             {
                 ushort raw = _rawData[rowIndex + i];
+                // (Hi, Lo) -> (Lo, Hi) or vice-versa
                 regs[i] = isBS_Format ? (ushort)((raw << 8) | (raw >> 8)) : raw;
             }
 
-            // 2. Ułóż rejestry w odpowiedniej kolejności (BE lub LE)
+            // 2. Arrange registers in the correct order (BE or LE)
             for (int i = 0; i < numRegisters; i++)
             {
-                // Dla BE: 0, 1, 2, 3
-                // Dla LE: 3, 2, 1, 0 (odwrócona kolejność SŁÓW/REJESTRÓW)
+                // For BE (e.g., 64-bit): 0, 1, 2, 3
+                // For LE (e.g., 64-bit): 3, 2, 1, 0 (reversed WORD/REGISTER order)
                 int regIndex = isLE_Format ? (numRegisters - 1 - i) : i;
 
-                // 3. Rozbij każdy rejestr na bajty (Hi, Lo)
-                byte[] regBytes = BitConverter.GetBytes(regs[regIndex]); // Na PC (LE) da to [Lo, Hi]
+                // 3. Split each register into bytes (Hi, Lo)
+                // BitConverter.GetBytes on a PC (Little Endian) will return [Lo, Hi]
+                byte[] regBytes = BitConverter.GetBytes(regs[regIndex]);
 
-                // Składamy bajty w kolejności Big-Endian (zawsze Hi, Lo)
+                // We assemble the final array in Big-Endian (MSB first) order
                 bytes[i * 2] = regBytes[1]; // Hi Byte
                 bytes[i * 2 + 1] = regBytes[0]; // Lo Byte
             }
@@ -826,8 +874,7 @@ namespace MP_ModbusApp
 
 
         /// <summary>
-        /// Formatuje wartość dla danego wiersza na podstawie surowych danych i formatu wiersza.
-        /// (KOMPLETNA POPRAWIONA WERSJA)
+        /// Formats the final display string for a given row based on its DisplayFormat.
         /// </summary>
         private string FormatValue(int rowIndex)
         {
@@ -838,13 +885,13 @@ namespace MP_ModbusApp
             int regsNeeded = GetRegistersForFormat(format);
             string fmtStr = format.ToString();
 
-            // Zabezpieczenie (Feature 3)
+            // Check if we have enough data to format
             if (rowIndex + regsNeeded > _rawData.Length)
-                return "BŁĄD: ZBYT MAŁO DANYCH";
+                return "ERROR: NOT ENOUGH DATA";
 
             try
             {
-                // --- Logika 16-bit ---
+                // --- 16-bit Logic ---
                 if (regsNeeded == 1)
                 {
                     ushort val = _rawData[rowIndex];
@@ -855,7 +902,7 @@ namespace MP_ModbusApp
                         case DisplayFormat.Binary16: return Convert.ToString(val, 2).PadLeft(16, '0');
                         case DisplayFormat.ASCII:
                             byte[] asciiBytes = BitConverter.GetBytes(val);
-                            // Zamień bajty, jeśli trzeba (Hi, Lo) -> (Lo, Hi) dla czytelnego ASCII
+                            // Swap bytes for readable ASCII (Hi, Lo) -> (Lo, Hi)
                             if (BitConverter.IsLittleEndian)
                                 return $"{(char)asciiBytes[0]}{(char)asciiBytes[1]}";
                             else
@@ -871,16 +918,15 @@ namespace MP_ModbusApp
                 bool isAscii = fmtStr.Contains("ASCII");
                 bool isHex = fmtStr.Contains("Hex");
 
-                // --- Logika 32-bit ---
+                // --- 32-bit Logic ---
                 if (regsNeeded == 2)
                 {
                     byte[] bytes = BuildByteArray(rowIndex, 2, isLE_Format, isBS_Format);
 
-                    // *** KLUCZOWA POPRAWKA LOGIKI ***
-                    // BuildByteArray zawsze zwraca tablicę w kolejności Big Endian (MSB...LSB).
-                    // BitConverter na PC (Little Endian) oczekuje tablicy w kolejności Little Endian (LSB...MSB).
-                    // Dlatego *musimy* odwrócić tablicę, jeśli działamy na maszynie Little Endian.
-                    // (Ignorujemy to dla ASCII i Hex, które chcemy wyświetlać w kolejności Big Endian).
+                    // BuildByteArray always returns in Big-Endian (MSB...LSB).
+                    // BitConverter on a PC (Little Endian) expects LSB...MSB.
+                    // Therefore, we MUST reverse the byte array for BitConverter to work correctly.
+                    // We skip this for ASCII and Hex, which we want to display as-is (MSB first).
                     if (!isAscii && !isHex)
                     {
                         if (BitConverter.IsLittleEndian)
@@ -889,7 +935,7 @@ namespace MP_ModbusApp
 
                     switch (format)
                     {
-                        // 32-bit Numeryczne
+                        // 32-bit Numeric
                         case DisplayFormat.Unsigned32_BE:
                         case DisplayFormat.Unsigned32_LE:
                         case DisplayFormat.Unsigned32_BE_BS:
@@ -906,16 +952,16 @@ namespace MP_ModbusApp
                         case DisplayFormat.Float32_LE:
                         case DisplayFormat.Float32_BE_BS:
                         case DisplayFormat.Float32_LE_BS:
-                            return BitConverter.ToSingle(bytes, 0).ToString("F3"); // "F3" = 3 miejsca po przecinku
+                            return BitConverter.ToSingle(bytes, 0).ToString("F3"); // 3 decimal places
 
-                        // 32-bit ASCII (dostarczone jako [Hi, Lo, Hi, Lo])
+                        // 32-bit ASCII (bytes are already MSB...LSB)
                         case DisplayFormat.ASCII32_BE:
                         case DisplayFormat.ASCII32_LE:
                         case DisplayFormat.ASCII32_BE_BS:
                         case DisplayFormat.ASCII32_LE_BS:
-                            return Encoding.ASCII.GetString(bytes).Replace("\0", " "); // Czyścimy znaki null
+                            return Encoding.ASCII.GetString(bytes).Replace("\0", " "); // Clean null chars
 
-                        // 32-bit Hex (dostarczone jako [Hi, Lo, Hi, Lo])
+                        // 32-bit Hex (bytes are already MSB...LSB)
                         case DisplayFormat.Hex32_BE:
                         case DisplayFormat.Hex32_LE:
                         case DisplayFormat.Hex32_BE_BS:
@@ -924,13 +970,12 @@ namespace MP_ModbusApp
                     }
                 }
 
-                // --- Logika 64-bit ---
+                // --- 64-bit Logic ---
                 if (regsNeeded == 4)
                 {
                     byte[] bytes = BuildByteArray(rowIndex, 4, isLE_Format, isBS_Format);
 
-                    // *** KLUCZOWA POPRAWKA LOGIKI ***
-                    // Ta sama logika co dla 32-bit.
+                    // Same logic as 32-bit: Reverse for BitConverter if on a Little-Endian machine.
                     if (!isAscii && !isHex)
                     {
                         if (BitConverter.IsLittleEndian)
@@ -939,33 +984,33 @@ namespace MP_ModbusApp
 
                     switch (format)
                     {
-                        // 64-bit Numeryczne (Unsigned)
+                        // 64-bit Numeric (Unsigned)
                         case DisplayFormat.Unsigned64_BE:
                         case DisplayFormat.Unsigned64_LE:
                         case DisplayFormat.Unsigned64_BE_BS:
                         case DisplayFormat.Unsigned64_LE_BS:
                             return BitConverter.ToUInt64(bytes, 0).ToString();
 
-                        // 64-bit Numeryczne (Signed)
+                        // 64-bit Numeric (Signed)
                         case DisplayFormat.Signed64_BE:
                         case DisplayFormat.Signed64_LE:
                         case DisplayFormat.Signed64_BE_BS:
                         case DisplayFormat.Signed64_LE_BS:
                             return BitConverter.ToInt64(bytes, 0).ToString();
 
-                        // 64-bit Numeryczne (Float/Double)
+                        // 64-bit Numeric (Float/Double)
                         case DisplayFormat.Double64_BE:
                         case DisplayFormat.Double64_LE:
-                        case DisplayFormat.Float64_BE_BS:
-                        case DisplayFormat.Float64_LE_BS:
-                            return BitConverter.ToDouble(bytes, 0).ToString("F5"); // "F5" = 5 miejsc po przecinku
+                        case DisplayFormat.Float64_BE_BS: // Alias for Double
+                        case DisplayFormat.Float64_LE_BS: // Alias for Double
+                            return BitConverter.ToDouble(bytes, 0).ToString("F5"); // 5 decimal places
 
-                        // 64-bit ASCII (nie wymaga odwracania)
+                        // 64-bit ASCII (bytes are already MSB...LSB)
                         case DisplayFormat.ASCII64_BE:
                         case DisplayFormat.ASCII64_LE:
                         case DisplayFormat.ASCII64_BE_BS:
                         case DisplayFormat.ASCII64_LE_BS:
-                            return Encoding.ASCII.GetString(bytes).Replace("\0", " "); // Czyścimy znaki null
+                            return Encoding.ASCII.GetString(bytes).Replace("\0", " "); // Clean null chars
 
                         // 64-bit Hex
                         case DisplayFormat.Hex64_BE:
@@ -978,15 +1023,16 @@ namespace MP_ModbusApp
             }
             catch (Exception ex)
             {
-                return $"BŁĄD: {ex.Message}";
+                return $"ERROR: {ex.Message}";
             }
 
-            return "---";
+            return "---"; // Fallback
         }
 
 
         /// <summary>
-        /// Główna funkcja odświeżająca. Stosuje formaty i ukrywa wiersze. (Feature 1)
+        /// Refreshes the entire grid display. This function applies formatting,
+        /// hides rows for multi-register formats, and updates register number ranges.
         /// </summary>
         public void RefreshDisplayValues()
         {
@@ -997,16 +1043,16 @@ namespace MP_ModbusApp
                 return;
             }
 
-            dataGridView1.SuspendLayout(); // Poprawa wydajności
+            dataGridView1.SuspendLayout(); // Suspend layout for performance
 
             for (int i = 0; i < dataGridView1.Rows.Count; i++)
             {
                 if (dataGridView1.Rows[i].IsNewRow) continue;
 
-                // Krok 1: Upewnij się, że wiersz jest widoczny (na wypadek zmiany formatu)
+                // Step 1: Ensure row is visible (in case format changed)
                 dataGridView1.Rows[i].Visible = true;
 
-                // Krok 2: Pobierz format i liczbę potrzebnych rejestrów
+                // Step 2: Get the format and number of registers needed
                 if (dataGridView1.Rows[i].Cells["DisplayFormatColumn"].Value == null)
                 {
                     dataGridView1.Rows[i].Cells["DisplayFormatColumn"].Value = DisplayFormat.Unsigned16;
@@ -1014,7 +1060,7 @@ namespace MP_ModbusApp
                 DisplayFormat format = (DisplayFormat)dataGridView1.Rows[i].Cells["DisplayFormatColumn"].Value;
                 int regsNeeded = GetRegistersForFormat(format);
 
-                // Krok 3: Sformatuj komórkę "RegisterNumber" (Feature 1)
+                // Step 3: Format the "RegisterNumber" cell (e.g., "100" or "100 - 103")
                 int baseRegNum = i + (int)startRegister.Value;
                 if (regsNeeded == 1)
                 {
@@ -1026,10 +1072,10 @@ namespace MP_ModbusApp
                     dataGridView1.Rows[i].Cells["RegisterNumber"].Value = $"{baseRegNum} - {endRegNum}";
                 }
 
-                // Krok 4: Sformatuj komórkę "Value"
+                // Step 4: Format the "Value" cell
                 dataGridView1.Rows[i].Cells["Value"].Value = FormatValue(i);
 
-                // Krok 5: Ukryj kolejne wiersze (Feature 1)
+                // Step 5: Hide subsequent rows that are part of this multi-register value
                 if (regsNeeded > 1)
                 {
                     for (int j = 1; j < regsNeeded; j++)
@@ -1039,13 +1085,15 @@ namespace MP_ModbusApp
                             dataGridView1.Rows[i + j].Visible = false;
                         }
                     }
-                    i += (regsNeeded - 1); // Pomiń wiersze, które właśnie ukryliśmy
+                    i += (regsNeeded - 1); // Skip the rows we just hid
                 }
             }
             dataGridView1.ResumeLayout();
         }
 
-        // --- WYPEŁNIONE HANDLERY DLA 64-BIT (I INNYCH BRAKUJĄCYCH) ---
+        #endregion
+
+        // --- 64-bit Format Click Handlers ---
 
         // 64-bit Unsigned
         private void bigendianToolStripMenuItem6_Click(object sender, EventArgs e)
@@ -1153,7 +1201,7 @@ namespace MP_ModbusApp
             ApplyFormatToSelected(DisplayFormat.Hex64_LE_BS);
         }
 
-        // Puste handlery z designera (teraz podłączone do Hex64)
+        // --- Empty designer-generated handlers (now connected to Hex64) ---
         private void bigendianToolStripMenuItem9_Click(object sender, EventArgs e)
         {
             ApplyFormatToSelected(DisplayFormat.Hex64_BE);
