@@ -91,10 +91,11 @@
             // 
             contextMenuStrip1.Items.AddRange(new ToolStripItem[] { addToolStripMenuItem, removeToolStripMenuItem, toolStripSeparator2, renameToolStripMenuItem, toolStripSeparator1, chartToolStripMenuItem });
             contextMenuStrip1.Name = "contextMenuStrip1";
-            contextMenuStrip1.Size = new Size(211, 104);
+            contextMenuStrip1.Size = new Size(211, 126);
             // 
             // addToolStripMenuItem
             // 
+            addToolStripMenuItem.Image = Properties.Resources.icons8_plus_50;
             addToolStripMenuItem.Name = "addToolStripMenuItem";
             addToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.Oemplus;
             addToolStripMenuItem.Size = new Size(210, 22);
@@ -103,6 +104,7 @@
             // 
             // removeToolStripMenuItem
             // 
+            removeToolStripMenuItem.Image = Properties.Resources.icons8_minus_48;
             removeToolStripMenuItem.Name = "removeToolStripMenuItem";
             removeToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.OemMinus;
             removeToolStripMenuItem.Size = new Size(210, 22);
@@ -116,6 +118,7 @@
             // 
             // renameToolStripMenuItem
             // 
+            renameToolStripMenuItem.Image = Properties.Resources.icons8_rename_48;
             renameToolStripMenuItem.Name = "renameToolStripMenuItem";
             renameToolStripMenuItem.ShortcutKeys = Keys.F2;
             renameToolStripMenuItem.Size = new Size(210, 22);
@@ -129,6 +132,7 @@
             // 
             // chartToolStripMenuItem
             // 
+            chartToolStripMenuItem.Image = Properties.Resources.icons8_graph_50;
             chartToolStripMenuItem.Name = "chartToolStripMenuItem";
             chartToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.X;
             chartToolStripMenuItem.Size = new Size(210, 22);
@@ -175,6 +179,7 @@
             // 
             // saveToolStripMenuItem
             // 
+            saveToolStripMenuItem.Image = Properties.Resources.icons8_save_as_48;
             saveToolStripMenuItem.Name = "saveToolStripMenuItem";
             saveToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.S;
             saveToolStripMenuItem.Size = new Size(228, 22);
@@ -183,6 +188,7 @@
             // 
             // newReadingsToolStripMenuItem
             // 
+            newReadingsToolStripMenuItem.Image = Properties.Resources.icons8_plus_50;
             newReadingsToolStripMenuItem.Name = "newReadingsToolStripMenuItem";
             newReadingsToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.Oemplus;
             newReadingsToolStripMenuItem.Size = new Size(228, 22);
@@ -198,17 +204,19 @@
             // 
             // startToolStripMenuItem
             // 
+            startToolStripMenuItem.Image = Properties.Resources.icons8_play_48;
             startToolStripMenuItem.Name = "startToolStripMenuItem";
             startToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.S;
-            startToolStripMenuItem.Size = new Size(142, 22);
+            startToolStripMenuItem.Size = new Size(180, 22);
             startToolStripMenuItem.Text = "Start";
             startToolStripMenuItem.Click += startToolStripMenuItem_Click;
             // 
             // stopToolStripMenuItem
             // 
+            stopToolStripMenuItem.Image = Properties.Resources.icons8_pause_50;
             stopToolStripMenuItem.Name = "stopToolStripMenuItem";
             stopToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.P;
-            stopToolStripMenuItem.Size = new Size(142, 22);
+            stopToolStripMenuItem.Size = new Size(180, 22);
             stopToolStripMenuItem.Text = "Pause";
             stopToolStripMenuItem.Click += stopToolStripMenuItem_Click;
             // 

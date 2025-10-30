@@ -43,9 +43,6 @@ namespace MP_ModbusApp
             toolStripSeparator1 = new ToolStripSeparator();
             deleteDeviceContextMenuItem = new ToolStripMenuItem();
             imageList1 = new ImageList(components);
-            treeButton = new Panel();
-            label4 = new Label();
-            openTree = new Button();
             setupPanel = new Panel();
             btnConnect = new Button();
             gBoxGlobalSettings = new GroupBox();
@@ -80,6 +77,9 @@ namespace MP_ModbusApp
             btnDisconnect = new Button();
             gboxConnection = new GroupBox();
             cboxConnection = new ComboBox();
+            treeButton = new Panel();
+            label4 = new Label();
+            openTree = new Button();
             setupButton = new Panel();
             label3 = new Label();
             openMenu = new Button();
@@ -93,7 +93,6 @@ namespace MP_ModbusApp
             communicationToolStripMenuItem = new ToolStripMenuItem();
             sidePanel.SuspendLayout();
             treeViewContextMenu.SuspendLayout();
-            treeButton.SuspendLayout();
             setupPanel.SuspendLayout();
             gBoxGlobalSettings.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)numPollDelay).BeginInit();
@@ -104,6 +103,7 @@ namespace MP_ModbusApp
             ((System.ComponentModel.ISupportInitialize)numIPPort).BeginInit();
             gboxSerialSettings.SuspendLayout();
             gboxConnection.SuspendLayout();
+            treeButton.SuspendLayout();
             setupButton.SuspendLayout();
             statusStrip1.SuspendLayout();
             menuStrip1.SuspendLayout();
@@ -113,8 +113,8 @@ namespace MP_ModbusApp
             // 
             sidePanel.BackColor = SystemColors.ButtonFace;
             sidePanel.Controls.Add(treeView);
-            sidePanel.Controls.Add(treeButton);
             sidePanel.Controls.Add(setupPanel);
+            sidePanel.Controls.Add(treeButton);
             sidePanel.Controls.Add(setupButton);
             sidePanel.Dock = DockStyle.Left;
             sidePanel.Location = new Point(0, 0);
@@ -125,6 +125,7 @@ namespace MP_ModbusApp
             // treeView
             // 
             treeView.BackColor = SystemColors.ButtonFace;
+            treeView.BorderStyle = BorderStyle.None;
             treeView.ContextMenuStrip = treeViewContextMenu;
             treeView.Dock = DockStyle.Fill;
             treeView.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
@@ -200,37 +201,8 @@ namespace MP_ModbusApp
             imageList1.Images.SetKeyName(0, "icons8-database-50.png");
             imageList1.Images.SetKeyName(1, "icons8-voltmeter-50.png");
             imageList1.Images.SetKeyName(2, "icons8-circle-30.png");
-            // 
-            // treeButton
-            // 
-            treeButton.Controls.Add(label4);
-            treeButton.Controls.Add(openTree);
-            treeButton.Dock = DockStyle.Top;
-            treeButton.Location = new Point(0, 466);
-            treeButton.Name = "treeButton";
-            treeButton.Size = new Size(350, 50);
-            treeButton.TabIndex = 2;
-            // 
-            // label4
-            // 
-            label4.AutoSize = true;
-            label4.Font = new Font("Segoe UI Semibold", 14.25F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point, 0);
-            label4.Location = new Point(223, 13);
-            label4.Name = "label4";
-            label4.Size = new Size(78, 25);
-            label4.TabIndex = 1;
-            label4.Text = "Devices";
-            // 
-            // openTree
-            // 
-            openTree.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            openTree.Location = new Point(305, 5);
-            openTree.Name = "openTree";
-            openTree.Size = new Size(40, 40);
-            openTree.TabIndex = 0;
-            openTree.Text = "⫷";
-            openTree.UseVisualStyleBackColor = true;
-            openTree.Click += openTree_Click;
+            imageList1.Images.SetKeyName(3, "icons8-connected-50.png");
+            imageList1.Images.SetKeyName(4, "icons8-disconnected-50.png");
             // 
             // setupPanel
             // 
@@ -241,7 +213,7 @@ namespace MP_ModbusApp
             setupPanel.Controls.Add(btnDisconnect);
             setupPanel.Controls.Add(gboxConnection);
             setupPanel.Dock = DockStyle.Top;
-            setupPanel.Location = new Point(0, 50);
+            setupPanel.Location = new Point(0, 100);
             setupPanel.Name = "setupPanel";
             setupPanel.Size = new Size(350, 416);
             setupPanel.TabIndex = 1;
@@ -249,11 +221,15 @@ namespace MP_ModbusApp
             // btnConnect
             // 
             btnConnect.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            btnConnect.ImageAlign = ContentAlignment.MiddleLeft;
+            btnConnect.ImageKey = "icons8-connected-50.png";
+            btnConnect.ImageList = imageList1;
             btnConnect.Location = new Point(204, 363);
             btnConnect.Name = "btnConnect";
             btnConnect.Size = new Size(116, 32);
             btnConnect.TabIndex = 6;
-            btnConnect.Text = "Connect";
+            btnConnect.Text = "Connect   ";
+            btnConnect.TextAlign = ContentAlignment.MiddleRight;
             btnConnect.UseVisualStyleBackColor = true;
             btnConnect.Click += btnConnect_Click;
             // 
@@ -594,11 +570,16 @@ namespace MP_ModbusApp
             // btnDisconnect
             // 
             btnDisconnect.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            btnDisconnect.ImageAlign = ContentAlignment.MiddleLeft;
+            btnDisconnect.ImageKey = "icons8-disconnected-50.png";
+            btnDisconnect.ImageList = imageList1;
             btnDisconnect.Location = new Point(31, 363);
             btnDisconnect.Name = "btnDisconnect";
+            btnDisconnect.RightToLeft = RightToLeft.No;
             btnDisconnect.Size = new Size(116, 32);
             btnDisconnect.TabIndex = 5;
             btnDisconnect.Text = "Disconnect";
+            btnDisconnect.TextAlign = ContentAlignment.MiddleRight;
             btnDisconnect.UseVisualStyleBackColor = true;
             btnDisconnect.Click += btnDisconnect_Click;
             // 
@@ -624,6 +605,37 @@ namespace MP_ModbusApp
             cboxConnection.Size = new Size(325, 23);
             cboxConnection.TabIndex = 0;
             cboxConnection.SelectedIndexChanged += cboxConnection_SelectedIndexChanged;
+            // 
+            // treeButton
+            // 
+            treeButton.Controls.Add(label4);
+            treeButton.Controls.Add(openTree);
+            treeButton.Dock = DockStyle.Top;
+            treeButton.Location = new Point(0, 50);
+            treeButton.Name = "treeButton";
+            treeButton.Size = new Size(350, 50);
+            treeButton.TabIndex = 2;
+            // 
+            // label4
+            // 
+            label4.AutoSize = true;
+            label4.Font = new Font("Segoe UI Semibold", 14.25F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point, 0);
+            label4.Location = new Point(223, 13);
+            label4.Name = "label4";
+            label4.Size = new Size(78, 25);
+            label4.TabIndex = 1;
+            label4.Text = "Devices";
+            // 
+            // openTree
+            // 
+            openTree.Font = new Font("Segoe UI", 14.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            openTree.Location = new Point(305, 5);
+            openTree.Name = "openTree";
+            openTree.Size = new Size(40, 40);
+            openTree.TabIndex = 0;
+            openTree.Text = "⫷";
+            openTree.UseVisualStyleBackColor = true;
+            openTree.Click += openTree_Click;
             // 
             // setupButton
             // 
@@ -698,6 +710,7 @@ namespace MP_ModbusApp
             // 
             // newToolStripMenuItem
             // 
+            newToolStripMenuItem.Image = Properties.Resources.icons8_file_50;
             newToolStripMenuItem.Name = "newToolStripMenuItem";
             newToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.N;
             newToolStripMenuItem.Size = new Size(141, 22);
@@ -713,6 +726,7 @@ namespace MP_ModbusApp
             // 
             // communicationToolStripMenuItem
             // 
+            communicationToolStripMenuItem.Image = Properties.Resources.icons8_networking_manager_50;
             communicationToolStripMenuItem.Name = "communicationToolStripMenuItem";
             communicationToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.C;
             communicationToolStripMenuItem.Size = new Size(199, 22);
@@ -738,8 +752,6 @@ namespace MP_ModbusApp
             DragEnter += MainWindow_DragEnter;
             sidePanel.ResumeLayout(false);
             treeViewContextMenu.ResumeLayout(false);
-            treeButton.ResumeLayout(false);
-            treeButton.PerformLayout();
             setupPanel.ResumeLayout(false);
             gBoxGlobalSettings.ResumeLayout(false);
             gBoxGlobalSettings.PerformLayout();
@@ -754,6 +766,8 @@ namespace MP_ModbusApp
             gboxSerialSettings.ResumeLayout(false);
             gboxSerialSettings.PerformLayout();
             gboxConnection.ResumeLayout(false);
+            treeButton.ResumeLayout(false);
+            treeButton.PerformLayout();
             setupButton.ResumeLayout(false);
             setupButton.PerformLayout();
             statusStrip1.ResumeLayout(false);

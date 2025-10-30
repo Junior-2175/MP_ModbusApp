@@ -1,7 +1,11 @@
 ﻿using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using NModbus;
 using NModbus.Device;
+using NModbus.Device;
+using NModbus.IO;
+using NModbus.Logging;
 using System;
 using System.Diagnostics;
 using System.Diagnostics;
@@ -11,16 +15,12 @@ using System.IO.Ports;
 using System.Linq;
 using System.Management;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Linq;
-using NModbus.Device;
-using NModbus.IO;
-using Microsoft.Extensions.Logging;
-using System.Text.RegularExpressions;
-using NModbus.Logging;
 
 namespace MP_ModbusApp
 {
@@ -72,12 +72,15 @@ namespace MP_ModbusApp
             sidePanel.Width = 21;
             setupButton.Height = 90;
             openMenu.Text = "Setup";
+            openMenu.BackgroundImage = null;
+            openMenu.BackgroundImageLayout = ImageLayout.Zoom;
             openMenu.Font = new Font("Segoe UI", 8F);
             openMenu.Height = 80;
             openMenu.Width = 15;
             openMenu.Left = 3;
             treeButton.Height = 110;
             openTree.Text = "Devices x";
+            openTree.BackgroundImage = null;
             openTree.Font = new Font("Segoe UI", 8F);
             openTree.Height = 100;
             openTree.Width = 15;
@@ -110,12 +113,17 @@ namespace MP_ModbusApp
             {
                 sidePanel.Width = 350;
                 setupButton.Height = 50;
-                openMenu.Text = "↩";
+                openMenu.Text = "";
+                openMenu.BackgroundImage = Properties.Resources.icons8_double_left_50;
+                openMenu.BackgroundImageLayout = ImageLayout.Zoom;
                 openMenu.Font = new Font("Segoe UI", 14.25F);
                 openMenu.Height = 40;
                 openMenu.Width = 40;
                 openMenu.Left = 300;
-                openTree.Text = "↓";
+                treeButton.Height = 50;
+                openTree.Text = "";
+                openTree.BackgroundImage = Properties.Resources.icons8_broadcasting_50;
+                openTree.BackgroundImageLayout = ImageLayout.Zoom;
                 openTree.Font = new Font("Segoe UI", 14.25F);
                 openTree.Height = 40;
                 openTree.Width = 40;
@@ -130,12 +138,17 @@ namespace MP_ModbusApp
                 {
                     sidePanel.Width = 350;
                     setupButton.Height = 50;
-                    openMenu.Text = "↩";
+                    openMenu.Text = "";
+                    openMenu.BackgroundImage = Properties.Resources.icons8_double_left_50;
+                    openMenu.BackgroundImageLayout = ImageLayout.Zoom;
                     openMenu.Font = new Font("Segoe UI", 14.25F);
                     openMenu.Height = 40;
                     openMenu.Width = 40;
                     openMenu.Left = 300;
-                    openTree.Text = "↓";
+                    treeButton.Height = 50;
+                    openTree.Text = "";
+                    openTree.BackgroundImage = Properties.Resources.icons8_broadcasting_50;
+                    openTree.BackgroundImageLayout = ImageLayout.Zoom;
                     openTree.Font = new Font("Segoe UI", 14.25F);
                     openTree.Height = 40;
                     openTree.Width = 40;
@@ -149,12 +162,14 @@ namespace MP_ModbusApp
                     sidePanel.Width = 21;
                     setupButton.Height = 90;
                     openMenu.Text = "Setup";
+                    openMenu.BackgroundImage = null;
                     openMenu.Font = new Font("Segoe UI", 8F);
                     openMenu.Height = 80;
                     openMenu.Width = 15;
                     openMenu.Left = 3;
                     treeButton.Height = 110;
                     openTree.Text = "Devices x";
+                    openTree.BackgroundImage = null;
                     openTree.Font = new Font("Segoe UI", 8F);
                     openTree.Height = 100;
                     openTree.Width = 15;
@@ -173,13 +188,17 @@ namespace MP_ModbusApp
             {
                 sidePanel.Width = 350;
                 setupButton.Height = 50;
-                openMenu.Text = "↓";
+                openMenu.Text = "";
+                openMenu.BackgroundImage = Properties.Resources.icons8_settings_50;
+                openMenu.BackgroundImageLayout = ImageLayout.Zoom;
                 openMenu.Font = new Font("Segoe UI", 14.25F);
                 openMenu.Height = 40;
                 openMenu.Width = 40;
                 openMenu.Left = 300;
                 treeButton.Height = 50;
-                openTree.Text = "↩";
+                openTree.Text = "";
+                openTree.BackgroundImage = Properties.Resources.icons8_double_left_50;
+                openTree.BackgroundImageLayout = ImageLayout.Zoom;
                 openTree.Font = new Font("Segoe UI", 14.25F);
                 openTree.Height = 40;
                 openTree.Width = 40;
@@ -194,13 +213,17 @@ namespace MP_ModbusApp
                 {
                     sidePanel.Width = 350;
                     setupButton.Height = 50;
-                    openMenu.Text = "↓";
+                    openMenu.Text = "";
+                    openMenu.BackgroundImage = Properties.Resources.icons8_settings_50;
+                    openMenu.BackgroundImageLayout = ImageLayout.Zoom;
                     openMenu.Font = new Font("Segoe UI", 14.25F);
                     openMenu.Height = 40;
                     openMenu.Width = 40;
                     openMenu.Left = 300;
                     treeButton.Height = 50;
-                    openTree.Text = "↩";
+                    openTree.Text = "";
+                    openTree.BackgroundImage = Properties.Resources.icons8_double_left_50;
+                    openTree.BackgroundImageLayout = ImageLayout.Zoom;
                     openTree.Font = new Font("Segoe UI", 14.25F);
                     openTree.Height = 40;
                     openTree.Width = 40;
@@ -215,12 +238,14 @@ namespace MP_ModbusApp
                     sidePanel.Width = 21;
                     setupButton.Height = 90;
                     openMenu.Text = "Setup";
+                    openMenu.BackgroundImage = null;
                     openMenu.Font = new Font("Segoe UI", 8F);
                     openMenu.Height = 80;
                     openMenu.Width = 15;
                     openMenu.Left = 3;
                     treeButton.Height = 110;
                     openTree.Text = "Devices x";
+                    openTree.BackgroundImage = null;
                     openTree.Font = new Font("Segoe UI", 8F);
                     openTree.Height = 100;
                     openTree.Width = 15;
@@ -423,9 +448,14 @@ namespace MP_ModbusApp
                     serialPort = new SerialPort(portName, baudRate, parity, dataBits, stopBits);
                     serialPort.Open();
 
-                    _modbusMaster = rBtnRTU.Checked
-                    ? factory.CreateRtuMaster((IStreamResource)serialPort)
-                    : factory.CreateAsciiMaster((IStreamResource)serialPort);
+                    // *** POCZĄTEK POPRAWNEGO KODU ***
+                    // Tworzymy adapter, który opakowuje port.
+                    // Klasa SerialPortAdapter jest teraz dostępna dzięki paczce NModbus.SerialPort
+                    //var adapter = new NModbus.IO.SerialPortAdapter(serialPort);
+
+                    //_modbusMaster = rBtnRTU.Checked
+                    //? factory.CreateRtuMaster(adapter)  // Przekazujemy adapter
+                    //: factory.CreateAsciiMaster(adapter);
                 }
                 else // TCP/IP
                 {
