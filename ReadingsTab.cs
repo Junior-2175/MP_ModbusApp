@@ -27,6 +27,7 @@ namespace MP_ModbusApp
             Signed16,
             Hex16,
             Binary16,
+            Bool16,
             ASCII,
 
             // 32-bit (BE = Big-Endian, LE = Little-Endian, BS = Byte-Swapped)
@@ -89,6 +90,7 @@ namespace MP_ModbusApp
             this.signedToolStripMenuItem.Tag = DisplayFormat.Signed16;
             this.binaryToolStripMenuItem.Tag = DisplayFormat.Binary16;
             this.hexToolStripMenuItem.Tag = DisplayFormat.Hex16;
+            this.boolToolStripMenuItem.Tag = DisplayFormat.Bool16;
             this.aSCIIToolStripMenuItem.Tag = DisplayFormat.ASCII;
 
             // 32-bit Unsigned
@@ -177,7 +179,11 @@ namespace MP_ModbusApp
 
         private void ReadingsTab_Load(object sender, EventArgs e)
         {
-            comboBox1.SelectedIndex = 2; // Default to "03 Holding Registers (4x)"
+            if (comboBox1.SelectedIndex == -1)
+            {
+                // Default to Holding Registers (4x)
+                comboBox1.SelectedIndex = 2;
+            }
             dataGridView1.RowCount = (int)numOfRegisters.Value;
             lblTabError.Visible = false;
         }
@@ -763,6 +769,24 @@ namespace MP_ModbusApp
         }
 
         /// <summary>
+        /// Clears all displayed values in the grid, showing "---".
+        /// This is used when a non-communication error (like Illegal Data Address)
+        /// occurs, to prevent showing stale data. Thread-safe.
+        /// </summary>
+        public void ClearDisplayValues()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(ClearDisplayValues));
+                return;
+            }
+
+            _rawData = null;
+            RefreshDisplayValues();
+        }
+
+
+        /// <summary>
         /// Displays an error message on this specific tab. Thread-safe.
         /// </summary>
         public void ShowTabError(string message)
@@ -806,6 +830,7 @@ namespace MP_ModbusApp
 
             // Refresh the grid display using the new data
             RefreshDisplayValues();
+
         }
 
         #endregion
@@ -900,6 +925,7 @@ namespace MP_ModbusApp
                         case DisplayFormat.Signed16: return ((short)val).ToString();
                         case DisplayFormat.Hex16: return $"0x{val:X4}";
                         case DisplayFormat.Binary16: return Convert.ToString(val, 2).PadLeft(16, '0');
+                        case DisplayFormat.Bool16: return (val != 0) ? "True" : "False";
                         case DisplayFormat.ASCII:
                             byte[] asciiBytes = BitConverter.GetBytes(val);
                             // Swap bytes for readable ASCII (Hi, Lo) -> (Lo, Hi)
@@ -1036,7 +1062,6 @@ namespace MP_ModbusApp
         /// </summary>
         public void RefreshDisplayValues()
         {
-            if (_rawData == null) return;
             if (InvokeRequired)
             {
                 Invoke(new Action(RefreshDisplayValues));
@@ -1222,5 +1247,9 @@ namespace MP_ModbusApp
             ApplyFormatToSelected(DisplayFormat.Hex64_LE_BS);
         }
 
+        private void boolToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ApplyFormatToSelected(DisplayFormat.Bool16);
+        }
     }
 }

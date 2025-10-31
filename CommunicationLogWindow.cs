@@ -14,6 +14,11 @@ namespace MP_ModbusApp
         /// The master list of all log entries.
         /// </summary>
         private readonly BindingList<ModbusFrameLog> _frameLogs = new BindingList<ModbusFrameLog>();
+       
+        /// <summary>
+        /// The filtered list of log entries, bound to the DataGridView.
+        /// </summary>
+        private readonly BindingList<ModbusFrameLog> _filteredLogs = new BindingList<ModbusFrameLog>();
 
         /// <summary>
         /// The BindingSource acts as a proxy between the DataGridView and the master list (_frameLogs).
@@ -27,7 +32,7 @@ namespace MP_ModbusApp
             InitializeComponent();
 
             // Set the BindingSource as the intermediary
-            _bindingSource.DataSource = _frameLogs;
+            _bindingSource.DataSource = _filteredLogs;
             dgvLog.DataSource = _bindingSource;
 
             // DataGridView Configuration
@@ -70,6 +75,15 @@ namespace MP_ModbusApp
             {
                 cboDeviceFilter.Items.Add(logEntry.DeviceName);
             }
+
+            // Check if the new log entry matches the current filter
+            string currentFilter = cboDeviceFilter.SelectedItem?.ToString() ?? "(Show All)";
+
+            if (currentFilter == "(Show All)" || logEntry.DeviceName == currentFilter)
+            {
+                // If it matches, add it to the filtered list
+                _filteredLogs.Add(logEntry);
+            }
         }
 
         /// <summary>
@@ -87,6 +101,45 @@ namespace MP_ModbusApp
             else
             {
                 AddLogEntry(logEntry);
+            }
+        }
+
+        /// <summary>
+        /// Rebuilds the filtered list (_filteredLogs) based on
+        /// the main list (_frameLogs) and the current ComboBox selection.
+        /// </summary>
+        private void ApplyFilter()
+        {
+            string selectedDevice = cboDeviceFilter.SelectedItem?.ToString() ?? "(Show All)";
+
+            // Disable change notifications while rebuilding the list (for performance)
+            _filteredLogs.RaiseListChangedEvents = false;
+            _filteredLogs.Clear();
+
+            try
+            {
+                // Use LINQ to quickly find matching entries
+                IEnumerable<ModbusFrameLog> itemsToAdd;
+                if (selectedDevice == "(Show All)")
+                {
+                    itemsToAdd = _frameLogs;
+                }
+                else
+                {
+                    itemsToAdd = _frameLogs.Where(log => log.DeviceName == selectedDevice);
+                }
+
+                // Add the found entries to the filtered list
+                foreach (var log in itemsToAdd)
+                {
+                    _filteredLogs.Add(log);
+                }
+            }
+            finally
+            {
+                // Enable notifications and notify the DataGridView that the data has changed
+                _filteredLogs.RaiseListChangedEvents = true;
+                _filteredLogs.ResetBindings();
             }
         }
 
@@ -138,6 +191,7 @@ namespace MP_ModbusApp
         private void btnClearLog_Click(object sender, EventArgs e)
         {
             _frameLogs.Clear();
+            _filteredLogs.Clear();
             cboDeviceFilter.Items.Clear();
             cboDeviceFilter.Items.Add("(Show All)");
             cboDeviceFilter.SelectedItem = "(Show All)";
@@ -145,8 +199,9 @@ namespace MP_ModbusApp
 
         private void btnExportToCsv_Click(object sender, EventArgs e)
         {
-            // Check the underlying list, not the (potentially filtered) BindingSource
-            if (_frameLogs.Count == 0)
+            // Check the underlying list
+            //if (_frameLogs.Count == 0)
+            if (_filteredLogs.Count == 0)
             {
                 MessageBox.Show("No data to export.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
@@ -164,9 +219,10 @@ namespace MP_ModbusApp
                         // CSV Header
                         sb.AppendLine("Timestamp,DeviceName,Direction,DataFrame,ErrorDescription");
 
-                        // Iterate over the master list (_frameLogs) to ensure all data is exported,
-                        // not just the filtered data currently in _bindingSource.List.
-                        foreach (var log in _frameLogs)
+                        // Iterate over the master list (_filteredLogs) to ensure all data is exported,
+                        // just the filtered data currently in _bindingSource.List.
+                        //foreach (var log in _frameLogs)
+                        foreach (var log in _filteredLogs)
                         {
                             sb.AppendLine($"{log.Timestamp:yyyy-MM-dd HH:mm:ss.fff},{log.DeviceName},{log.Direction},\"{log.DataFrame}\",\"{log.ErrorDescription}\"");
                         }
@@ -241,20 +297,8 @@ namespace MP_ModbusApp
         /// </summary>
         private void cboDeviceFilter_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (cboDeviceFilter.SelectedItem == null) return;
 
-            string selectedDevice = cboDeviceFilter.SelectedItem.ToString();
-
-            if (selectedDevice == "(Show All)")
-            {
-                _bindingSource.Filter = null;
-            }
-            else
-            {
-                // Build the filter. Use string.Format to correctly handle
-                // names that might contain an apostrophe (e.g., "Device's Log").
-                _bindingSource.Filter = string.Format("DeviceName = '{0}'", selectedDevice.Replace("'", "''"));
-            }
+            ApplyFilter();
         }
 
         /// <summary>
@@ -262,7 +306,6 @@ namespace MP_ModbusApp
         /// </summary>
         private void btnClearFilter_Click(object sender, EventArgs e)
         {
-            _bindingSource.Filter = null;
             cboDeviceFilter.SelectedItem = "(Show All)";
         }
     }

@@ -17,7 +17,10 @@ namespace MP_ModbusApp
         private MainWindow _mainWindow;
         private MP_modbus.IMyModbusMaster _modbusMaster;
         private bool _isPolling = false;
-
+        private int _consecutiveErrorCount = 0;
+        private int _rxCounter = 0;
+        private int _txCounter = 0;
+        private int _errorCounter = 0;
 
         public event EventHandler DeviceSaved;
 
@@ -383,7 +386,7 @@ namespace MP_ModbusApp
             _modbusMaster = _mainWindow?.ModbusMaster;
             if (_modbusMaster == null)
             {
-                ShowDeviceError("Not connected in Setup tab!");
+                ShowDeviceError("Port is not connected! Connect via Setup tab!");
                 return;
             }
 
@@ -493,6 +496,12 @@ namespace MP_ModbusApp
             }
 
             byte slaveId = (byte)this.SlaveId;
+            int maxRetries = 0;
+
+            if (_mainWindow != null)
+            {
+                maxRetries = _mainWindow.GetMaxRetries();
+            }
 
             foreach (TabPage tabPage in tabPanel1.TabPages)
             {
@@ -510,25 +519,27 @@ namespace MP_ModbusApp
                     funcCode = readingsTab.GetFunctionCode();
                     startAddr = (ushort)readingsTab.GetStartAddress();
                     quantity = (ushort)readingsTab.GetQuantity();
-
+                    _txCounter++;
                     ushort[] data;
                     switch (funcCode)
                     {
                         case 0: // 01 Coils
                             bool[] coils = await _modbusMaster.ReadCoilsAsync(slaveId, startAddr, quantity);
                             data = coils.Select(c => c ? (ushort)1 : (ushort)0).ToArray();
+                            _rxCounter++;
                             break;
                         case 1: // 02 Discrete Inputs
                             bool[] inputs = await _modbusMaster.ReadInputsAsync(slaveId, startAddr, quantity);
                             data = inputs.Select(i => i ? (ushort)1 : (ushort)0).ToArray();
+                            _rxCounter++;
                             break;
-                        // 03 Holding Registers (4x) is ComboBox index 2
                         case 2: // 03 Holding Registers
                             data = await _modbusMaster.ReadHoldingRegistersAsync(slaveId, startAddr, quantity);
+                            _rxCounter++;
                             break;
-                        // 04 Input Registers (3x) is ComboBox index 3
                         case 3: // 04 Input Registers
                             data = await _modbusMaster.ReadInputRegistersAsync(slaveId, startAddr, quantity);
+                            _rxCounter++;
                             break;
                         default:
                             // This shouldn't happen with a ComboBox, but just in case
@@ -538,16 +549,17 @@ namespace MP_ModbusApp
 
                     readingsTab.UpdateValues(data);
                     readingsTab.ClearTabError(); // Clear the error if the read was successful
+                    _consecutiveErrorCount = 0;
                 }
                 catch (MP_modbus.MyModbusSlaveException modbusEx) // Modbus Error (e.g., bad address)
                 {
                     // Use ModbusUtils to get the required error format
                     string fullError = MP_modbus.ModbusUtils.GetFullExceptionMessage(modbusEx.FunctionCode, modbusEx.SlaveExceptionCode);
                     string simpleError = MP_modbus.ModbusUtils.GetExceptionName(modbusEx.SlaveExceptionCode);
-
+                    _errorCounter++;
                     // Display the simple error in the device tab
                     readingsTab.ShowTabError(simpleError);
-
+                    readingsTab.ClearDisplayValues();
                     // Log the full error in the communication window
                     LogFrame("Error", "", fullError);
 
@@ -556,20 +568,35 @@ namespace MP_ModbusApp
                 }
                 catch (Exception ex) // Communication Error (e.g., Timeout, disconnection)
                 {
+                    _errorCounter++;
+                    _consecutiveErrorCount++;
                     string commsError = $"Comms Error: {ex.Message}";
 
                     // Log the communication error
                     LogFrame("Error", "", commsError); // Clean error in the ErrorDescription column
 
                     // Show the error in the tab and at the device level
-                    readingsTab.ShowTabError(commsError);
-                    ShowDeviceError(commsError); // Show device-level error
-
-                    // Safely stops the loop and updates the UI
-                    this.StopPolling();
-
+                    readingsTab.ShowTabError(commsError + _consecutiveErrorCount.ToString());
+                    if (_consecutiveErrorCount >= maxRetries && maxRetries > 0)
+                    {
+                        string deviceError = $"Comms Error after {_consecutiveErrorCount} attempts: {ex.Message}. Polling stopped.";
+                        ShowDeviceError(deviceError + _consecutiveErrorCount.ToString());
+                        this.StopPolling();
+                    }
+                    else
+                    {
+                        if (maxRetries > 0)
+                        {
+                            ShowDeviceError($"{commsError} (Attempt {_consecutiveErrorCount}/{maxRetries})");
+                        }
+                        else
+                        {
+                            ShowDeviceError($"{commsError} (Attempt {_consecutiveErrorCount}/inf)");
+                        }
+                    }
                     break; // Break the tab loop because the error affects the entire connection
                 }
+                label1.Text = $"TX: {_txCounter}  RX: {_rxCounter}  ERR: {_errorCounter}";
             } // End of foreach loop for tabs
 
             // If the loop finished and polling is still active, clear the device error.

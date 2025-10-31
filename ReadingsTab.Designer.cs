@@ -40,15 +40,13 @@
             lblTabError = new Label();
             startRegister_1 = new NumericUpDown();
             dataGridView1 = new DataGridView();
-            Name = new DataGridViewTextBoxColumn();
-            RegisterNumber = new DataGridViewTextBoxColumn();
-            Value = new DataGridViewTextBoxColumn();
             contextMenuStrip1 = new ContextMenuStrip(components);
             toolStripMenuItem2 = new ToolStripMenuItem();
             unsignedToolStripMenuItem = new ToolStripMenuItem();
             signedToolStripMenuItem = new ToolStripMenuItem();
             binaryToolStripMenuItem = new ToolStripMenuItem();
             hexToolStripMenuItem = new ToolStripMenuItem();
+            boolToolStripMenuItem = new ToolStripMenuItem();
             aSCIIToolStripMenuItem = new ToolStripMenuItem();
             toolStripMenuItem3 = new ToolStripMenuItem();
             unsignedToolStripMenuItem1 = new ToolStripMenuItem();
@@ -112,7 +110,11 @@
             toolStripSeparator10 = new ToolStripSeparator();
             bigendianByteSwapToolStripMenuItem8 = new ToolStripMenuItem();
             littleendianByteSwapToolStripMenuItem8 = new ToolStripMenuItem();
+            Name = new DataGridViewTextBoxColumn();
+            RegisterNumber = new DataGridViewTextBoxColumn();
+            Value = new DataGridViewTextBoxColumn();
             DisplayFormatColumn = new DataGridViewTextBoxColumn();
+            Chart = new DataGridViewCheckBoxColumn();
             ((System.ComponentModel.ISupportInitialize)numOfRegisters).BeginInit();
             ((System.ComponentModel.ISupportInitialize)startRegister).BeginInit();
             ((System.ComponentModel.ISupportInitialize)startRegisterHex).BeginInit();
@@ -248,7 +250,7 @@
             dataGridView1.AllowUserToDeleteRows = false;
             dataGridView1.AllowUserToResizeRows = false;
             dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView1.Columns.AddRange(new DataGridViewColumn[] { Name, RegisterNumber, Value, DisplayFormatColumn });
+            dataGridView1.Columns.AddRange(new DataGridViewColumn[] { Name, RegisterNumber, Value, DisplayFormatColumn, Chart });
             dataGridView1.Dock = DockStyle.Fill;
             dataGridView1.Location = new Point(0, 109);
             dataGridView1.Name = "dataGridView1";
@@ -256,31 +258,6 @@
             dataGridView1.RowTemplate.Height = 20;
             dataGridView1.Size = new Size(332, 329);
             dataGridView1.TabIndex = 6;
-            // 
-            // Name
-            // 
-            Name.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-            Name.HeaderText = "Name";
-            Name.Name = "Name";
-            Name.SortMode = DataGridViewColumnSortMode.NotSortable;
-            // 
-            // RegisterNumber
-            // 
-            RegisterNumber.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-            RegisterNumber.HeaderText = "Register Number";
-            RegisterNumber.Name = "RegisterNumber";
-            RegisterNumber.ReadOnly = true;
-            RegisterNumber.SortMode = DataGridViewColumnSortMode.NotSortable;
-            RegisterNumber.Width = 92;
-            // 
-            // Value
-            // 
-            Value.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-            Value.ContextMenuStrip = contextMenuStrip1;
-            Value.HeaderText = "Value";
-            Value.Name = "Value";
-            Value.SortMode = DataGridViewColumnSortMode.NotSortable;
-            Value.Width = 41;
             // 
             // contextMenuStrip1
             // 
@@ -291,7 +268,7 @@
             // 
             // toolStripMenuItem2
             // 
-            toolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { unsignedToolStripMenuItem, signedToolStripMenuItem, binaryToolStripMenuItem, hexToolStripMenuItem, aSCIIToolStripMenuItem });
+            toolStripMenuItem2.DropDownItems.AddRange(new ToolStripItem[] { unsignedToolStripMenuItem, signedToolStripMenuItem, binaryToolStripMenuItem, hexToolStripMenuItem, boolToolStripMenuItem, aSCIIToolStripMenuItem });
             toolStripMenuItem2.Name = "toolStripMenuItem2";
             toolStripMenuItem2.Size = new Size(105, 22);
             toolStripMenuItem2.Text = "16-bit";
@@ -323,6 +300,13 @@
             hexToolStripMenuItem.Size = new Size(124, 22);
             hexToolStripMenuItem.Text = "Hex";
             hexToolStripMenuItem.Click += hexToolStripMenuItem_Click;
+            // 
+            // boolToolStripMenuItem
+            // 
+            boolToolStripMenuItem.Name = "boolToolStripMenuItem";
+            boolToolStripMenuItem.Size = new Size(124, 22);
+            boolToolStripMenuItem.Text = "Bool";
+            boolToolStripMenuItem.Click += boolToolStripMenuItem_Click;
             // 
             // aSCIIToolStripMenuItem
             // 
@@ -731,6 +715,31 @@
             littleendianByteSwapToolStripMenuItem8.Text = "Little-endian byte swap";
             littleendianByteSwapToolStripMenuItem8.Click += littleendianByteSwapToolStripMenuItem8_Click;
             // 
+            // Name
+            // 
+            Name.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            Name.HeaderText = "Name";
+            Name.Name = "Name";
+            Name.SortMode = DataGridViewColumnSortMode.NotSortable;
+            // 
+            // RegisterNumber
+            // 
+            RegisterNumber.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            RegisterNumber.HeaderText = "Register Number";
+            RegisterNumber.Name = "RegisterNumber";
+            RegisterNumber.ReadOnly = true;
+            RegisterNumber.SortMode = DataGridViewColumnSortMode.NotSortable;
+            RegisterNumber.Width = 92;
+            // 
+            // Value
+            // 
+            Value.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            Value.ContextMenuStrip = contextMenuStrip1;
+            Value.HeaderText = "Value";
+            Value.Name = "Value";
+            Value.SortMode = DataGridViewColumnSortMode.NotSortable;
+            Value.Width = 41;
+            // 
             // DisplayFormatColumn
             // 
             DisplayFormatColumn.HeaderText = "DisplayFormat";
@@ -738,6 +747,13 @@
             DisplayFormatColumn.ReadOnly = true;
             DisplayFormatColumn.SortMode = DataGridViewColumnSortMode.NotSortable;
             DisplayFormatColumn.Visible = false;
+            // 
+            // Chart
+            // 
+            Chart.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
+            Chart.HeaderText = "Add to chart";
+            Chart.Name = "Chart";
+            Chart.Width = 71;
             // 
             // ReadingsTab
             // 
@@ -839,9 +855,11 @@
         private ToolStripSeparator toolStripSeparator10;
         private ToolStripMenuItem bigendianByteSwapToolStripMenuItem8;
         private ToolStripMenuItem littleendianByteSwapToolStripMenuItem8;
+        private ToolStripMenuItem boolToolStripMenuItem;
         private DataGridViewTextBoxColumn Name;
         private DataGridViewTextBoxColumn RegisterNumber;
         private DataGridViewTextBoxColumn Value;
         private DataGridViewTextBoxColumn DisplayFormatColumn;
+        private DataGridViewCheckBoxColumn Chart;
     }
 }

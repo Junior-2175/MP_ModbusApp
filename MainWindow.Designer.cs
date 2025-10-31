@@ -46,12 +46,14 @@ namespace MP_ModbusApp
             setupPanel = new Panel();
             btnConnect = new Button();
             gBoxGlobalSettings = new GroupBox();
+            numMaxRetries = new NumericUpDown();
             numPollDelay = new NumericUpDown();
             numResponseTimeout = new NumericUpDown();
             gBoxSerialMode = new GroupBox();
             rBtnASCII = new RadioButton();
             rBtnRTU = new RadioButton();
             label2 = new Label();
+            label13 = new Label();
             label1 = new Label();
             gboxIPSettings = new GroupBox();
             label9 = new Label();
@@ -99,6 +101,7 @@ namespace MP_ModbusApp
             treeViewContextMenu.SuspendLayout();
             setupPanel.SuspendLayout();
             gBoxGlobalSettings.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)numMaxRetries).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numPollDelay).BeginInit();
             ((System.ComponentModel.ISupportInitialize)numResponseTimeout).BeginInit();
             gBoxSerialMode.SuspendLayout();
@@ -135,7 +138,7 @@ namespace MP_ModbusApp
             treeView.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             treeView.ImageIndex = 0;
             treeView.ImageList = imageList1;
-            treeView.Location = new Point(0, 516);
+            treeView.Location = new Point(0, 539);
             treeView.Name = "treeView";
             treeNode1.ImageIndex = 2;
             treeNode1.Name = "Group1";
@@ -154,7 +157,7 @@ namespace MP_ModbusApp
             treeNode3.Text = "Devices List";
             treeView.Nodes.AddRange(new TreeNode[] { treeNode3 });
             treeView.SelectedImageIndex = 0;
-            treeView.Size = new Size(350, 82);
+            treeView.Size = new Size(350, 59);
             treeView.TabIndex = 8;
             treeView.ItemDrag += treeView_ItemDrag;
             treeView.NodeMouseClick += treeView_NodeMouseClick;
@@ -221,7 +224,7 @@ namespace MP_ModbusApp
             setupPanel.Dock = DockStyle.Top;
             setupPanel.Location = new Point(0, 100);
             setupPanel.Name = "setupPanel";
-            setupPanel.Size = new Size(350, 416);
+            setupPanel.Size = new Size(350, 439);
             setupPanel.TabIndex = 1;
             // 
             // btnConnect
@@ -230,7 +233,7 @@ namespace MP_ModbusApp
             btnConnect.ImageAlign = ContentAlignment.MiddleLeft;
             btnConnect.ImageKey = "icons8-connected-50.png";
             btnConnect.ImageList = imageList1;
-            btnConnect.Location = new Point(204, 363);
+            btnConnect.Location = new Point(204, 405);
             btnConnect.Name = "btnConnect";
             btnConnect.Size = new Size(116, 32);
             btnConnect.TabIndex = 6;
@@ -241,28 +244,40 @@ namespace MP_ModbusApp
             // 
             // gBoxGlobalSettings
             // 
+            gBoxGlobalSettings.Controls.Add(numMaxRetries);
             gBoxGlobalSettings.Controls.Add(numPollDelay);
             gBoxGlobalSettings.Controls.Add(numResponseTimeout);
             gBoxGlobalSettings.Controls.Add(gBoxSerialMode);
             gBoxGlobalSettings.Controls.Add(label2);
+            gBoxGlobalSettings.Controls.Add(label13);
             gBoxGlobalSettings.Controls.Add(label1);
             gBoxGlobalSettings.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             gBoxGlobalSettings.Location = new Point(5, 238);
             gBoxGlobalSettings.Name = "gBoxGlobalSettings";
-            gBoxGlobalSettings.Size = new Size(340, 119);
+            gBoxGlobalSettings.Size = new Size(340, 161);
             gBoxGlobalSettings.TabIndex = 5;
             gBoxGlobalSettings.TabStop = false;
             gBoxGlobalSettings.Text = "Global settings";
+            // 
+            // numMaxRetries
+            // 
+            numMaxRetries.Location = new Point(126, 128);
+            numMaxRetries.Maximum = new decimal(new int[] { 999, 0, 0, 0 });
+            numMaxRetries.Name = "numMaxRetries";
+            numMaxRetries.Size = new Size(92, 23);
+            numMaxRetries.TabIndex = 4;
+            numMaxRetries.ValueChanged += numMaxRetries_ValueChanged;
             // 
             // numPollDelay
             // 
             numPollDelay.Increment = new decimal(new int[] { 10, 0, 0, 0 });
             numPollDelay.Location = new Point(126, 84);
             numPollDelay.Maximum = new decimal(new int[] { 60000, 0, 0, 0 });
+            numPollDelay.Minimum = new decimal(new int[] { 100, 0, 0, 0 });
             numPollDelay.Name = "numPollDelay";
             numPollDelay.Size = new Size(92, 23);
             numPollDelay.TabIndex = 4;
-            numPollDelay.Value = new decimal(new int[] { 100, 0, 0, 0 });
+            numPollDelay.Value = new decimal(new int[] { 1000, 0, 0, 0 });
             numPollDelay.ValueChanged += Setting_Changed;
             // 
             // numResponseTimeout
@@ -320,6 +335,15 @@ namespace MP_ModbusApp
             label2.Size = new Size(135, 15);
             label2.TabIndex = 1;
             label2.Text = "Response timeout [ms]";
+            // 
+            // label13
+            // 
+            label13.AutoSize = true;
+            label13.Location = new Point(124, 110);
+            label13.Name = "label13";
+            label13.Size = new Size(123, 15);
+            label13.TabIndex = 2;
+            label13.Text = "Max retries on error:";
             // 
             // label1
             // 
@@ -579,7 +603,7 @@ namespace MP_ModbusApp
             btnDisconnect.ImageAlign = ContentAlignment.MiddleLeft;
             btnDisconnect.ImageKey = "icons8-disconnected-50.png";
             btnDisconnect.ImageList = imageList1;
-            btnDisconnect.Location = new Point(31, 363);
+            btnDisconnect.Location = new Point(31, 405);
             btnDisconnect.Name = "btnDisconnect";
             btnDisconnect.RightToLeft = RightToLeft.No;
             btnDisconnect.Size = new Size(116, 32);
@@ -750,7 +774,7 @@ namespace MP_ModbusApp
             // 
             cascadeToolStripMenuItem.Image = Properties.Resources.icons8_static_view_level2_48;
             cascadeToolStripMenuItem.Name = "cascadeToolStripMenuItem";
-            cascadeToolStripMenuItem.Size = new Size(180, 22);
+            cascadeToolStripMenuItem.Size = new Size(155, 22);
             cascadeToolStripMenuItem.Text = "Cascade";
             cascadeToolStripMenuItem.Click += cascadeToolStripMenuItem_Click;
             // 
@@ -758,7 +782,7 @@ namespace MP_ModbusApp
             // 
             splitHorizontalToolStripMenuItem.Image = Properties.Resources.icons8_vertical_docking_48;
             splitHorizontalToolStripMenuItem.Name = "splitHorizontalToolStripMenuItem";
-            splitHorizontalToolStripMenuItem.Size = new Size(180, 22);
+            splitHorizontalToolStripMenuItem.Size = new Size(155, 22);
             splitHorizontalToolStripMenuItem.Text = "Split Horizontal";
             splitHorizontalToolStripMenuItem.Click += splitHorizontalToolStripMenuItem_Click;
             // 
@@ -766,7 +790,7 @@ namespace MP_ModbusApp
             // 
             splitVerticalToolStripMenuItem.Image = Properties.Resources.icons8_horizontal_docking_48;
             splitVerticalToolStripMenuItem.Name = "splitVerticalToolStripMenuItem";
-            splitVerticalToolStripMenuItem.Size = new Size(180, 22);
+            splitVerticalToolStripMenuItem.Size = new Size(155, 22);
             splitVerticalToolStripMenuItem.Text = "Split Vertical";
             splitVerticalToolStripMenuItem.Click += splitVerticalToolStripMenuItem_Click;
             // 
@@ -792,6 +816,7 @@ namespace MP_ModbusApp
             setupPanel.ResumeLayout(false);
             gBoxGlobalSettings.ResumeLayout(false);
             gBoxGlobalSettings.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)numMaxRetries).EndInit();
             ((System.ComponentModel.ISupportInitialize)numPollDelay).EndInit();
             ((System.ComponentModel.ISupportInitialize)numResponseTimeout).EndInit();
             gBoxSerialMode.ResumeLayout(false);
@@ -876,5 +901,7 @@ namespace MP_ModbusApp
         private ToolStripMenuItem cascadeToolStripMenuItem;
         private ToolStripMenuItem splitHorizontalToolStripMenuItem;
         private ToolStripMenuItem splitVerticalToolStripMenuItem;
+        private NumericUpDown numMaxRetries;
+        private Label label13;
     }
 }

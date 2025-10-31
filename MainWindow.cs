@@ -267,6 +267,7 @@ namespace MP_ModbusApp
             cBoxStopBits.SelectedIndex = int.Parse(DatabaseHelper.LoadSetting("cBoxStopBits", "0")); // Default: One
             numResponseTimeout.Value = decimal.Parse(DatabaseHelper.LoadSetting("numResponseTimeout", "1000"));
             numPollDelay.Value = decimal.Parse(DatabaseHelper.LoadSetting("numPollDelay", "500"));
+            numMaxRetries.Value = decimal.Parse(DatabaseHelper.LoadSetting("numMaxRetries", "0"));
             numIPConnTimeout.Value = decimal.Parse(DatabaseHelper.LoadSetting("numIPConnTimeout", "2000"));
             numIPPort.Value = decimal.Parse(DatabaseHelper.LoadSetting("numIPPort", "502"));
 
@@ -578,6 +579,7 @@ namespace MP_ModbusApp
             gboxIPSettings.Enabled = !isConnected;
             gboxSerialSettings.Enabled = !isConnected;
             gBoxGlobalSettings.Enabled = !isConnected;
+            numMaxRetries.Enabled = !isConnected;
             btnConnect.Enabled = !isConnected;
             btnDisconnect.Enabled = isConnected;
 
@@ -1251,6 +1253,24 @@ namespace MP_ModbusApp
         {
             // Tile all MDI child windows vertically
             this.LayoutMdi(MdiLayout.TileVertical);
+        }
+
+        private void numMaxRetries_ValueChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        /// <summary>
+        /// Gets the maximum number of retries from the numeric up-down control.
+        /// </summary>
+        public int GetMaxRetries()
+        {
+            // Use Invoke if called from another thread
+            if (numMaxRetries.InvokeRequired)
+            {
+                return (int)numMaxRetries.Invoke(new Func<int>(() => (int)numMaxRetries.Value));
+            }
+            return (int)numMaxRetries.Value;
         }
     }
 }

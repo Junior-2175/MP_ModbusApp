@@ -40,6 +40,7 @@
             toolStripSeparator1 = new ToolStripSeparator();
             chartToolStripMenuItem = new ToolStripMenuItem();
             panel1 = new Panel();
+            label1 = new Label();
             lblDeviceStatus = new Label();
             menuStrip1 = new MenuStrip();
             deviceToolStripMenuItem = new ToolStripMenuItem();
@@ -91,7 +92,7 @@
             // 
             contextMenuStrip1.Items.AddRange(new ToolStripItem[] { addToolStripMenuItem, removeToolStripMenuItem, toolStripSeparator2, renameToolStripMenuItem, toolStripSeparator1, chartToolStripMenuItem });
             contextMenuStrip1.Name = "contextMenuStrip1";
-            contextMenuStrip1.Size = new Size(211, 126);
+            contextMenuStrip1.Size = new Size(211, 104);
             // 
             // addToolStripMenuItem
             // 
@@ -140,6 +141,7 @@
             // 
             // panel1
             // 
+            panel1.Controls.Add(label1);
             panel1.Controls.Add(lblDeviceStatus);
             panel1.Controls.Add(slaveId);
             panel1.Controls.Add(label4);
@@ -149,12 +151,23 @@
             panel1.Size = new Size(450, 47);
             panel1.TabIndex = 6;
             // 
+            // label1
+            // 
+            label1.AutoSize = true;
+            label1.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+            label1.ForeColor = Color.Black;
+            label1.Location = new Point(169, 6);
+            label1.Name = "label1";
+            label1.Size = new Size(106, 15);
+            label1.TabIndex = 5;
+            label1.Text = "TX: 0  RX: 0  ERR: 0";
+            // 
             // lblDeviceStatus
             // 
             lblDeviceStatus.AutoSize = true;
             lblDeviceStatus.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
             lblDeviceStatus.ForeColor = Color.FromArgb(192, 0, 0);
-            lblDeviceStatus.Location = new Point(169, 14);
+            lblDeviceStatus.Location = new Point(169, 25);
             lblDeviceStatus.Name = "lblDeviceStatus";
             lblDeviceStatus.Size = new Size(37, 15);
             lblDeviceStatus.TabIndex = 4;
@@ -207,7 +220,7 @@
             startToolStripMenuItem.Image = Properties.Resources.icons8_play_48;
             startToolStripMenuItem.Name = "startToolStripMenuItem";
             startToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.S;
-            startToolStripMenuItem.Size = new Size(180, 22);
+            startToolStripMenuItem.Size = new Size(142, 22);
             startToolStripMenuItem.Text = "Start";
             startToolStripMenuItem.Click += startToolStripMenuItem_Click;
             // 
@@ -216,7 +229,7 @@
             stopToolStripMenuItem.Image = Properties.Resources.icons8_pause_50;
             stopToolStripMenuItem.Name = "stopToolStripMenuItem";
             stopToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.P;
-            stopToolStripMenuItem.Size = new Size(180, 22);
+            stopToolStripMenuItem.Size = new Size(142, 22);
             stopToolStripMenuItem.Text = "Pause";
             stopToolStripMenuItem.Click += stopToolStripMenuItem_Click;
             // 
@@ -273,5 +286,6 @@
         private ToolStripSeparator toolStripSeparator2;
         private ToolStripMenuItem chartToolStripMenuItem;
         private Label lblDeviceStatus;
+        private Label label1;
     }
 }
