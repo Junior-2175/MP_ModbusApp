@@ -15,6 +15,7 @@ namespace MP_ModbusApp
         private bool _isUpdatingValues = false;
 
         // Local cache of the most recent raw data from the poller
+        // Local cache of the most recent raw data from the poller
         private ushort[] _rawData = null;
 
         /// <summary>
@@ -838,6 +839,24 @@ namespace MP_ModbusApp
         #region Formatting Logic
 
         /// <summary>
+        /// Checks if a DisplayFormat represents a numeric type that can be charted.
+        /// Non-numeric types are Hex, Binary, ASCII, and Bool.
+        /// </summary>
+        private bool IsNumericFormat(DisplayFormat format)
+        {
+            string fmtStr = format.ToString();
+
+            // Exclude all formats that contain string/binary representation or boolean
+            if (fmtStr.Contains("Hex") || fmtStr.Contains("Binary") || fmtStr.Contains("ASCII") || format == DisplayFormat.Bool16)
+            {
+                return false;
+            }
+
+            // All remaining formats (Signed, Unsigned, Float, Double) are numeric
+            return true;
+        }
+
+        /// <summary>
         /// Returns the number of 16-bit registers required for a given format.
         /// </summary>
         private int GetRegistersForFormat(DisplayFormat format)
@@ -1085,6 +1104,24 @@ namespace MP_ModbusApp
                 DisplayFormat format = (DisplayFormat)dataGridView1.Rows[i].Cells["DisplayFormatColumn"].Value;
                 int regsNeeded = GetRegistersForFormat(format);
 
+                // --- NEW LOGIC: Disable Charting for non-numeric types ---
+                bool isNumeric = IsNumericFormat(format);
+                DataGridViewCheckBoxCell chartCell = (DataGridViewCheckBoxCell)dataGridView1.Rows[i].Cells["Chart"];
+
+                // 1. Set ReadOnly state
+                chartCell.ReadOnly = !isNumeric;
+
+                // 2. Uncheck if it was checked and became non-numeric
+                if (!isNumeric && (bool)(chartCell.Value ?? false))
+                {
+                    chartCell.Value = false;
+                }
+
+                // 3. Set visual state (color) - makes the disabled cell look different
+                chartCell.Style.BackColor = isNumeric ? dataGridView1.DefaultCellStyle.BackColor : SystemColors.ControlLight;
+                // --- END NEW LOGIC ---
+
+
                 // Step 3: Format the "RegisterNumber" cell (e.g., "100" or "100 - 103")
                 int baseRegNum = i + (int)startRegister.Value;
                 if (regsNeeded == 1)
@@ -1108,6 +1145,11 @@ namespace MP_ModbusApp
                         if (i + j < dataGridView1.Rows.Count)
                         {
                             dataGridView1.Rows[i + j].Visible = false;
+
+                            // Also explicitly disable/uncheck chart for hidden rows
+                            DataGridViewCheckBoxCell hiddenChartCell = (DataGridViewCheckBoxCell)dataGridView1.Rows[i + j].Cells["Chart"];
+                            hiddenChartCell.ReadOnly = true;
+                            hiddenChartCell.Value = false;
                         }
                     }
                     i += (regsNeeded - 1); // Skip the rows we just hid
