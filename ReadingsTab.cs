@@ -4,17 +4,38 @@ using System.Windows.Forms;
 using System.Xml.Linq;
 using static System.ComponentModel.Design.ObjectSelectorEditor;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
-using System.Text; // Added for ASCII handling
-using System.Collections.Generic; // Added for Dictionary
+using System.Text;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace MP_ModbusApp
 {
+    // KLASY POMOCNICZE WSPÓLNE DLA CAŁEJ PRZESTRZENI NAZW
+    public class ChartDataPoint
+    {
+        public string SeriesName { get; set; }
+        public double Value { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+
+    public class ChartDataUpdateEventArgs : EventArgs
+    {
+        public List<ChartDataPoint> DataPoints { get; }
+        public ChartDataUpdateEventArgs(List<ChartDataPoint> dataPoints)
+        {
+            DataPoints = dataPoints;
+        }
+    }
+    // KONIEC KLAS POMOCNICZYCH
+
     public partial class ReadingsTab : UserControl
     {
+        // Nowe zdarzenie używające klasy w przestrzeni nazw
+        public event EventHandler<ChartDataUpdateEventArgs> ChartDataUpdated;
+
         // Flag to prevent recursive event loops when updating numeric up/down controls
         private bool _isUpdatingValues = false;
 
-        // Local cache of the most recent raw data from the poller
         // Local cache of the most recent raw data from the poller
         private ushort[] _rawData = null;
 
@@ -43,7 +64,7 @@ namespace MP_ModbusApp
             Float32_BE_BS, // Real
             Unsigned32_LE_BS,
             Signed32_LE_BS,
-            Float32_LE_BS,
+            Float32_LE_BS, // alias for Float
             ASCII32_BE,
             ASCII32_LE,
             ASCII32_BE_BS,
@@ -176,6 +197,10 @@ namespace MP_ModbusApp
             this.bigendianByteSwapToolStripMenuItem7.Tag = DisplayFormat.Hex64_BE_BS;
             this.littleendianByteSwapToolStripMenuItem7.Click += new System.EventHandler(this.hex64LEBSToolStripMenuItem_Click);
             this.littleendianByteSwapToolStripMenuItem7.Tag = DisplayFormat.Hex64_LE_BS;
+
+            // --- NOWE: Podpięcie zdarzeń dla kolumny Chart ---
+            this.dataGridView1.CellValueChanged += new DataGridViewCellEventHandler(this.dataGridView1_CellValueChanged);
+            this.dataGridView1.CurrentCellDirtyStateChanged += new EventHandler(this.dataGridView1_CurrentCellDirtyStateChanged);
         }
 
         private void ReadingsTab_Load(object sender, EventArgs e)
@@ -187,6 +212,30 @@ namespace MP_ModbusApp
             }
             dataGridView1.RowCount = (int)numOfRegisters.Value;
             lblTabError.Visible = false;
+        }
+
+        // Wymusza natychmiastowe zatwierdzenie edycji komórki (np. po kliknięciu checkboxa)
+        private void dataGridView1_CurrentCellDirtyStateChanged(object sender, EventArgs e)
+        {
+            if (dataGridView1.IsCurrentCellDirty && dataGridView1.CurrentCell.ColumnIndex == Chart.Index)
+            {
+                dataGridView1.CommitEdit(DataGridViewDataErrorContexts.Commit);
+            }
+        }
+
+        // Wywołuje zdarzenie po zmianie wartości komórki (np. checkboxa)
+        private void dataGridView1_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            // Wywołaj aktualizację wykresu tylko po zmianie wartości w kolumnie "Chart"
+            if (e.RowIndex >= 0 && e.ColumnIndex == Chart.Index)
+            {
+                OnChartDataUpdated(new ChartDataUpdateEventArgs(GetChartData()));
+            }
+        }
+
+        protected virtual void OnChartDataUpdated(ChartDataUpdateEventArgs e)
+        {
+            ChartDataUpdated?.Invoke(this, e);
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -834,6 +883,60 @@ namespace MP_ModbusApp
 
         }
 
+        /// <summary>
+        /// Zwraca listę aktywnych punktów danych do wykreślenia.
+        /// Wymaga publicznego dostępu dla ModbusDevice.
+        /// </summary>
+        public List<ChartDataPoint> GetChartData()
+        {
+            if (_rawData == null) return new List<ChartDataPoint>();
+
+            var chartData = new List<ChartDataPoint>();
+            DateTime now = DateTime.Now;
+
+            for (int i = 0; i < dataGridView1.Rows.Count; i++)
+            {
+                if (dataGridView1.Rows[i].IsNewRow || !dataGridView1.Rows[i].Visible) continue;
+
+                // Użyj domyślnej wartości false, jeśli komórka jest DBNull
+                bool isChartChecked = (bool)(dataGridView1.Rows[i].Cells["Chart"].Value ?? false);
+                DisplayFormat format = (DisplayFormat)dataGridView1.Rows[i].Cells["DisplayFormatColumn"].Value;
+                int regsNeeded = GetRegistersForFormat(format);
+
+                if (isChartChecked && IsNumericFormat(format))
+                {
+                    string stringValue = FormatValue(i);
+
+                    // Bezpieczne parsowanie wartości. Używamy InvariantCulture, aby uniknąć problemów z przecinkami/kropkami.
+                    if (double.TryParse(stringValue.Replace("0x", "").Replace(" ", ""),
+                                       System.Globalization.NumberStyles.Any,
+                                       System.Globalization.CultureInfo.InvariantCulture,
+                                       out double value))
+                    {
+                        string seriesName = dataGridView1.Rows[i].Cells["Name"].Value?.ToString() ?? "Register";
+
+                        // Dodanie nazwy nadrzędnej zakładki/grupy do nazwy serii
+                        string fullSeriesName = this.Parent?.Text + " - " + seriesName;
+
+                        chartData.Add(new ChartDataPoint
+                        {
+                            SeriesName = fullSeriesName,
+                            Value = value,
+                            Timestamp = now
+                        });
+                    }
+                }
+
+                // Pomiń ukryte wiersze (część większej wartości)
+                if (regsNeeded > 1)
+                {
+                    i += (regsNeeded - 1);
+                }
+            }
+
+            return chartData;
+        }
+
         #endregion
 
         #region Formatting Logic
@@ -997,7 +1100,7 @@ namespace MP_ModbusApp
                         case DisplayFormat.Float32_LE:
                         case DisplayFormat.Float32_BE_BS:
                         case DisplayFormat.Float32_LE_BS:
-                            return BitConverter.ToSingle(bytes, 0).ToString("F3"); // 3 decimal places
+                            return BitConverter.ToSingle(bytes, 0).ToString("F3", System.Globalization.CultureInfo.InvariantCulture); // 3 decimal places
 
                         // 32-bit ASCII (bytes are already MSB...LSB)
                         case DisplayFormat.ASCII32_BE:
@@ -1048,7 +1151,7 @@ namespace MP_ModbusApp
                         case DisplayFormat.Double64_LE:
                         case DisplayFormat.Float64_BE_BS: // Alias for Double
                         case DisplayFormat.Float64_LE_BS: // Alias for Double
-                            return BitConverter.ToDouble(bytes, 0).ToString("F5"); // 5 decimal places
+                            return BitConverter.ToDouble(bytes, 0).ToString("F5", System.Globalization.CultureInfo.InvariantCulture); // 5 decimal places
 
                         // 64-bit ASCII (bytes are already MSB...LSB)
                         case DisplayFormat.ASCII64_BE:
@@ -1104,25 +1207,23 @@ namespace MP_ModbusApp
                 DisplayFormat format = (DisplayFormat)dataGridView1.Rows[i].Cells["DisplayFormatColumn"].Value;
                 int regsNeeded = GetRegistersForFormat(format);
 
-                // --- NEW LOGIC: Disable Charting for non-numeric types ---
+                // --- LOGIKA CHARTINGOWA: Wyłączanie dla typów nienumerycznych ---
                 bool isNumeric = IsNumericFormat(format);
                 DataGridViewCheckBoxCell chartCell = (DataGridViewCheckBoxCell)dataGridView1.Rows[i].Cells["Chart"];
 
-                // 1. Set ReadOnly state
                 chartCell.ReadOnly = !isNumeric;
 
-                // 2. Uncheck if it was checked and became non-numeric
                 if (!isNumeric && (bool)(chartCell.Value ?? false))
                 {
                     chartCell.Value = false;
                 }
 
-                // 3. Set visual state (color) - makes the disabled cell look different
+                // Ustaw wizualny stan wyłączonego checkboxa
                 chartCell.Style.BackColor = isNumeric ? dataGridView1.DefaultCellStyle.BackColor : SystemColors.ControlLight;
-                // --- END NEW LOGIC ---
+                // --- KONIEC LOGIKI CHARTINGOWEJ ---
 
 
-                // Step 3: Format the "RegisterNumber" cell (e.g., "100" or "100 - 103")
+                // Step 3: Format the "RegisterNumber" cell
                 int baseRegNum = i + (int)startRegister.Value;
                 if (regsNeeded == 1)
                 {
@@ -1146,16 +1247,20 @@ namespace MP_ModbusApp
                         {
                             dataGridView1.Rows[i + j].Visible = false;
 
-                            // Also explicitly disable/uncheck chart for hidden rows
+                            // Także jawne wyłączenie/odznaczenie wykresu dla ukrytych wierszy
                             DataGridViewCheckBoxCell hiddenChartCell = (DataGridViewCheckBoxCell)dataGridView1.Rows[i + j].Cells["Chart"];
                             hiddenChartCell.ReadOnly = true;
                             hiddenChartCell.Value = false;
+                            hiddenChartCell.Style.BackColor = SystemColors.ControlLight;
                         }
                     }
                     i += (regsNeeded - 1); // Skip the rows we just hid
                 }
             }
             dataGridView1.ResumeLayout();
+
+            // NOWE: Wywołaj zdarzenie po pełnym odświeżeniu wartości
+            OnChartDataUpdated(new ChartDataUpdateEventArgs(GetChartData()));
         }
 
         #endregion

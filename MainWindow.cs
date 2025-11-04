@@ -754,6 +754,9 @@ namespace MP_ModbusApp
                             ReadingsTab readingsTab = new ReadingsTab { Dock = DockStyle.Fill };
                             readingsTab.SetConfiguration(funcCode, startAddr, quantity);
 
+                            // FIX: Subskrypcja eventu do publicznej metody w ModbusDevice
+                            readingsTab.ChartDataUpdated += deviceForm.ReadingsTab_ChartDataUpdated;
+
                             TabPage newTab = new TabPage(groupName);
                             newTab.Controls.Add(readingsTab);
                             deviceForm.DeviceTabControl.TabPages.Add(newTab);

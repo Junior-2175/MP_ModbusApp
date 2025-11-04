@@ -24,6 +24,17 @@ namespace MP_ModbusApp
 
         public event EventHandler DeviceSaved;
 
+        // --- NOWE POLA DLA WYKRESU ---
+        private TabPage chartTabPage = null;
+        private ChartTab chartControl = null;
+
+        // POPRAWKA CS0123/CS0426: Użycie bezpośredniej nazwy klasy argumentów
+        public void ReadingsTab_ChartDataUpdated(object sender, ChartDataUpdateEventArgs e)
+        {
+            UpdateChartDataFromAllTabs();
+        }
+        // --- KONIEC NOWYCH PÓL ---
+
         public string DeviceName
         {
             get => this.Text;
@@ -49,6 +60,9 @@ namespace MP_ModbusApp
 
             // Connect the "Pause" button event
             this.stopToolStripMenuItem.Click += new System.EventHandler(this.stopToolStripMenuItem_Click);
+
+            // NOWE: Podpięcie zdarzenia do obsługi kliknięcia "Chart"
+            this.chartToolStripMenuItem.Click += new System.EventHandler(this.chartToolStripMenuItem_Click);
         }
 
         /// <summary>
@@ -69,10 +83,24 @@ namespace MP_ModbusApp
                 tabNo = tabNo + 1;
                 tabPanel1.SelectedTab = newTab;
                 newTab.Text = "Readings " + tabNo;
-                newTab.Controls.Add(new ReadingsTab() { Dock = DockStyle.Fill });
+
+                ReadingsTab readingsTab = new ReadingsTab() { Dock = DockStyle.Fill };
+                readingsTab.ChartDataUpdated += ReadingsTab_ChartDataUpdated; // Podpięcie zdarzenia
+                newTab.Controls.Add(readingsTab);
+
                 tabPanel1.TabPages.Add(newTab);
             }
             txtRenameTab.Visible = false;
+
+            // --- Podpięcie zdarzeń dla załadowanych zakładek (jeśli były ładowane z DB) ---
+            foreach (TabPage page in tabPanel1.TabPages)
+            {
+                if (page.Controls[0] is ReadingsTab tab)
+                {
+                    tab.ChartDataUpdated += ReadingsTab_ChartDataUpdated;
+                }
+            }
+            // --------------------------------------------------------------------------------
 
             // Automatically start polling after a short delay
             await Task.Delay(100);
@@ -86,10 +114,67 @@ namespace MP_ModbusApp
         {
             TabPage newTab = new TabPage();
             tabNo = tabNo + 1;
-            tabPanel1.SelectedTab = newTab;
             newTab.Text = "Readings " + tabNo;
-            newTab.Controls.Add(new ReadingsTab() { Dock = DockStyle.Fill });
+
+            ReadingsTab readingsTab = new ReadingsTab() { Dock = DockStyle.Fill };
+            readingsTab.ChartDataUpdated += ReadingsTab_ChartDataUpdated; // Podpięcie zdarzenia
+
+            newTab.Controls.Add(readingsTab);
             tabPanel1.TabPages.Add(newTab);
+            tabPanel1.SelectedTab = newTab;
+        }
+
+        /// <summary>
+        /// Implementacja otwierania zakładki z wykresem.
+        /// </summary>
+        private void chartToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (chartTabPage == null || chartTabPage.IsDisposed)
+            {
+                // 1. Utwórz i zainicjuj ChartTab (jeśli nie istnieje)
+                chartControl = new ChartTab() { Dock = DockStyle.Fill };
+                chartTabPage = new TabPage("Chart");
+                chartTabPage.Controls.Add(chartControl);
+                tabPanel1.TabPages.Add(chartTabPage);
+            }
+
+            // 2. Aktywuj zakładkę
+            tabPanel1.SelectedTab = chartTabPage;
+
+            // 3. Ręcznie wywołaj aktualizację danych wykresu po otwarciu, aby odświeżyć stan
+            UpdateChartDataFromAllTabs();
+        }
+
+        /// <summary>
+        /// Zbieranie danych ze wszystkich zakładek ReadingsTab i aktualizacja ChartTab.
+        /// </summary>
+        private void UpdateChartDataFromAllTabs()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(UpdateChartDataFromAllTabs));
+                return;
+            }
+
+            if (chartControl == null || chartControl.IsDisposed)
+            {
+                return;
+            }
+
+            var allChartData = new List<ChartDataPoint>();
+
+            // Iteracja przez zakładki w poszukiwaniu danych
+            foreach (TabPage page in tabPanel1.TabPages)
+            {
+                // Sprawdź, czy kontrolka wewnątrz zakładki to ReadingsTab
+                if (page.Controls.Count > 0 && page.Controls[0] is ReadingsTab readingsTab)
+                {
+                    allChartData.AddRange(readingsTab.GetChartData());
+                }
+            }
+
+            // Wysłanie skumulowanych danych do kontrolki wykresu
+            chartControl.UpdateChart(allChartData);
         }
 
         /// <summary>
@@ -510,6 +595,10 @@ namespace MP_ModbusApp
                 if (!_isPolling) break;
 
                 if (tabPage.Controls[0] is not ReadingsTab readingsTab) continue;
+
+                // Pomiń zakładkę wykresu, jeśli jest otwarta
+                if (tabPage == chartTabPage) continue;
+
 
                 int funcCode = 0;
                 ushort startAddr = 0;
