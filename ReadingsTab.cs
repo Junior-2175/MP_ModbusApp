@@ -10,23 +10,7 @@ using System.Linq;
 
 namespace MP_ModbusApp
 {
-    // KLASY POMOCNICZE WSPÓLNE DLA CAŁEJ PRZESTRZENI NAZW
-    public class ChartDataPoint
-    {
-        public string SeriesName { get; set; }
-        public double Value { get; set; }
-        public DateTime Timestamp { get; set; }
-    }
-
-    public class ChartDataUpdateEventArgs : EventArgs
-    {
-        public List<ChartDataPoint> DataPoints { get; }
-        public ChartDataUpdateEventArgs(List<ChartDataPoint> dataPoints)
-        {
-            DataPoints = dataPoints;
-        }
-    }
-    // KONIEC KLAS POMOCNICZYCH
+    
 
     public partial class ReadingsTab : UserControl
     {
@@ -1399,4 +1383,22 @@ namespace MP_ModbusApp
             ApplyFormatToSelected(DisplayFormat.Bool16);
         }
     }
+
+    // KLASY POMOCNICZE WSPÓLNE DLA CAŁEJ PRZESTRZENI NAZW
+    public class ChartDataPoint
+    {
+        public string SeriesName { get; set; }
+        public double Value { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+
+    public class ChartDataUpdateEventArgs : EventArgs
+    {
+        public List<ChartDataPoint> DataPoints { get; }
+        public ChartDataUpdateEventArgs(List<ChartDataPoint> dataPoints)
+        {
+            DataPoints = dataPoints;
+        }
+    }
+    // KONIEC KLAS POMOCNICZYCH
 }
