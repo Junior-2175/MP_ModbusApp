@@ -86,6 +86,7 @@ namespace MP_ModbusApp
 
                 ReadingsTab readingsTab = new ReadingsTab() { Dock = DockStyle.Fill };
                 readingsTab.ChartDataUpdated += ReadingsTab_ChartDataUpdated; // Podpięcie zdarzenia
+                readingsTab.WriteValueRequested += ReadingsTab_WriteValueRequested; // NOWE: Podpięcie zdarzenia zapisu
                 newTab.Controls.Add(readingsTab);
 
                 tabPanel1.TabPages.Add(newTab);
@@ -98,6 +99,7 @@ namespace MP_ModbusApp
                 if (page.Controls[0] is ReadingsTab tab)
                 {
                     tab.ChartDataUpdated += ReadingsTab_ChartDataUpdated;
+                    tab.WriteValueRequested += ReadingsTab_WriteValueRequested; // NOWE: Podpięcie zdarzenia zapisu
                 }
             }
             // --------------------------------------------------------------------------------
@@ -105,6 +107,178 @@ namespace MP_ModbusApp
             // Automatically start polling after a short delay
             await Task.Delay(100);
             startToolStripMenuItem_Click(sender, e);
+        }
+
+        /// <summary>
+        /// Handles the WriteValueRequested event from any ReadingsTab and executes the Modbus write.
+        /// Używa FC 05 (Write Single Coil) i FC 06/16 (Write Single/Multiple Registers).
+        /// </summary>
+        public async void ReadingsTab_WriteValueRequested(object sender, WriteRequestedEventArgs e)
+        {
+            if (_modbusMaster == null)
+            {
+                ShowDeviceError("Port nie jest podłączony! Nie można wykonać zapisu.");
+                e.ReadingsTab.ShowTabError("Brak połączenia.");
+                return;
+            }
+
+            // 1. Wstrzymaj polling, aby uniknąć kolizji
+            bool wasPolling = _isPolling;
+            StopPolling();
+
+            // Ustaw nazwę urządzenia do logowania
+            if (_modbusMaster.Transport is MP_modbus.ModbusTransportBase transport)
+            {
+                transport.LoggingDeviceName = this.DeviceName + " (" + this.slaveId.Value.ToString() + ")";
+            }
+
+            try
+            {
+                byte slaveId = (byte)this.SlaveId;
+                ushort address = e.StartAddress;
+                string rawValue = e.ValueString;
+                int regsNeeded = e.ReadingsTab.GetRegistersForFormat(e.Format);
+
+                if (e.FunctionCode == 0) // Coils (FC 05)
+                {
+                    bool valueToWrite = false;
+
+                    // Logika konwersji wartości boolowskiej (dla formatu Bool16/default)
+                    if (e.Format == ReadingsTab.DisplayFormat.Bool16)
+                    {
+                        if (!bool.TryParse(rawValue, out valueToWrite))
+                        {
+                            throw new ArgumentException($"Nieprawidłowa wartość logiczna dla formatu Bool16 (oczekiwano True/False): {rawValue}");
+                        }
+                    }
+                    else // Domyślna konwersja (np. 0/1) dla Coil
+                    {
+                        if (rawValue.Trim() == "0") valueToWrite = false;
+                        else if (rawValue.Trim() == "1") valueToWrite = true;
+                        else if (int.TryParse(rawValue, out int intVal)) valueToWrite = (intVal != 0);
+                        else throw new ArgumentException($"Nieprawidłowa wartość dla Coila (oczekiwano True/False/0/1): {rawValue}");
+                    }
+
+                    // Użycie FC 05 (Write Single Coil)
+                    await _modbusMaster.WriteSingleCoilAsync(slaveId, address, valueToWrite);
+                    LogFrame("TX_Write", $"Zapis Coil {address} = {valueToWrite} (FC 05)", "Write OK");
+                }
+                else if (e.FunctionCode == 2) // Holding Registers (FC 06/16)
+                {
+                    ushort[] valuesToWrite;
+
+                    if (regsNeeded == 1) // 16-bit, używamy FC 06
+                    {
+                        ushort valueToWrite;
+
+                        if (e.Format == ReadingsTab.DisplayFormat.Unsigned16)
+                        {
+                            if (!ushort.TryParse(rawValue, out valueToWrite))
+                                throw new ArgumentException($"Nieprawidłowa wartość 16-bit Unsigned (oczekiwano 0-65535): {rawValue}");
+                        }
+                        else if (e.Format == ReadingsTab.DisplayFormat.Signed16)
+                        {
+                            if (!short.TryParse(rawValue, out short signedValue))
+                                throw new ArgumentException($"Nieprawidłowa wartość 16-bit Signed: {rawValue}");
+                            valueToWrite = (ushort)signedValue;
+                        }
+                        else if (e.Format == ReadingsTab.DisplayFormat.Hex16)
+                        {
+                            string cleanHex = rawValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? rawValue.Substring(2) : rawValue;
+                            if (!ushort.TryParse(cleanHex, System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out valueToWrite))
+                                throw new ArgumentException($"Nieprawidłowa wartość Hex: {rawValue}");
+                        }
+                        else if (e.Format == ReadingsTab.DisplayFormat.ASCII)
+                        {
+                            if (rawValue.Length != 2) throw new ArgumentException($"Dla formatu ASCII 16-bit oczekiwano 2 znaków: {rawValue}");
+                            byte byte1 = (byte)rawValue[0];
+                            byte byte2 = (byte)rawValue[1];
+                            valueToWrite = (ushort)((byte1 << 8) | byte2);
+                        }
+                        else
+                        {
+                            throw new NotSupportedException($"Wewnętrzny błąd logiki zapisu dla formatu: {e.Format}.");
+                        }
+
+                        // Użycie FC 06 (Write Single Register)
+                        await _modbusMaster.WriteSingleRegisterAsync(slaveId, address, valueToWrite);
+                        LogFrame("TX_Write", $"Zapis Rejestru {address} = {valueToWrite} (FC 06)", "Write OK");
+                    }
+                    else // 32-bit (2 rejestry) lub 64-bit (4 rejestry), używamy FC 16
+                    {
+                        string fmtStr = e.Format.ToString();
+
+                        if (fmtStr.Contains("Unsigned") && regsNeeded == 2) // 32-bit Unsigned (UInt32)
+                        {
+                            if (!uint.TryParse(rawValue, out uint uIntValue)) throw new ArgumentException($"Nieprawidłowa wartość UInt32: {rawValue}");
+                            valuesToWrite = MP_modbus.ModbusUtils.ConvertValueToRegisters(uIntValue, e.Format);
+                        }
+                        else if (fmtStr.Contains("Signed") && regsNeeded == 2) // 32-bit Signed (Int32)
+                        {
+                            if (!int.TryParse(rawValue, out int intValue)) throw new ArgumentException($"Nieprawidłowa wartość Int32: {rawValue}");
+                            valuesToWrite = MP_modbus.ModbusUtils.ConvertValueToRegisters(intValue, e.Format);
+                        }
+                        else if (fmtStr.Contains("Float32")) // 32-bit Float (Real)
+                        {
+                            if (!float.TryParse(rawValue, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float floatValue))
+                                throw new ArgumentException($"Nieprawidłowa wartość zmiennoprzecinkowa Float32: {rawValue}");
+                            valuesToWrite = MP_modbus.ModbusUtils.ConvertValueToRegisters(floatValue, e.Format);
+                        }
+                        else if (fmtStr.Contains("Unsigned") && regsNeeded == 4) // 64-bit Unsigned (ULong)
+                        {
+                            if (!ulong.TryParse(rawValue, out ulong ulongValue)) throw new ArgumentException($"Nieprawidłowa wartość ULong64: {rawValue}");
+                            valuesToWrite = MP_modbus.ModbusUtils.ConvertValueToRegisters(ulongValue, e.Format);
+                        }
+                        else if (fmtStr.Contains("Signed") && regsNeeded == 4) // 64-bit Signed (Long)
+                        {
+                            if (!long.TryParse(rawValue, out long longValue)) throw new ArgumentException($"Nieprawidłowa wartość Long64: {rawValue}");
+                            valuesToWrite = MP_modbus.ModbusUtils.ConvertValueToRegisters(longValue, e.Format);
+                        }
+                        else if (fmtStr.Contains("Double64") || fmtStr.Contains("Float64")) // 64-bit Double (Real)
+                        {
+                            if (!double.TryParse(rawValue, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double doubleValue))
+                                throw new ArgumentException($"Nieprawidłowa wartość zmiennoprzecinkowa Double64: {rawValue}");
+                            valuesToWrite = MP_modbus.ModbusUtils.ConvertValueToRegisters(doubleValue, e.Format);
+                        }
+                        else if (fmtStr.Contains("ASCII")) // ASCII Multi-register
+                        {
+                            valuesToWrite = MP_modbus.ModbusUtils.ConvertAsciiToRegisters(rawValue, e.Format);
+                        }
+                        else
+                        {
+                            throw new NotSupportedException($"Zapis formatu {e.Format} ({regsNeeded * 16}-bit) nie jest obsługiwany przez obecną logikę konwersji.");
+                        }
+
+                        // Użycie FC 16 (Write Multiple Registers)
+                        await _modbusMaster.WriteMultipleRegistersAsync(slaveId, address, valuesToWrite);
+                        LogFrame("TX_Write", $"Zapis {regsNeeded * 16}-bit Reg {address} = {rawValue} ({e.Format.ToString()}, FC 16)", "Write OK");
+                    }
+                }
+
+                e.ReadingsTab.ClearTabError();
+
+                // 2. Wymuś natychmiastowy odczyt, aby odświeżyć wartość w siatce
+                await PollDeviceOnce();
+            }
+            catch (MP_modbus.MyModbusSlaveException modbusEx)
+            {
+                string simpleError = MP_modbus.ModbusUtils.GetExceptionName(modbusEx.SlaveExceptionCode);
+                e.ReadingsTab.ShowTabError($"Błąd Modbus: {simpleError}");
+                LogFrame("Error", "", $"Zapis nieudany: {modbusEx.Message}");
+            }
+            catch (Exception ex)
+            {
+                e.ReadingsTab.ShowTabError($"Błąd zapisu: {ex.Message}");
+                LogFrame("Error", "", $"Zapis nieudany: {ex.Message}");
+            }
+            finally
+            {
+                // 3. Wznów polling, jeśli był wcześniej aktywny
+                if (wasPolling)
+                {
+                    startToolStripMenuItem_Click(this, EventArgs.Empty);
+                }
+            }
         }
 
         /// <summary>
@@ -118,6 +292,7 @@ namespace MP_ModbusApp
 
             ReadingsTab readingsTab = new ReadingsTab() { Dock = DockStyle.Fill };
             readingsTab.ChartDataUpdated += ReadingsTab_ChartDataUpdated; // Podpięcie zdarzenia
+            readingsTab.WriteValueRequested += ReadingsTab_WriteValueRequested; // NOWE: Podpięcie zdarzenia zapisu
 
             newTab.Controls.Add(readingsTab);
             tabPanel1.TabPages.Add(newTab);
@@ -286,7 +461,10 @@ namespace MP_ModbusApp
             tabNo = tabNo + 1;
             tabPanel1.SelectedTab = newTab;
             newTab.Text = "Readings " + tabNo;
-            newTab.Controls.Add(new ReadingsTab() { Dock = DockStyle.Fill });
+            ReadingsTab readingsTab = new ReadingsTab() { Dock = DockStyle.Fill };
+            readingsTab.ChartDataUpdated += ReadingsTab_ChartDataUpdated;
+            readingsTab.WriteValueRequested += ReadingsTab_WriteValueRequested; // NOWE: Podpięcie zdarzenia zapisu
+            newTab.Controls.Add(readingsTab);
             tabPanel1.TabPages.Add(newTab);
         }
 

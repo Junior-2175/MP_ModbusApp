@@ -48,6 +48,36 @@ namespace MP_ModbusApp.MP_modbus
         /// <returns>An array of 16-bit unsigned integers representing the register values.</returns>
         Task<ushort[]> ReadInputRegistersAsync(byte slaveId, ushort startAddress, ushort quantity);
 
-        // Write methods (WriteCoilsAsync, WriteRegistersAsync, etc.) can be added here
+        /// <summary>
+        /// Writes a single coil (Function Code 05).
+        /// </summary>
+        /// <param name="slaveId">The slave device address.</param>
+        /// <param name="address">The address of the coil to write.</param>
+        /// <param name="value">The boolean value to write.</param>
+        Task WriteSingleCoilAsync(byte slaveId, ushort address, bool value);
+
+        /// <summary>
+        /// Writes a single holding register (Function Code 06).
+        /// </summary>
+        /// <param name="slaveId">The slave device address.</param>
+        /// <param name="address">The address of the register to write.</param>
+        /// <param name="value">The 16-bit unsigned integer value to write.</param>
+        Task WriteSingleRegisterAsync(byte slaveId, ushort address, ushort value);
+
+        /// <summary>
+        /// Writes a sequence of coils (Function Code 15).
+        /// </summary>
+        /// <param name="slaveId">The slave device address.</param>
+        /// <param name="startAddress">The starting address.</param>
+        /// <param name="values">The boolean values to write.</param>
+        Task WriteMultipleCoilsAsync(byte slaveId, ushort startAddress, bool[] values);
+
+        /// <summary>
+        /// Writes a sequence of holding registers (Function Code 16).
+        /// </summary>
+        /// <param name="slaveId">The slave device address.</param>
+        /// <param name="startAddress">The starting address.</param>
+        /// <param name="values">The 16-bit unsigned integer values to write.</param>
+        Task WriteMultipleRegistersAsync(byte slaveId, ushort startAddress, ushort[] values);
     }
 }

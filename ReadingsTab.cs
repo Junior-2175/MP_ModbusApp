@@ -14,8 +14,10 @@ namespace MP_ModbusApp
 
     public partial class ReadingsTab : UserControl
     {
-        // Nowe zdarzenie używające klasy w przestrzeni nazw
         public event EventHandler<ChartDataUpdateEventArgs> ChartDataUpdated;
+
+        // NOWY EVENT: Zdarzenie wywoływane po edycji komórki
+        public event EventHandler<WriteRequestedEventArgs> WriteValueRequested;
 
         // Flag to prevent recursive event loops when updating numeric up/down controls
         private bool _isUpdatingValues = false;
@@ -89,9 +91,6 @@ namespace MP_ModbusApp
             InitializeComponent();
 
             // --- Link context menu items to DisplayFormat enums using the Tag property ---
-            // This allows a generic click handler to know which format to apply.
-
-            // 16-bit
             this.unsignedToolStripMenuItem.Tag = DisplayFormat.Unsigned16;
             this.signedToolStripMenuItem.Tag = DisplayFormat.Signed16;
             this.binaryToolStripMenuItem.Tag = DisplayFormat.Binary16;
@@ -132,27 +131,21 @@ namespace MP_ModbusApp
 
 
             // --- Connect all event handlers from the designer ---
-            // (These are auto-generated but linked here for clarity)
-
-            // 32-bit Unsigned BS
             this.bigendianToolStripMenuItem1.Click += new System.EventHandler(this.unsigned32BEBSToolStripMenuItem_Click);
             this.bigendianToolStripMenuItem1.Tag = DisplayFormat.Unsigned32_BE_BS;
             this.littleendianToolStripMenuItem1.Click += new System.EventHandler(this.unsigned32LEBSToolStripMenuItem_Click);
             this.littleendianToolStripMenuItem1.Tag = DisplayFormat.Unsigned32_LE_BS;
 
-            // 32-bit Signed BS
             this.bigendianByteSwapToolStripMenuItem.Click += new System.EventHandler(this.signed32BEBSToolStripMenuItem_Click);
             this.bigendianByteSwapToolStripMenuItem.Tag = DisplayFormat.Signed32_BE_BS;
             this.littleendianByteSwapToolStripMenuItem1.Click += new System.EventHandler(this.signed32LEBSToolStripMenuItem_Click);
             this.littleendianByteSwapToolStripMenuItem1.Tag = DisplayFormat.Signed32_LE_BS;
 
-            // 32-bit Real BS
             this.bigendianByteSwapToolStripMenuItem1.Click += new System.EventHandler(this.float32BEBSToolStripMenuItem_Click);
             this.bigendianByteSwapToolStripMenuItem1.Tag = DisplayFormat.Float32_BE_BS;
             this.littleendianByteSwapToolStripMenuItem.Click += new System.EventHandler(this.float32LEBSToolStripMenuItem_Click);
             this.littleendianByteSwapToolStripMenuItem.Tag = DisplayFormat.Float32_LE_BS;
 
-            // 32-bit Hex
             this.bigendianToolStripMenuItem4.Click += new System.EventHandler(this.hex32BEToolStripMenuItem_Click);
             this.bigendianToolStripMenuItem4.Tag = DisplayFormat.Hex32_BE;
             this.littleendianToolStripMenuItem5.Click += new System.EventHandler(this.hex32LEToolStripMenuItem_Click);
@@ -162,7 +155,6 @@ namespace MP_ModbusApp
             this.littleendianByteSwapToolStripMenuItem2.Click += new System.EventHandler(this.hex32LEBSToolStripMenuItem_Click);
             this.littleendianByteSwapToolStripMenuItem2.Tag = DisplayFormat.Hex32_LE_BS;
 
-            // 32-bit ASCII
             this.bigendianToolStripMenuItem5.Click += new System.EventHandler(this.ascii32BEToolStripMenuItem_Click);
             this.bigendianToolStripMenuItem5.Tag = DisplayFormat.ASCII32_BE;
             this.littleendianToolStripMenuItem4.Click += new System.EventHandler(this.ascii32LEToolStripMenuItem_Click);
@@ -172,7 +164,6 @@ namespace MP_ModbusApp
             this.littleendianByteSwapToolStripMenuItem3.Click += new System.EventHandler(this.ascii32LEBSToolStripMenuItem_Click);
             this.littleendianByteSwapToolStripMenuItem3.Tag = DisplayFormat.ASCII32_LE_BS;
 
-            // 64-bit Hex
             this.bigendianToolStripMenuItem9.Click += new System.EventHandler(this.hex64BEToolStripMenuItem_Click);
             this.bigendianToolStripMenuItem9.Tag = DisplayFormat.Hex64_BE;
             this.littleendianToolStripMenuItem9.Click += new System.EventHandler(this.hex64LEToolStripMenuItem_Click);
@@ -182,9 +173,10 @@ namespace MP_ModbusApp
             this.littleendianByteSwapToolStripMenuItem7.Click += new System.EventHandler(this.hex64LEBSToolStripMenuItem_Click);
             this.littleendianByteSwapToolStripMenuItem7.Tag = DisplayFormat.Hex64_LE_BS;
 
-            // --- NOWE: Podpięcie zdarzeń dla kolumny Chart ---
+            // --- NOWE: Podpięcie zdarzeń do obsługi wykresu i ZAPISU ---
             this.dataGridView1.CellValueChanged += new DataGridViewCellEventHandler(this.dataGridView1_CellValueChanged);
             this.dataGridView1.CurrentCellDirtyStateChanged += new EventHandler(this.dataGridView1_CurrentCellDirtyStateChanged);
+            this.dataGridView1.CellEndEdit += new DataGridViewCellEventHandler(this.dataGridView1_CellEndEdit);
         }
 
         private void ReadingsTab_Load(object sender, EventArgs e)
@@ -217,9 +209,68 @@ namespace MP_ModbusApp
             }
         }
 
+        /// <summary>
+        /// NOWA METODA: Obsługuje zakończenie edycji komórki 'Value' i wywołuje zdarzenie zapisu.
+        /// </summary>
+        private void dataGridView1_CellEndEdit(object sender, DataGridViewCellEventArgs e)
+        {
+            // Sprawdź, czy edytowana komórka znajduje się w kolumnie "Value"
+            if (e.RowIndex < 0 || e.ColumnIndex != Value.Index) return;
+
+            int funcCode = GetFunctionCode();
+
+            // Zapis jest dozwolony tylko dla Coils (FC 01, index 0) i Holding Registers (FC 03, index 2)
+            if (funcCode != 0 && funcCode != 2)
+            {
+                MessageBox.Show("Zapis jest dozwolony tylko dla Coils (0x) i Holding Registers (4x).", "Błąd zapisu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                // Cofnij edycję (prosta metoda: odśwież DataGridView)
+                RefreshDisplayValues();
+                return;
+            }
+
+            // Adres rejestru/Coila, który jest wyświetlany w tym wierszu
+            int startAddressForTab = GetStartAddress();
+            ushort transactionAddress = (ushort)(startAddressForTab + e.RowIndex);
+
+            string valueString = dataGridView1.Rows[e.RowIndex].Cells[Value.Index].Value?.ToString() ?? "";
+            DisplayFormat format = (DisplayFormat)dataGridView1.Rows[e.RowIndex].Cells["DisplayFormatColumn"].Value;
+            int regsNeeded = GetRegistersForFormat(format); // Sprawdź, ile rejestrów wymaga format
+
+            if (string.IsNullOrWhiteSpace(valueString)) return;
+
+            // Logika walidacji edycji dla pól wielorejestrowych
+            if (regsNeeded > 1 && dataGridView1.Rows[e.RowIndex].Cells["Value"].ReadOnly)
+            {
+                // To się nie powinno zdarzyć, jeśli flaga ReadOnly została poprawnie ustawiona
+                // Jeśli jednak nastąpiła edycja wiersza, który nie jest początkiem grupy
+                MessageBox.Show("Edycja jest dozwolona tylko w pierwszym wierszu grupy wielorejestrowej (np. 40001).", "Błąd edycji", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                RefreshDisplayValues();
+                return;
+            }
+
+            // Cofnij wyświetlaną wartość do "---" do czasu następnego odczytu
+            dataGridView1.Rows[e.RowIndex].Cells[Value.Index].Value = "---";
+
+            // Wywołaj zdarzenie. SlaveId zostanie dodane w ModbusDevice.
+            OnWriteValueRequested(new WriteRequestedEventArgs(
+                funcCode,
+                transactionAddress,
+                valueString,
+                this,
+                format,
+                e.RowIndex
+            ));
+        }
+
+
         protected virtual void OnChartDataUpdated(ChartDataUpdateEventArgs e)
         {
             ChartDataUpdated?.Invoke(this, e);
+        }
+
+        protected virtual void OnWriteValueRequested(WriteRequestedEventArgs e)
+        {
+            WriteValueRequested?.Invoke(this, e);
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -946,7 +997,7 @@ namespace MP_ModbusApp
         /// <summary>
         /// Returns the number of 16-bit registers required for a given format.
         /// </summary>
-        private int GetRegistersForFormat(DisplayFormat format)
+        public int GetRegistersForFormat(DisplayFormat format) // Zmieniono na PUBLIC
         {
             string fmtStr = format.ToString();
 
@@ -1206,6 +1257,12 @@ namespace MP_ModbusApp
                 chartCell.Style.BackColor = isNumeric ? dataGridView1.DefaultCellStyle.BackColor : SystemColors.ControlLight;
                 // --- KONIEC LOGIKI CHARTINGOWEJ ---
 
+                // Umożliwia edycję tylko dla Coils (FC 01, index 0) i Holding Registers (FC 03, index 2)
+                bool isCoilOrHolding = (GetFunctionCode() == 0 || GetFunctionCode() == 2);
+
+                // Nowe: Zezwalamy na edycję tylko wiersza "głównego" (pierwszego w grupie)
+                bool isEditable = isCoilOrHolding && (i + regsNeeded <= dataGridView1.Rows.Count);
+                dataGridView1.Rows[i].Cells["Value"].ReadOnly = !isEditable;
 
                 // Step 3: Format the "RegisterNumber" cell
                 int baseRegNum = i + (int)startRegister.Value;
@@ -1230,6 +1287,7 @@ namespace MP_ModbusApp
                         if (i + j < dataGridView1.Rows.Count)
                         {
                             dataGridView1.Rows[i + j].Visible = false;
+                            dataGridView1.Rows[i + j].Cells["Value"].ReadOnly = true; // Ukryte wiersze nie są edytowalne
 
                             // Także jawne wyłączenie/odznaczenie wykresu dla ukrytych wierszy
                             DataGridViewCheckBoxCell hiddenChartCell = (DataGridViewCheckBoxCell)dataGridView1.Rows[i + j].Cells["Chart"];
@@ -1384,6 +1442,7 @@ namespace MP_ModbusApp
         }
     }
 
+
     // KLASY POMOCNICZE WSPÓLNE DLA CAŁEJ PRZESTRZENI NAZW
     public class ChartDataPoint
     {
@@ -1398,6 +1457,31 @@ namespace MP_ModbusApp
         public ChartDataUpdateEventArgs(List<ChartDataPoint> dataPoints)
         {
             DataPoints = dataPoints;
+        }
+    }
+
+    /// <summary>
+    /// Argumenty zdarzenia żądania zapisu z ReadingsTab.
+    /// </summary>
+    public class WriteRequestedEventArgs : EventArgs
+    {
+        public byte SlaveId { get; set; }
+        // 0=Coil (Read FC 01), 2=Holding Register (Read FC 03)
+        public int FunctionCode { get; set; }
+        public ushort StartAddress { get; set; } // Adres Modbus wiersza
+        public string ValueString { get; set; }
+        public ReadingsTab ReadingsTab { get; set; }
+        public ReadingsTab.DisplayFormat Format { get; set; } // Format danych
+        public int RowIndex { get; set; } // Index w DataGridView
+
+        public WriteRequestedEventArgs(int functionCode, ushort startAddress, string valueString, ReadingsTab tab, ReadingsTab.DisplayFormat format, int rowIndex)
+        {
+            FunctionCode = functionCode;
+            StartAddress = startAddress;
+            ValueString = valueString;
+            ReadingsTab = tab;
+            Format = format;
+            RowIndex = rowIndex;
         }
     }
     // KONIEC KLAS POMOCNICZYCH
