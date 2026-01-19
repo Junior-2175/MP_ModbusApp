@@ -15,7 +15,7 @@ namespace MP_ModbusApp
     public partial class ReadingsTab : UserControl
     {
         public event EventHandler<ChartDataUpdateEventArgs> ChartDataUpdated;
-
+        private ushort[] _prevRawData = null;
         // NOWY EVENT: Zdarzenie wywoływane po edycji komórki
         public event EventHandler<WriteRequestedEventArgs> WriteValueRequested;
 
@@ -1298,9 +1298,28 @@ namespace MP_ModbusApp
                     }
                     i += (regsNeeded - 1); // Skip the rows we just hid
                 }
+
+                if (_rawData != null && _prevRawData != null && i < _rawData.Length && i < _prevRawData.Length)
+                {
+                    if (_rawData[i] != _prevRawData[i])
+                    {
+                        // Zmieniono wartość - podświetl na żółto (lub inny kolor)
+                        dataGridView1.Rows[i].Cells["Value"].Style.BackColor = ColorTranslator.FromHtml("#00A2E8");
+                        dataGridView1.Rows[i].Cells["Value"].Style.ForeColor = Color.DarkBlue;
+                    }
+                    else
+                    {
+                        // Wartość stała - przywróć domyślne kolory (zrób Fade-out w timerze dla lepszego efektu, lub po prostu przywróć tutaj)
+                        dataGridView1.Rows[i].Cells["Value"].Style.BackColor = dataGridView1.DefaultCellStyle.BackColor;
+                        dataGridView1.Rows[i].Cells["Value"].Style.ForeColor = dataGridView1.DefaultCellStyle.ForeColor;
+                    }
+                }
+
+
             }
             dataGridView1.ResumeLayout();
-
+            if (_rawData != null)
+                _prevRawData = (ushort[])_rawData.Clone();
             // NOWE: Wywołaj zdarzenie po pełnym odświeżeniu wartości
             OnChartDataUpdated(new ChartDataUpdateEventArgs(GetChartData()));
         }
