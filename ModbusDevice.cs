@@ -51,6 +51,7 @@ namespace MP_ModbusApp
 
         private TabPage tabToRename = null;
         private int tabNo = 0;
+
         public ModbusDevice()
         {
             InitializeComponent();
@@ -91,12 +92,13 @@ namespace MP_ModbusApp
 
                 tabPanel1.TabPages.Add(newTab);
             }
-            txtRenameTab.Visible = false;
+
+            // Usunięto odwołanie do txtRenameTab, ponieważ używamy teraz okna dialogowego
 
             // --- Podpięcie zdarzeń dla załadowanych zakładek (jeśli były ładowane z DB) ---
             foreach (TabPage page in tabPanel1.TabPages)
             {
-                if (page.Controls[0] is ReadingsTab tab)
+                if (page.Controls.Count > 0 && page.Controls[0] is ReadingsTab tab)
                 {
                     tab.ChartDataUpdated += ReadingsTab_ChartDataUpdated;
                     tab.WriteValueRequested += ReadingsTab_WriteValueRequested; // NOWE: Podpięcie zdarzenia zapisu
@@ -265,11 +267,15 @@ namespace MP_ModbusApp
                 string simpleError = MP_modbus.ModbusUtils.GetExceptionName(modbusEx.SlaveExceptionCode);
                 e.ReadingsTab.ShowTabError($"Błąd Modbus: {simpleError}");
                 LogFrame("Error", "", $"Zapis nieudany: {modbusEx.Message}");
+                MessageBox.Show($"Błąd urządzenia Modbus podczas zapisu:\n{simpleError}", "Błąd zapisu", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
             catch (Exception ex)
             {
                 e.ReadingsTab.ShowTabError($"Błąd zapisu: {ex.Message}");
                 LogFrame("Error", "", $"Zapis nieudany: {ex.Message}");
+
+                // ULEPSZENIE: Wyraźny komunikat dla użytkownika o błędzie zapisu
+                MessageBox.Show($"Nie udało się zapisać wartości.\nSzczegóły: {ex.Message}", "Błąd zapisu", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -364,25 +370,11 @@ namespace MP_ModbusApp
         }
 
         /// <summary>
-        /// Initiates the tab rename process by showing a TextBox over the tab.
+        /// Initiates the tab rename process using a standard dialog.
         /// </summary>
         private void renameToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            tabToRename = tabPanel1.SelectedTab;
-            if (tabToRename == null) return;
-
-            Rectangle tabRect = tabPanel1.GetTabRect(tabPanel1.SelectedIndex);
-            Point textCords = new Point(
-                tabPanel1.Left + tabRect.Left,
-                tabPanel1.Top + tabRect.Top);
-            txtRenameTab.Location = textCords;
-            txtRenameTab.Size = tabRect.Size;
-            txtRenameTab.Text = tabToRename.Text;
-
-            txtRenameTab.Visible = true;
-            txtRenameTab.BringToFront();
-            txtRenameTab.Focus();
-            txtRenameTab.SelectAll();
+            PerformTabRename();
         }
 
         /// <summary>
@@ -406,50 +398,29 @@ namespace MP_ModbusApp
         }
 
         /// <summary>
-        /// Handles key presses in the rename TextBox (Enter to confirm, Escape to cancel).
+        /// Helper function to rename the currently selected tab using RenameForm.
         /// </summary>
-        private void txtRenameTab_KeyDown(object sender, KeyEventArgs e)
+        private void PerformTabRename()
         {
-            if (e.KeyCode == Keys.Enter)
-            {
-                AllowRename();
-                e.SuppressKeyPress = true;
-            }
-            else if (e.KeyCode == Keys.Escape)
-            {
-                CancelRename();
-            }
-        }
-
-        /// <summary>
-        /// Applies the new name to the tab and hides the rename TextBox.
-        /// </summary>
-        private void AllowRename()
-        {
+            tabToRename = tabPanel1.SelectedTab;
             if (tabToRename == null) return;
-            if (!string.IsNullOrWhiteSpace(txtRenameTab.Text))
+
+            using (RenameForm renameDialog = new RenameForm())
             {
-                tabToRename.Text = txtRenameTab.Text;
+                renameDialog.Text = "Zmień nazwę grupy";
+                renameDialog.newName = tabToRename.Text;
+
+                if (renameDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(renameDialog.newName))
+                {
+                    tabToRename.Text = renameDialog.newName;
+                }
             }
-
-            txtRenameTab.Visible = false;
             tabToRename = null;
-            txtRenameTab.Parent = this;
-        }
-
-        /// <summary>
-        /// Cancels the tab rename process.
-        /// </summary>
-        private void CancelRename()
-        {
-            txtRenameTab.Visible = false;
-            tabToRename = null;
-            txtRenameTab.Parent = this;
         }
 
         private void ModbusDevice_Resize(object sender, EventArgs e)
         {
-            CancelRename();
+            // Brak potrzeby anulowania edycji, ponieważ używamy teraz okna modalnego
         }
 
         /// <summary>
@@ -473,22 +444,8 @@ namespace MP_ModbusApp
         /// </summary>
         private void tabPanel1_DoubleClick(object sender, EventArgs e)
         {
-            tabToRename = tabPanel1.SelectedTab;
-            if (tabToRename == null) return;
-
-            Rectangle tabRect = tabPanel1.GetTabRect(tabPanel1.SelectedIndex);
-            Point textCords = new Point(
-                tabPanel1.Left + tabRect.Left,
-                tabPanel1.Top + tabRect.Top);
-            txtRenameTab.Location = textCords;
-            txtRenameTab.Size = tabRect.Size;
-            txtRenameTab.Text = tabToRename.Text;
-
-            txtRenameTab.Visible = true;
-            txtRenameTab.BringToFront();
-            txtRenameTab.Focus();
-            txtRenameTab.SelectAll();
-
+            // ULEPSZENIE: Użycie okna dialogowego zamiast nakładanego TextBoxa
+            PerformTabRename();
         }
 
         /// <summary>
@@ -593,7 +550,7 @@ namespace MP_ModbusApp
                     // --- Save all tabs (ReadingGroups) and their registers ---
                     foreach (TabPage tabPage in tabPanel1.TabPages)
                     {
-                        if (tabPage.Controls[0] is ReadingsTab readingsTab)
+                        if (tabPage.Controls.Count > 0 && tabPage.Controls[0] is ReadingsTab readingsTab)
                         {
                             // Insert the ReadingGroup
                             var groupCmd = connection.CreateCommand();
@@ -750,6 +707,12 @@ namespace MP_ModbusApp
         {
             if (!_isPolling || _modbusMaster == null) return;
 
+            // OPTYMALIZACJA: Jeśli okno jest zminimalizowane, nie odświeżaj UI
+            if (this.WindowState == FormWindowState.Minimized)
+            {
+                return;
+            }
+
             // Set the custom device name in the transport layer *before* polling.
             // This ensures all TX/RX logs generated during this poll cycle
             // use this device's friendly name (this.DeviceName).
@@ -772,7 +735,7 @@ namespace MP_ModbusApp
                 // we don't want to continue with the next ones.
                 if (!_isPolling) break;
 
-                if (tabPage.Controls[0] is not ReadingsTab readingsTab) continue;
+                if (tabPage.Controls.Count == 0 || tabPage.Controls[0] is not ReadingsTab readingsTab) continue;
 
                 // Pomiń zakładkę wykresu, jeśli jest otwarta
                 if (tabPage == chartTabPage) continue;

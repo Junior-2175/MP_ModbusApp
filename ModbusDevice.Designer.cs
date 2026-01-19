@@ -239,7 +239,7 @@
             txtRenameTab.Name = "txtRenameTab";
             txtRenameTab.Size = new Size(100, 23);
             txtRenameTab.TabIndex = 8;
-            txtRenameTab.KeyDown += txtRenameTab_KeyDown;
+            //txtRenameTab.KeyDown += txtRenameTab_KeyDown;
             // 
             // ModbusDevice
             // 

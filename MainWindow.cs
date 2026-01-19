@@ -297,6 +297,8 @@ namespace MP_ModbusApp
             cboxComPort.Items.Clear();
             string portsClassGuid = "{4d36e978-e325-11ce-bfc1-08002be10318}"; // WMI GUID for ports
 
+            System.Collections.Generic.List<string> foundPorts = new System.Collections.Generic.List<string>();
+
             try
             {
                 using (var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_PnPEntity"))
@@ -345,7 +347,7 @@ namespace MP_ModbusApp
 
                         // Prepend a warning symbol if the device status is not "OK"
                         string finalDisplayName = (status != "OK" ? "⚠ " : "") + $"{portName} - {caption}{interfaceType}";
-                        cboxComPort.Items.Add(finalDisplayName);
+                        foundPorts.Add(finalDisplayName);
                     }
                 }
             }
@@ -354,9 +356,18 @@ namespace MP_ModbusApp
                 Debug.WriteLine($"Failed to query WMI for COM ports: {ex.Message}");
                 // Fallback to simple SerialPort.GetPortNames()
                 var portNames = SerialPort.GetPortNames();
-                cboxComPort.Items.AddRange(portNames);
+                foundPorts.AddRange(portNames);
             }
 
+            // ULEPSZENIE: Sortowanie portów numeryczne (COM2 przed COM10)
+            var sortedPorts = foundPorts.OrderBy(x =>
+            {
+                // Wyciągnij numer portu za pomocą RegEx dla poprawnego sortowania (COM2 < COM10)
+                var match = Regex.Match(x, @"COM(\d+)");
+                return match.Success ? int.Parse(match.Groups[1].Value) : 9999;
+            }).ToArray();
+
+            cboxComPort.Items.AddRange(sortedPorts);
 
             if (cboxComPort.Items.Count == 0)
             {
@@ -477,6 +488,12 @@ namespace MP_ModbusApp
         private async void btnConnect_Click(object sender, EventArgs e)
         {
             string connectionPort = "";
+
+            // ULEPSZENIE: Feedback dla użytkownika (klepsydra i blokada przycisku)
+            Cursor.Current = Cursors.WaitCursor;
+            btnConnect.Enabled = false;
+            btnConnect.Text = "Łączenie...";
+
             try
             {
                 // Ensure the log window is created
@@ -542,6 +559,19 @@ namespace MP_ModbusApp
             {
                 MessageBox.Show($"Connection failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 Disconnect(); // Clean up any partial connection
+            }
+            finally
+            {
+                // Przywrócenie stanu interfejsu
+                Cursor.Current = Cursors.Default;
+                btnConnect.Text = "Connect"; // Przywróć oryginalny tekst (jeśli nie udało się połączyć, Disconnect w catch już obsłużył stan Enabled)
+
+                // Jeśli łączenie się nie powiodło (czyli UpdateUiState(true) nie zostało wywołane),
+                // musimy upewnić się, że przycisk jest odblokowany.
+                if (_modbusMaster == null)
+                {
+                    btnConnect.Enabled = true;
+                }
             }
         }
 

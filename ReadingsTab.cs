@@ -7,15 +7,20 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using System.Text;
 using System.Collections.Generic;
 using System.Linq;
-
 namespace MP_ModbusApp
 {
-    
+
 
     public partial class ReadingsTab : UserControl
     {
         public event EventHandler<ChartDataUpdateEventArgs> ChartDataUpdated;
         private ushort[] _prevRawData = null;
+
+        private Dictionary<int, DateTime> _lastChangeTimes = new Dictionary<int, DateTime>();
+        private const int FADE_DURATION_MS = 1000; // Czas trwania mignięcia (1 sekunda)
+        private readonly Color _flashColor = ColorTranslator.FromHtml("#00A2E8"); // Twój kolor mignięcia
+
+
         // NOWY EVENT: Zdarzenie wywoływane po edycji komórki
         public event EventHandler<WriteRequestedEventArgs> WriteValueRequested;
 
@@ -88,6 +93,7 @@ namespace MP_ModbusApp
 
         public ReadingsTab()
         {
+
             InitializeComponent();
 
             // --- Link context menu items to DisplayFormat enums using the Tag property ---
@@ -1242,25 +1248,19 @@ namespace MP_ModbusApp
                 DisplayFormat format = (DisplayFormat)dataGridView1.Rows[i].Cells["DisplayFormatColumn"].Value;
                 int regsNeeded = GetRegistersForFormat(format);
 
-                // --- LOGIKA CHARTINGOWA: Wyłączanie dla typów nienumerycznych ---
+                // --- LOGIKA CHARTINGOWA ---
                 bool isNumeric = IsNumericFormat(format);
                 DataGridViewCheckBoxCell chartCell = (DataGridViewCheckBoxCell)dataGridView1.Rows[i].Cells["Chart"];
-
                 chartCell.ReadOnly = !isNumeric;
-
                 if (!isNumeric && (bool)(chartCell.Value ?? false))
                 {
                     chartCell.Value = false;
                 }
-
-                // Ustaw wizualny stan wyłączonego checkboxa
                 chartCell.Style.BackColor = isNumeric ? dataGridView1.DefaultCellStyle.BackColor : SystemColors.ControlLight;
-                // --- KONIEC LOGIKI CHARTINGOWEJ ---
+                // --------------------------
 
-                // Umożliwia edycję tylko dla Coils (FC 01, index 0) i Holding Registers (FC 03, index 2)
+                // Edycja
                 bool isCoilOrHolding = (GetFunctionCode() == 0 || GetFunctionCode() == 2);
-
-                // Nowe: Zezwalamy na edycję tylko wiersza "głównego" (pierwszego w grupie)
                 bool isEditable = isCoilOrHolding && (i + regsNeeded <= dataGridView1.Rows.Count);
                 dataGridView1.Rows[i].Cells["Value"].ReadOnly = !isEditable;
 
@@ -1279,6 +1279,33 @@ namespace MP_ModbusApp
                 // Step 4: Format the "Value" cell
                 dataGridView1.Rows[i].Cells["Value"].Value = FormatValue(i);
 
+                // --- POPRAWIONE WYKRYWANIE ZMIAN (ANIMACJA) ---
+                // Sprawdzamy czy ZMIENIŁ SIĘ którykolwiek z rejestrów składających się na tę wartość
+                bool valueChanged = false;
+                if (_rawData != null && _prevRawData != null)
+                {
+                    for (int offset = 0; offset < regsNeeded; offset++)
+                    {
+                        int checkIndex = i + offset;
+                        // Upewnij się, że nie wychodzimy poza zakres tablicy
+                        if (checkIndex < _rawData.Length && checkIndex < _prevRawData.Length)
+                        {
+                            if (_rawData[checkIndex] != _prevRawData[checkIndex])
+                            {
+                                valueChanged = true;
+                                break; // Wystarczy jedna zmiana składowa
+                            }
+                        }
+                    }
+                }
+
+                if (valueChanged)
+                {
+                    // Zapisujemy czas zmiany dla GŁÓWNEGO (widocznego) indeksu wiersza 'i'
+                    _lastChangeTimes[i] = DateTime.Now;
+                }
+                // ----------------------------------------------
+
                 // Step 5: Hide subsequent rows that are part of this multi-register value
                 if (regsNeeded > 1)
                 {
@@ -1287,40 +1314,25 @@ namespace MP_ModbusApp
                         if (i + j < dataGridView1.Rows.Count)
                         {
                             dataGridView1.Rows[i + j].Visible = false;
-                            dataGridView1.Rows[i + j].Cells["Value"].ReadOnly = true; // Ukryte wiersze nie są edytowalne
+                            dataGridView1.Rows[i + j].Cells["Value"].ReadOnly = true;
 
-                            // Także jawne wyłączenie/odznaczenie wykresu dla ukrytych wierszy
                             DataGridViewCheckBoxCell hiddenChartCell = (DataGridViewCheckBoxCell)dataGridView1.Rows[i + j].Cells["Chart"];
                             hiddenChartCell.ReadOnly = true;
                             hiddenChartCell.Value = false;
                             hiddenChartCell.Style.BackColor = SystemColors.ControlLight;
                         }
                     }
-                    i += (regsNeeded - 1); // Skip the rows we just hid
+                    // Przeskakujemy indeksy, które właśnie ukryliśmy, aby pętla for ich nie mieliła jako osobnych wartości
+                    i += (regsNeeded - 1);
                 }
-
-                if (_rawData != null && _prevRawData != null && i < _rawData.Length && i < _prevRawData.Length)
-                {
-                    if (_rawData[i] != _prevRawData[i])
-                    {
-                        // Zmieniono wartość - podświetl na żółto (lub inny kolor)
-                        dataGridView1.Rows[i].Cells["Value"].Style.BackColor = ColorTranslator.FromHtml("#00A2E8");
-                        dataGridView1.Rows[i].Cells["Value"].Style.ForeColor = Color.DarkBlue;
-                    }
-                    else
-                    {
-                        // Wartość stała - przywróć domyślne kolory (zrób Fade-out w timerze dla lepszego efektu, lub po prostu przywróć tutaj)
-                        dataGridView1.Rows[i].Cells["Value"].Style.BackColor = dataGridView1.DefaultCellStyle.BackColor;
-                        dataGridView1.Rows[i].Cells["Value"].Style.ForeColor = dataGridView1.DefaultCellStyle.ForeColor;
-                    }
-                }
-
-
             }
+
             dataGridView1.ResumeLayout();
+
+            // Klonujemy dane do _prevRawData na potrzeby następnego cyklu
             if (_rawData != null)
                 _prevRawData = (ushort[])_rawData.Clone();
-            // NOWE: Wywołaj zdarzenie po pełnym odświeżeniu wartości
+
             OnChartDataUpdated(new ChartDataUpdateEventArgs(GetChartData()));
         }
 
@@ -1458,6 +1470,74 @@ namespace MP_ModbusApp
         private void boolToolStripMenuItem_Click(object sender, EventArgs e)
         {
             ApplyFormatToSelected(DisplayFormat.Bool16);
+        }
+
+        private void _fadeTimer_Tick(object sender, EventArgs e)
+        {
+            // Jeśli nie ma danych lub Grid nie jest gotowy, nic nie rób
+            if (dataGridView1.Rows.Count == 0) return;
+
+            DateTime now = DateTime.Now;
+
+            // Iterujemy tylko po widocznych wierszach dla wydajności
+            foreach (DataGridViewRow row in dataGridView1.Rows)
+            {
+                if (row.IsNewRow || !row.Visible) continue;
+
+                int index = row.Index;
+
+                // Sprawdzamy, czy ten wiersz był niedawno aktualizowany
+                if (_lastChangeTimes.TryGetValue(index, out DateTime lastChange))
+                {
+                    double elapsedMs = (now - lastChange).TotalMilliseconds;
+
+                    if (elapsedMs < FADE_DURATION_MS)
+                    {
+                        // Obliczanie koloru pośredniego (interpolacja)
+                        // 0ms = 100% flashColor, 1000ms = 100% defaultColor
+                        float percentage = (float)(elapsedMs / FADE_DURATION_MS);
+
+                        Color targetColor = InterpolateColor(_flashColor, dataGridView1.DefaultCellStyle.BackColor, percentage);
+
+                        // Ustaw kolor tła
+                        if (row.Cells["Value"].Style.BackColor != targetColor)
+                        {
+                            row.Cells["Value"].Style.BackColor = targetColor;
+
+                            // Opcjonalnie: Zmień kolor tekstu na biały/ciemny w zależności od tła
+                            // row.Cells["Value"].Style.ForeColor = (percentage < 0.5) ? Color.White : dataGridView1.DefaultCellStyle.ForeColor;
+                        }
+                    }
+                    else
+                    {
+                        // Czas minął - przywróć domyślny, jeśli jeszcze nie jest przywrócony
+                        if (row.Cells["Value"].Style.BackColor != dataGridView1.DefaultCellStyle.BackColor)
+                        {
+                            row.Cells["Value"].Style.BackColor = dataGridView1.DefaultCellStyle.BackColor;
+                            row.Cells["Value"].Style.ForeColor = dataGridView1.DefaultCellStyle.ForeColor;
+                        }
+
+                        // Opcjonalnie: Można usunąć klucz ze słownika, żeby nie sprawdzać go ciągle,
+                        // ale przy małej liczbie rejestrów (Modbus zazwyczaj < 125) Dictionary jest bardzo szybki.
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Miesza dwa kolory w zadanej proporcji.
+        /// </summary>
+        private Color InterpolateColor(Color start, Color end, float percentage)
+        {
+            // Zabezpieczenie zakresu 0..1
+            if (percentage < 0) percentage = 0;
+            if (percentage > 1) percentage = 1;
+
+            int r = (int)(start.R + (end.R - start.R) * percentage);
+            int g = (int)(start.G + (end.G - start.G) * percentage);
+            int b = (int)(start.B + (end.B - start.B) * percentage);
+
+            return Color.FromArgb(r, g, b);
         }
     }
 
