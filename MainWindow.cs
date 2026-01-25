@@ -1308,20 +1308,39 @@ namespace MP_ModbusApp
 
         private void slaveScanToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            DeviceScan scanForm = new DeviceScan(this._modbusMaster); // lub jakkolwiek nazywa się Twoja instancja mastera
+            // Tworzenie okna skanera
+            DeviceScan scanForm = new DeviceScan(this._modbusMaster);
             scanForm.MdiParent = this;
+
+            // --- PODPIĘCIE ZDARZENIA PAUZOWANIA ---
+            scanForm.ScanningStateChanged += (s, isScanning) =>
+            {
+                // Iterujemy po wszystkich oknach podrzędnych (MDI Children)
+                foreach (Form child in this.MdiChildren)
+                {
+                    // Szukamy okien typu ModbusDevice (czyli tych z wykresami i odczytami)
+                    if (child is ModbusDevice deviceForm)
+                    {
+                        if (isScanning)
+                        {
+                            // Skaner działa -> ZATRZYMAJ odpytywanie w tle
+                            deviceForm.StopPolling();
+                        }
+                        else
+                        {
+                            // Skaner skończył -> WZNÓW odpytywanie
+                            // UWAGA: Upewnij się, że w ModbusDevice.cs masz metodę StartPolling()!
+                            // Jeśli jej nie masz, dodaj ją w ModbusDevice.cs (zwyczajnie timer1.Start())
+                            deviceForm.StartPolling();
+                        }
+                    }
+                }
+            };
+
             scanForm.Show();
-
-
-            //var slaveScan = new DeviceScan
-            //{
-            //    MdiParent = this
-            //};
-            //// Add event handler to refresh the tree when a new device is saved
-            ////newDevice.DeviceSaved += (s, ev) => LoadDevicesToTree();
-            //slaveScan.Show();
-            //slaveScan.Activate();
         }
+
+
 
         private void addresScanToolStripMenuItem_Click(object sender, EventArgs e)
         {

@@ -14,7 +14,9 @@ namespace MP_ModbusApp
         private readonly IMyModbusMaster _modbusMaster;
         private CancellationTokenSource _cts;
 
-        // Główny konstruktor - przyjmuje instancję Mastera Modbus
+        // Zdarzenie informujące o stanie skanowania
+        public event EventHandler<bool> ScanningStateChanged;
+
         public DeviceScan(IMyModbusMaster modbusMaster)
         {
             InitializeComponent();
@@ -22,26 +24,20 @@ namespace MP_ModbusApp
             SetupDataGridView();
         }
 
-        // Konstruktor bezparametrowy (dla Designera Visual Studio)
         public DeviceScan()
         {
             InitializeComponent();
             SetupDataGridView();
         }
 
-        // Konfiguracja kolumn w tabeli wyników
         private void SetupDataGridView()
         {
-            // Upewniamy się, że kontrolka istnieje (zabezpieczenie)
             if (scanResultsGrid == null) return;
 
             scanResultsGrid.Columns.Clear();
-
-            // Dodajemy kolumny
             scanResultsGrid.Columns.Add("colSlaveId", "Adres ID");
             scanResultsGrid.Columns.Add("colStatus", "Status");
 
-            // Ustawienia wyglądu
             scanResultsGrid.Columns[0].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             scanResultsGrid.Columns[1].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
 
@@ -50,31 +46,17 @@ namespace MP_ModbusApp
             scanResultsGrid.RowHeadersVisible = false;
         }
 
-        private void slaveId_ValueChanged(object sender, EventArgs e)
-        {
-            ValidateRange();
-        }
-
-        private void numericUpDown1_ValueChanged(object sender, EventArgs e)
-        {
-            ValidateRange();
-        }
+        private void slaveId_ValueChanged(object sender, EventArgs e) { ValidateRange(); }
+        private void numericUpDown1_ValueChanged(object sender, EventArgs e) { ValidateRange(); }
 
         private void ValidateRange()
         {
-            int startValue = (int)startId.Value;
-            int endValue = (int)endId.Value;
-            if (startValue > endValue)
-            {
-                endId.Value = startValue;
-            }
+            if (startId.Value > endId.Value) endId.Value = startId.Value;
         }
 
         // --- ROZPOCZĘCIE SKANOWANIA ---
         private async void startToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            startToolStripMenuItem.Enabled = false;
-            stopToolStripMenuItem1.Enabled = true;
             if (_modbusMaster == null)
             {
                 MessageBox.Show("Modbus Master nie jest zainicjalizowany.", "Błąd", MessageBoxButtons.OK, MessageBoxIcon.Error);
@@ -85,91 +67,101 @@ namespace MP_ModbusApp
             startToolStripMenuItem.Enabled = false;
             stopToolStripMenuItem1.Enabled = true;
 
-            // Czyścimy poprzednie wyniki
             scanResultsGrid.Rows.Clear();
 
-            // Pobieramy zakres z kontrolek
+            // Powiadom MainWindow o starcie
+            ScanningStateChanged?.Invoke(this, true);
+
             byte start = (byte)startId.Value;
             byte end = (byte)endId.Value;
-
-            // Parametry testowego odczytu (np. rejestr 10, ilość 1)
             ushort registerAddress = 10;
             ushort quantity = 1;
 
             try
             {
-                // Pętla po wszystkich adresach w zakresie
                 for (int i = start; i <= end; i++)
                 {
-                    // Sprawdzenie czy użytkownik wcisnął STOP
+                    // 1. Sprawdź czy okno nie zostało zamknięte
+                    if (this.IsDisposed) break;
+
+                    // 2. Sprawdź czy użytkownik nie anulował
                     if (_cts.Token.IsCancellationRequested)
                     {
-                        AddScanResult(0, "Stoped", Color.Orange);
+                        AddScanResult(0, "Stopped", Color.Orange);
                         break;
                     }
 
                     byte currentSlaveId = (byte)i;
 
-                    // Automatyczne przewijanie tabeli do dołu
-                    if (scanResultsGrid.Rows.Count > 0)
+                    // Przewijanie tabeli (tylko jeśli okno istnieje)
+                    if (!this.IsDisposed && scanResultsGrid.Rows.Count > 0)
                         scanResultsGrid.FirstDisplayedScrollingRowIndex = scanResultsGrid.Rows.Count - 1;
 
                     try
                     {
-                        // Wykonanie zapytania Modbus (FC 03)
                         await _modbusMaster.ReadHoldingRegistersAsync(currentSlaveId, registerAddress, quantity);
-
-                        // Jeśli nie ma wyjątku -> PEŁNY SUKCES (ZIELONY)
                         AddScanResult(currentSlaveId, "Response OK", Color.LightGreen);
                     }
                     catch (TimeoutException)
                     {
-                        // Timeout -> BRAK URZĄDZENIA (CZERWONY)
                         AddScanResult(currentSlaveId, "Timeout", Color.Salmon);
                     }
-                    catch (MyModbusSlaveException ex)
+                    catch (MyModbusSlaveException)
                     {
-                        // Urządzenie odpowiedziało błędem logicznym (np. zły adres) -> URZĄDZENIE JEST (ZIELONY)
-                        AddScanResult(currentSlaveId, "Response OK", Color.LightGreen);
+                        AddScanResult(currentSlaveId, "Response OK (Exception)", Color.LightGreen);
                     }
-                    catch (IOException ex)
+                    catch (IOException)
                     {
-                        // Urządzenie odpowiedziało, ale ramka jest uszkodzona -> URZĄDZENIE JEST (ZIELONY)
-                        AddScanResult(currentSlaveId, "Response OK", Color.LightGreen);
+                        AddScanResult(currentSlaveId, "Response OK (Frame Error)", Color.LightGreen);
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
-                        // Inny błąd
                         AddScanResult(currentSlaveId, "Error", Color.LightYellow);
                     }
 
-                    // Krótkie opóźnienie dla stabilności
-                    await Task.Delay(20);
+                    // Opóźnienie (chyba że anulowano)
+                    if (!_cts.Token.IsCancellationRequested)
+                        await Task.Delay(20);
                 }
+            }
+            catch (Exception ex)
+            {
+                // Logowanie błędów krytycznych pętli (opcjonalne)
+                System.Diagnostics.Debug.WriteLine("Błąd pętli skanowania: " + ex.Message);
             }
             finally
             {
-                startToolStripMenuItem.Enabled = true;
-                stopToolStripMenuItem1.Enabled = false;
+                // --- KLUCZOWA ZMIANA: Sprawdzamy czy okno nadal istnieje ---
+                // Nie możemy odwoływać się do kontrolek UI (ToolStripMenuItem), jeśli forma jest Disposed
+
+                if (!this.IsDisposed)
+                {
+                    startToolStripMenuItem.Enabled = true;
+                    stopToolStripMenuItem1.Enabled = false;
+                }
+
                 if (_cts != null)
                 {
                     _cts.Dispose();
                     _cts = null;
                 }
-                MessageBox.Show("Skanowanie zakończone.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                // Powiadom MainWindow, że można wznowić komunikację (to jest bezpieczne)
+                ScanningStateChanged?.Invoke(this, false);
+
+                // Wyświetl komunikat o sukcesie TYLKO jeśli okno nadal jest otwarte
+                if (!this.IsDisposed)
+                {
+                    MessageBox.Show("Skanowanie zakończone.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
             }
         }
 
-        // --- ZATRZYMANIE SKANOWANIA ---
         private void stopToolStripMenuItem1_Click(object sender, EventArgs e)
         {
-            startToolStripMenuItem.Enabled = true;
-            stopToolStripMenuItem1.Enabled = false;
             _cts?.Cancel();
         }
 
-        // --- EKSPORT DO CSV ---
-        // Pamiętaj, aby podpiąć tę metodę pod przycisk lub menu w Designerze!
         private void exportToolStripMenuItem_Click_1(object sender, EventArgs e)
         {
             if (scanResultsGrid.Rows.Count == 0)
@@ -188,21 +180,15 @@ namespace MP_ModbusApp
                     try
                     {
                         StringBuilder sb = new StringBuilder();
+                        sb.AppendLine("Slave ID;Status");
 
-                        // Nagłówki kolumn
-                        sb.AppendLine("Slave ID;Status;Szczegoly");
-
-                        // Dane wierszy
                         foreach (DataGridViewRow row in scanResultsGrid.Rows)
                         {
                             if (!row.IsNewRow)
                             {
                                 string id = row.Cells[0].Value?.ToString() ?? "";
                                 string status = row.Cells[1].Value?.ToString() ?? "";
-
-                                // Zastąpienie ewentualnych średników w tekście, aby nie psuły formatu CSV
                                 status = status.Replace(";", ",");
-
                                 sb.AppendLine($"{id};{status}");
                             }
                         }
@@ -218,9 +204,12 @@ namespace MP_ModbusApp
             }
         }
 
-        // Metoda pomocnicza do dodawania wierszy
+        // Metoda bezpiecznie dodająca wiersz (nawet z innego wątku)
         private void AddScanResult(byte slaveId, string status, Color backColor)
         {
+            // ZABEZPIECZENIE PRZED BŁĘDEM: Jeśli okno lub grid nie istnieje, wyjdź
+            if (this.IsDisposed || scanResultsGrid.IsDisposed) return;
+
             if (scanResultsGrid.InvokeRequired)
             {
                 scanResultsGrid.Invoke(new Action(() => AddScanResult(slaveId, status, backColor)));
@@ -229,16 +218,24 @@ namespace MP_ModbusApp
 
             int rowIndex = scanResultsGrid.Rows.Add();
             DataGridViewRow row = scanResultsGrid.Rows[rowIndex];
-
             row.Cells[0].Value = slaveId > 0 ? slaveId.ToString() : "-";
             row.Cells[1].Value = status;
-
             row.DefaultCellStyle.BackColor = backColor;
         }
 
+        // Obsługa zamykania okna "krzyżykiem"
         private void DeviceScan_FormClosing(object sender, FormClosingEventArgs e)
         {
-            _cts?.Cancel();
+            // Jeśli skanowanie trwa, anuluj je
+            if (_cts != null && !_cts.IsCancellationRequested)
+            {
+                _cts.Cancel();
+            }
+
+            // Upewnij się, że MainWindow wie, że ma wznowić komunikację
+            // Wywołujemy to tutaj, bo blok 'finally' może się nie wykonać w odpowiednim momencie
+            // lub zostać przerwany, gdy okno jest niszczone.
+            ScanningStateChanged?.Invoke(this, false);
         }
     }
 }

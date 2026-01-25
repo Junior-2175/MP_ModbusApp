@@ -854,10 +854,35 @@ namespace MP_ModbusApp
             _mainWindow?.LogCommunicationEvent(logEntry);
         }
 
+        public void StartPolling()
+        {
+
+
+            ///startToolStripMenuItem_Click
+            ///
+
+            if (startToolStripMenuItem.Enabled)
+            {
+                startToolStripMenuItem.PerformClick();
+            }
+
+            //// Zakładając, że masz timer o nazwie np. pollTimer lub timerRead
+            //if (pollTimer != null && !pollTimer.Enabled)
+            //{
+            //    pollTimer.Start();
+            //}
+        }
+
+
         /// <summary>
         /// Ensures polling is stopped when the form is closed.
         /// </summary>
         private void ModbusDevice_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            this.StopPolling();
+        }
+
+        private void ModbusDevice_FormClosing(object sender, FormClosingEventArgs e)
         {
             this.StopPolling();
         }

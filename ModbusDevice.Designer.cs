@@ -239,7 +239,6 @@
             txtRenameTab.Name = "txtRenameTab";
             txtRenameTab.Size = new Size(100, 23);
             txtRenameTab.TabIndex = 8;
-            //txtRenameTab.KeyDown += txtRenameTab_KeyDown;
             // 
             // ModbusDevice
             // 
@@ -252,6 +251,7 @@
             Controls.Add(txtRenameTab);
             Name = "ModbusDevice";
             Text = "New Device";
+            FormClosing += ModbusDevice_FormClosing;
             FormClosed += ModbusDevice_FormClosed;
             Load += ModbusGroup_Load;
             Resize += ModbusDevice_Resize;

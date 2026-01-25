@@ -125,7 +125,7 @@
             endId.Name = "endId";
             endId.Size = new Size(69, 23);
             endId.TabIndex = 4;
-            endId.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            endId.Value = new decimal(new int[] { 10, 0, 0, 0 });
             endId.ValueChanged += numericUpDown1_ValueChanged;
             // 
             // label1
