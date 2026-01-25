@@ -31,20 +31,20 @@
             menuStrip1 = new MenuStrip();
             startToolStripMenuItem = new ToolStripMenuItem();
             stopToolStripMenuItem1 = new ToolStripMenuItem();
+            exportToolStripMenuItem = new ToolStripMenuItem();
             label4 = new Label();
             startId = new NumericUpDown();
             panel1 = new Panel();
             endId = new NumericUpDown();
             label1 = new Label();
-            exportToolStripMenuItem = new ToolStripMenuItem();
-            dataGridView1 = new DataGridView();
+            scanResultsGrid = new DataGridView();
             Slave_Id = new DataGridViewTextBoxColumn();
             Response = new DataGridViewTextBoxColumn();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)startId).BeginInit();
             panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)endId).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)dataGridView1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)scanResultsGrid).BeginInit();
             SuspendLayout();
             // 
             // menuStrip1
@@ -67,11 +67,20 @@
             // 
             // stopToolStripMenuItem1
             // 
-            stopToolStripMenuItem1.Image = Properties.Resources.icons8_pause_50;
+            stopToolStripMenuItem1.Enabled = false;
+            stopToolStripMenuItem1.Image = Properties.Resources.icons8_stop_48;
             stopToolStripMenuItem1.Name = "stopToolStripMenuItem1";
-            stopToolStripMenuItem1.Size = new Size(66, 20);
-            stopToolStripMenuItem1.Text = "Pause";
+            stopToolStripMenuItem1.Size = new Size(59, 20);
+            stopToolStripMenuItem1.Text = "Stop";
             stopToolStripMenuItem1.Click += stopToolStripMenuItem1_Click;
+            // 
+            // exportToolStripMenuItem
+            // 
+            exportToolStripMenuItem.Image = Properties.Resources.icons8_download_resume_48;
+            exportToolStripMenuItem.Name = "exportToolStripMenuItem";
+            exportToolStripMenuItem.Size = new Size(68, 20);
+            exportToolStripMenuItem.Text = "Export";
+            exportToolStripMenuItem.Click += exportToolStripMenuItem_Click_1;
             // 
             // label4
             // 
@@ -129,26 +138,19 @@
             label1.TabIndex = 5;
             label1.Text = "Stop Id:";
             // 
-            // exportToolStripMenuItem
+            // scanResultsGrid
             // 
-            exportToolStripMenuItem.Image = Properties.Resources.icons8_download_resume_48;
-            exportToolStripMenuItem.Name = "exportToolStripMenuItem";
-            exportToolStripMenuItem.Size = new Size(68, 20);
-            exportToolStripMenuItem.Text = "Export";
-            // 
-            // dataGridView1
-            // 
-            dataGridView1.AllowUserToAddRows = false;
-            dataGridView1.AllowUserToDeleteRows = false;
-            dataGridView1.AllowUserToResizeRows = false;
-            dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView1.Columns.AddRange(new DataGridViewColumn[] { Slave_Id, Response });
-            dataGridView1.Dock = DockStyle.Fill;
-            dataGridView1.Location = new Point(0, 100);
-            dataGridView1.Name = "dataGridView1";
-            dataGridView1.RowHeadersVisible = false;
-            dataGridView1.Size = new Size(295, 350);
-            dataGridView1.TabIndex = 8;
+            scanResultsGrid.AllowUserToAddRows = false;
+            scanResultsGrid.AllowUserToDeleteRows = false;
+            scanResultsGrid.AllowUserToResizeRows = false;
+            scanResultsGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            scanResultsGrid.Columns.AddRange(new DataGridViewColumn[] { Slave_Id, Response });
+            scanResultsGrid.Dock = DockStyle.Fill;
+            scanResultsGrid.Location = new Point(0, 100);
+            scanResultsGrid.Name = "scanResultsGrid";
+            scanResultsGrid.RowHeadersVisible = false;
+            scanResultsGrid.Size = new Size(295, 350);
+            scanResultsGrid.TabIndex = 8;
             // 
             // Slave_Id
             // 
@@ -170,19 +172,21 @@
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(295, 450);
-            Controls.Add(dataGridView1);
+            Controls.Add(scanResultsGrid);
             Controls.Add(panel1);
             Controls.Add(menuStrip1);
+            FormBorderStyle = FormBorderStyle.FixedDialog;
             MainMenuStrip = menuStrip1;
             Name = "DeviceScan";
             Text = "DeviceScan";
+            FormClosing += DeviceScan_FormClosing;
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)startId).EndInit();
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)endId).EndInit();
-            ((System.ComponentModel.ISupportInitialize)dataGridView1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)scanResultsGrid).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -198,7 +202,7 @@
         private ToolStripMenuItem startToolStripMenuItem;
         private ToolStripMenuItem stopToolStripMenuItem1;
         private ToolStripMenuItem exportToolStripMenuItem;
-        private DataGridView dataGridView1;
+        private DataGridView scanResultsGrid;
         private DataGridViewTextBoxColumn Slave_Id;
         private DataGridViewTextBoxColumn Response;
     }

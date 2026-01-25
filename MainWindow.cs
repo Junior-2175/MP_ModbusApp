@@ -1308,14 +1308,19 @@ namespace MP_ModbusApp
 
         private void slaveScanToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            var slaveScan = new DeviceScan
-            {
-                MdiParent = this
-            };
-            // Add event handler to refresh the tree when a new device is saved
-            //newDevice.DeviceSaved += (s, ev) => LoadDevicesToTree();
-            slaveScan.Show();
-            slaveScan.Activate();
+            DeviceScan scanForm = new DeviceScan(this._modbusMaster); // lub jakkolwiek nazywa się Twoja instancja mastera
+            scanForm.MdiParent = this;
+            scanForm.Show();
+
+
+            //var slaveScan = new DeviceScan
+            //{
+            //    MdiParent = this
+            //};
+            //// Add event handler to refresh the tree when a new device is saved
+            ////newDevice.DeviceSaved += (s, ev) => LoadDevicesToTree();
+            //slaveScan.Show();
+            //slaveScan.Activate();
         }
 
         private void addresScanToolStripMenuItem_Click(object sender, EventArgs e)
