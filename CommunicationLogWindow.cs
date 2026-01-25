@@ -228,7 +228,7 @@ namespace MP_ModbusApp
                         }
 
                         File.WriteAllText(saveFileDialog.FileName, sb.ToString());
-                        MessageBox.Show("Export completed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        //MessageBox.Show("Export completed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {

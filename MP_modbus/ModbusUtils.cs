@@ -2,17 +2,17 @@
 using System.Linq;
 using System.Buffers.Binary;
 using System.Text;
-using MP_ModbusApp; // Dodano, aby uzyskać dostęp do ReadingsTab.DisplayFormat
+using MP_ModbusApp;
 
 namespace MP_ModbusApp.MP_modbus
 {
     /// <summary>
     /// Provides static utility methods for Modbus RTU (CRC) and ASCII (LRC, conversions) protocols,
-    /// as well as helper functions for converting complex data types (like floats/doubles) to Modbus registers.
+    /// as well as helper functions for converting complex data types to Modbus registers.
     /// </summary>
     public static class ModbusUtils
     {
-        // --- Standardowe Funkcje Modbus (CRC, LRC, Konwersje) ---
+        // --- Standard Modbus Functions (CRC, LRC, Conversions) ---
 
         /// <summary>
         /// Computes the CRC-16 checksum for Modbus RTU.
@@ -53,7 +53,7 @@ namespace MP_ModbusApp.MP_modbus
         }
 
         /// <summary>
-        /// Converts a PDU frame to its ASCII (hex) representation (without LRC and markers).
+        /// Converts a PDU frame to its ASCII (hex) representation.
         /// </summary>
         public static byte[] PduToAscii(byte[] pdu)
         {
@@ -63,7 +63,7 @@ namespace MP_ModbusApp.MP_modbus
         }
 
         /// <summary>
-        /// Converts an ASCII (hex) frame back to a PDU (without LRC and markers).
+        /// Converts an ASCII (hex) frame back to a PDU.
         /// </summary>
         public static byte[] AsciiToPdu(byte[] asciiFrame)
         {
@@ -77,7 +77,7 @@ namespace MP_ModbusApp.MP_modbus
         }
 
         /// <summary>
-        /// Translates a Modbus exception code into its name (for UI display).
+        /// Translates a Modbus exception code into its name.
         /// </summary>
         public static string GetExceptionName(byte exceptionCode)
         {
@@ -98,7 +98,7 @@ namespace MP_ModbusApp.MP_modbus
         }
 
         /// <summary>
-        /// Translates a Modbus exception code into a full string (for logging).
+        /// Translates a Modbus exception code into a full log message.
         /// </summary>
         public static string GetFullExceptionMessage(byte functionCode, byte exceptionCode)
         {
@@ -107,44 +107,43 @@ namespace MP_ModbusApp.MP_modbus
             return $"Modbus Error (FC:{originalFunctionCode}, Code:{exceptionCode}) - {errorName}";
         }
 
-        // --- Funkcje Konwersji Wartości Wielobajtowych do Rejestrów (dla ZAPISU) ---
+        // --- Multi-byte Value Conversion Functions (for Write operations) ---
 
         /// <summary>
-        /// Zwraca całkowitą liczbę bajtów dla danego formatu.
+        /// Gets the total byte count required for a given display format.
         /// </summary>
         public static int GetTotalBytesForFormat(ReadingsTab.DisplayFormat format)
         {
             string fmtStr = format.ToString();
 
             if (fmtStr.Contains("64"))
-                return 8; // 4 rejestry * 2 bajty
+                return 8; // 4 registers * 2 bytes
 
             if (fmtStr.Contains("32"))
-                return 4; // 2 rejestry * 2 bajty
+                return 4; // 2 registers * 2 bytes
 
-            return 2; // 1 rejestr * 2 bajty
+            return 2; // 1 register * 2 bytes
         }
 
         /// <summary>
-        /// Konwertuje surowe bajty wartości numerycznej (np. float/double) na tablicę ushort[]
-        /// zgodnie z zadanym formatem.
+        /// Converts raw bytes of a numeric value to a ushort register array according to the specified format.
         /// </summary>
-        /// <typeparam name="T">Typ wartości (float, double, int, long, uint, ulong).</typeparam>
-        /// <param name="value">Wartość do konwersji.</param>
-        /// <param name="format">Format docelowy (np. Float32_BE, Signed64_LE_BS).</param>
-        /// <returns>Tablica rejestrów ushort w kolejności Modbus (Rejestr 1, Rejestr 2, ...).</returns>
+        /// <typeparam name="T">Value type (float, double, int, etc.).</typeparam>
+        /// <param name="value">The value to convert.</param>
+        /// <param name="format">Target Modbus display format.</param>
+        /// <returns>An array of ushort registers in Modbus order.</returns>
         public static ushort[] ConvertValueToRegisters<T>(T value, ReadingsTab.DisplayFormat format) where T : struct
         {
             byte[] valueBytes;
 
-            // Konwersja generyczna wartości na bajty w kolejności systemowej (zwykle Little Endian)
+            // System-dependent conversion (usually Little Endian)
             if (typeof(T) == typeof(float)) valueBytes = BitConverter.GetBytes((float)(object)value);
             else if (typeof(T) == typeof(double)) valueBytes = BitConverter.GetBytes((double)(object)value);
             else if (typeof(T) == typeof(int)) valueBytes = BitConverter.GetBytes((int)(object)value);
             else if (typeof(T) == typeof(uint)) valueBytes = BitConverter.GetBytes((uint)(object)value);
             else if (typeof(T) == typeof(long)) valueBytes = BitConverter.GetBytes((long)(object)value);
             else if (typeof(T) == typeof(ulong)) valueBytes = BitConverter.GetBytes((ulong)(object)value);
-            else throw new ArgumentException("Nieobsługiwany typ generyczny dla konwersji.");
+            else throw new ArgumentException("Unsupported generic type for conversion.");
 
             int totalBytes = valueBytes.Length;
             int numRegisters = totalBytes / 2;
@@ -157,38 +156,32 @@ namespace MP_ModbusApp.MP_modbus
             byte[] orderedBytes = new byte[totalBytes];
             int[] byteOrder;
 
-            if (totalBytes == 4) // 32-bit (float, int, uint)
+            if (totalBytes == 4) // 32-bit values
             {
-                // B0 B1 B2 B3 (kolejność PC LE)
                 if (isLE_Format)
-                    // LE Normal (1-0-3-2): R1(B1 B0), R2(B3 B2)
                     byteOrder = isBS_Format ? new[] { 2, 3, 0, 1 } : new[] { 1, 0, 3, 2 };
                 else // Big Endian
-                    // BE Normal (3-2-1-0): R1(B3 B2), R2(B1 B0)
                     byteOrder = isBS_Format ? new[] { 0, 1, 2, 3 } : new[] { 3, 2, 1, 0 };
             }
-            else if (totalBytes == 8) // 64-bit (double, long, ulong)
+            else if (totalBytes == 8) // 64-bit values
             {
-                // B0 B1 B2 B3 B4 B5 B6 B7 (kolejność PC LE)
                 if (isLE_Format)
-                    // LE Normal: R1(B1 B0), R2(B3 B2), R3(B5 B4), R4(B7 B6)
                     byteOrder = isBS_Format ? new[] { 6, 7, 4, 5, 2, 3, 0, 1 } : new[] { 1, 0, 3, 2, 5, 4, 7, 6 };
                 else // Big Endian
-                    // BE Normal: R1(B7 B6), R2(B5 B4), R3(B3 B2), R4(B1 B0)
                     byteOrder = isBS_Format ? new[] { 0, 1, 2, 3, 4, 5, 6, 7 } : new[] { 7, 6, 5, 4, 3, 2, 1, 0 };
             }
             else
             {
-                throw new NotSupportedException($"Nieobsługiwana liczba bajtów: {totalBytes}");
+                throw new NotSupportedException($"Unsupported byte count: {totalBytes}");
             }
 
-            // Mapowanie bajtów z kolejności systemowej na kolejność Modbus
+            // Map bytes from system order to Modbus order
             for (int i = 0; i < totalBytes; i++)
             {
                 orderedBytes[i] = valueBytes[byteOrder[i]];
             }
 
-            // Konwersja kolejnych par bajtów na rejestry ushort (Big Endian)
+            // Convert consecutive byte pairs to Big Endian ushort registers
             for (int i = 0; i < numRegisters; i++)
             {
                 registers[i] = BinaryPrimitives.ReadUInt16BigEndian(orderedBytes.AsSpan(i * 2, 2));
@@ -198,7 +191,7 @@ namespace MP_ModbusApp.MP_modbus
         }
 
         /// <summary>
-        /// Konwertuje ciąg znaków ASCII na tablicę rejestrów ushort[].
+        /// Converts an ASCII string to a ushort register array.
         /// </summary>
         public static ushort[] ConvertAsciiToRegisters(string value, ReadingsTab.DisplayFormat format)
         {
@@ -226,7 +219,6 @@ namespace MP_ModbusApp.MP_modbus
                 byte byte1 = asciiBytes[i * 2];
                 byte byte2 = asciiBytes[i * 2 + 1];
 
-                // Wymiana kolejności bajtów wewnątrz rejestru (byte swap)
                 if (isBS_Format)
                 {
                     // Lo-Byte, Hi-Byte
@@ -234,7 +226,7 @@ namespace MP_ModbusApp.MP_modbus
                 }
                 else
                 {
-                    // Standardowy Modbus (Big Endian) wewnątrz rejestru: Hi-Byte, Lo-Byte
+                    // Standard Modbus (Big Endian) within register: Hi-Byte, Lo-Byte
                     registers[i] = (ushort)((byte1 << 8) | byte2);
                 }
             }

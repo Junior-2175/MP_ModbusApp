@@ -11,9 +11,9 @@ namespace MP_ModbusApp
 {
     public partial class ChartTab : UserControl
     {
-        // Słownik do przechowywania historii punktów dla każdej serii
+        // Dictionary to store point history for each data series
         private readonly Dictionary<string, List<ChartDataPoint>> _seriesData = new Dictionary<string, List<ChartDataPoint>>();
-        private const int MaxPoints = 1024; // Maksymalna liczba punktów w historii
+        private const int MaxPoints = 1024; // Maximum number of points in history
 
         public ChartTab()
         {
@@ -21,15 +21,15 @@ namespace MP_ModbusApp
             this.btnClearLog.Click += new System.EventHandler(this.btnClearLog_Click);
             this.btnExportToCsv.Click += new System.EventHandler(this.btnExportToCsv_Click);
 
-            // Domyślne ukrycie
+            // Hide by default
             this.Visible = false;
 
-            // Konfiguracja wykresu 
+            // Chart configuration
             if (chart1.Series.Count > 0) chart1.Series.Clear();
             if (chart1.ChartAreas.Count == 0) chart1.ChartAreas.Add(new ChartArea("MainArea"));
             if (chart1.Legends.Count == 0) chart1.Legends.Add(new Legend("MainLegend"));
 
-            // Konfiguracja legendy, aby pojawiała się pod wykresem
+            // Legend configuration to appear below the chart
             Legend legend = chart1.Legends.FirstOrDefault();
             if (legend != null)
             {
@@ -49,7 +49,7 @@ namespace MP_ModbusApp
         }
 
         /// <summary>
-        /// Aktualizuje wykres na podstawie najnowszych danych.
+        /// Updates the chart based on the latest data points.
         /// </summary>
         public void UpdateChart(List<ChartDataPoint> latestData)
         {
@@ -59,28 +59,28 @@ namespace MP_ModbusApp
                 return;
             }
 
-            // 1. Zarządzanie widocznością
+            // 1. Visibility management
             this.Visible = latestData != null && latestData.Count > 0;
             if (!this.Visible)
             {
-                // Pozostawiamy _seriesData, aby dane historyczne były zachowane
+                // Keep _seriesData so historical data is preserved
                 chart1.Series.Clear();
                 chart1.Invalidate();
                 return;
             }
 
-            // 2. Zapisz nowe punkty do historii
+            // 2. Save new points to history
             AddNewPointsToHistory(latestData);
 
-            // 3. Aktualizacja serii na wykresie
+            // 3. Update series on the chart
             chart1.Series.Clear();
 
-            // Zbiór nazw serii, które są aktualnie zaznaczone w ReadingsTab
+            // Set of series names that are currently selected in ReadingsTab
             var activeSeriesNames = latestData.Select(d => d.SeriesName).ToHashSet();
 
-            // Dodaj/odśwież serię z historii
-            // Filtrowanie tylko do activeSeriesNames zapewnia, że na wykresie pojawiają się tylko
-            // aktualnie zaznaczone rejestry, ale ich historia (_seriesData) pozostaje nienaruszona.
+            // Add/Refresh series from history
+            // Filtering to activeSeriesNames ensures only currently selected registers appear on the chart,
+            // while their history (_seriesData) remains intact.
             foreach (var kvp in _seriesData.Where(k => activeSeriesNames.Contains(k.Key)))
             {
                 string seriesName = kvp.Key;
@@ -96,7 +96,7 @@ namespace MP_ModbusApp
                     MarkerSize = 5
                 };
 
-                // Dodaj całą historię punktów do serii
+                // Add all historical points to the series
                 foreach (var dataPoint in dataHistory)
                 {
                     series.Points.AddXY(dataPoint.Timestamp.ToOADate(), dataPoint.Value);
@@ -105,9 +105,7 @@ namespace MP_ModbusApp
                 chart1.Series.Add(series);
             }
 
-            // Usunięto logikę usuwania nieaktywnych serii z _seriesData, aby zachować historię.
-
-            // Ustaw skalę osi X na podstawie aktualnej daty/czasu (ostatniego i pierwszego punktu)
+            // Set X-axis scale based on current data range
             if (chart1.Series.Count > 0)
             {
                 var allTimestamps = _seriesData.Values.SelectMany(list => list.Select(p => p.Timestamp)).ToList();
@@ -116,21 +114,22 @@ namespace MP_ModbusApp
                     double minX = allTimestamps.Min().ToOADate();
                     double maxX = allTimestamps.Max().ToOADate();
 
-                    // Ustaw minimalny i maksymalny zakres osi X
                     chart1.ChartAreas[0].AxisX.Minimum = minX;
                     chart1.ChartAreas[0].AxisX.Maximum = maxX;
 
-                    // Upewnij się, że skala Y dostosowuje się automatycznie
+                    // Ensure Y scale adjusts automatically
                     chart1.ChartAreas[0].AxisY.IsStartedFromZero = false;
                     chart1.ChartAreas[0].AxisY.Minimum = double.NaN;
                     chart1.ChartAreas[0].AxisY.Maximum = double.NaN;
                 }
             }
 
-
             chart1.Invalidate();
         }
 
+        /// <summary>
+        /// Adds new points to the internal history, maintaining the maximum point limit.
+        /// </summary>
         private void AddNewPointsToHistory(List<ChartDataPoint> newPoints)
         {
             foreach (var newPoint in newPoints)
@@ -156,9 +155,9 @@ namespace MP_ModbusApp
         private void btnClearLog_Click(object sender, EventArgs e)
         {
             _seriesData.Clear();
-            // Wywołaj UpdateChart z pustą listą, aby wyczyścić wyświetlacz i zresetować widoczność
+            // Call UpdateChart with empty list to clear display and reset visibility
             UpdateChart(new List<ChartDataPoint>());
-            MessageBox.Show("Chart data cleared successfully.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            //MessageBox.Show("Chart data cleared successfully.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         /// <summary>
@@ -180,72 +179,62 @@ namespace MP_ModbusApp
                 {
                     try
                     {
-                        var sb = new System.Text.StringBuilder();
+                        var sb = new StringBuilder();
                         var culture = System.Globalization.CultureInfo.InvariantCulture;
                         var consolidatedData = new List<ChartDataPoint>();
                         TimeSpan consolidationWindow = TimeSpan.FromMilliseconds(90);
 
-                        // --- Krok 1: Konsolidacja danych (eliminuje punkty w oknie 90ms, zachowując najnowszy) ---
+                        // Step 1: Data consolidation (eliminates points within 90ms window, keeping the latest)
                         foreach (var kvp in _seriesData)
                         {
-                            // Sortujemy malejąco, aby móc łatwo utrzymać latestRetainedTime
                             var sortedHistory = kvp.Value.OrderByDescending(p => p.Timestamp).ToList();
                             DateTime lastRetainedTimestamp = DateTime.MaxValue;
 
                             foreach (var point in sortedHistory)
                             {
-                                // Jeżeli punkt jest poza oknem konsolidacji (stary) LUB jest to pierwszy (najnowszy) punkt w serii
                                 if (lastRetainedTimestamp - point.Timestamp >= consolidationWindow || lastRetainedTimestamp == DateTime.MaxValue)
                                 {
                                     consolidatedData.Add(point);
                                     lastRetainedTimestamp = point.Timestamp;
                                 }
-                                // Punkty, których czas jest za blisko nowszego, już zachowanego punktu, są odrzucane.
                             }
                         }
 
-                        // --- Krok 2: Pivotowanie i eksport ---
-
-                        // Zbieranie wszystkich unikalnych nazw serii
+                        // Step 2: Pivoting and export
                         var allSeriesNames = _seriesData.Keys.OrderBy(k => k).ToList();
 
-                        // Grupujemy skonsolidowane dane według Timestamp. Utrzymujemy sortowanie malejące.
+                        // Group consolidated data by Timestamp, descending order (newest first)
                         var groupedData = consolidatedData
                             .GroupBy(p => p.Timestamp)
-                            .OrderByDescending(g => g.Key) // Sortowanie malejące - najnowsze na górze (Żądanie 2)
+                            .OrderByDescending(g => g.Key)
                             .ToDictionary(
                                 g => g.Key,
                                 g => g.ToDictionary(p => p.SeriesName, p => p.Value)
                             );
 
-                        // 2a. CSV Header: Timestamp, Rejestr_a, Rejestr_b, ...
+                        // CSV Header
                         sb.Append("Timestamp");
                         foreach (var seriesName in allSeriesNames)
                         {
-                            // Używamy tylko nazwy rejestru jako nagłówka kolumny
                             string cleanName = seriesName.Split(new[] { " - " }, StringSplitOptions.None).Last().Trim();
                             sb.Append($",\"{cleanName}\"");
                         }
                         sb.AppendLine();
 
-                        // 2b. Wiersze danych
+                        // Data rows
                         foreach (var timestampGroup in groupedData)
                         {
-                            // A. Timestamp - Formatuje jako dd.MM.yyyy HH:mm:ss.fff (zawsze z milisekundami - Żądanie 3)
+                            // Timestamp formatted as dd.MM.yyyy HH:mm:ss.fff
                             sb.Append($"\"{timestampGroup.Key:dd.MM.yyyy HH:mm:ss:f00}\"");
 
-                            // B. Wartości dla każdej serii w porządku nagłówków
                             foreach (var seriesName in allSeriesNames)
                             {
-                                // Pobierz wartość dla tej serii i tego znacznika czasowego
                                 if (timestampGroup.Value.TryGetValue(seriesName, out double value))
                                 {
-                                    // Dodaj wartość sformatowaną jako string
                                     sb.Append($",{value.ToString("F3", culture)}");
                                 }
                                 else
                                 {
-                                    // Jeśli brakuje wartości dla tej serii w tym czasie, wstaw pustą komórkę
                                     sb.Append(",");
                                 }
                             }
@@ -253,7 +242,7 @@ namespace MP_ModbusApp
                         }
 
                         File.WriteAllText(saveFileDialog.FileName, sb.ToString(), Encoding.UTF8);
-                        MessageBox.Show("Export completed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        //MessageBox.Show("Export completed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {

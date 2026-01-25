@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Windows.Forms.DataVisualization.Charting;
 
 namespace MP_ModbusApp
 {
@@ -14,7 +15,7 @@ namespace MP_ModbusApp
         private readonly IMyModbusMaster _modbusMaster;
         private CancellationTokenSource _cts;
 
-        // Zdarzenie informujące o stanie skanowania
+        // Event to notify about the current scanning status
         public event EventHandler<bool> ScanningStateChanged;
 
         public DeviceScan(IMyModbusMaster modbusMaster)
@@ -35,7 +36,7 @@ namespace MP_ModbusApp
             if (scanResultsGrid == null) return;
 
             scanResultsGrid.Columns.Clear();
-            scanResultsGrid.Columns.Add("colSlaveId", "Adres ID");
+            scanResultsGrid.Columns.Add("colSlaveId", "Slave ID");
             scanResultsGrid.Columns.Add("colStatus", "Status");
 
             scanResultsGrid.Columns[0].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
@@ -54,12 +55,12 @@ namespace MP_ModbusApp
             if (startId.Value > endId.Value) endId.Value = startId.Value;
         }
 
-        // --- ROZPOCZĘCIE SKANOWANIA ---
         private async void startToolStripMenuItem_Click(object sender, EventArgs e)
         {
             if (_modbusMaster == null)
             {
-                MessageBox.Show("Modbus Master nie jest zainicjalizowany.", "Błąd", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Modbus Master is not initialized. Configure connection in Setup and try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Close();
                 return;
             }
 
@@ -69,7 +70,7 @@ namespace MP_ModbusApp
 
             scanResultsGrid.Rows.Clear();
 
-            // Powiadom MainWindow o starcie
+            // Notify MainWindow that scanning has started
             ScanningStateChanged?.Invoke(this, true);
 
             byte start = (byte)startId.Value;
@@ -81,10 +82,10 @@ namespace MP_ModbusApp
             {
                 for (int i = start; i <= end; i++)
                 {
-                    // 1. Sprawdź czy okno nie zostało zamknięte
+                    // Check if form is still active
                     if (this.IsDisposed) break;
 
-                    // 2. Sprawdź czy użytkownik nie anulował
+                    // Check for cancellation request
                     if (_cts.Token.IsCancellationRequested)
                     {
                         AddScanResult(0, "Stopped", Color.Orange);
@@ -93,7 +94,7 @@ namespace MP_ModbusApp
 
                     byte currentSlaveId = (byte)i;
 
-                    // Przewijanie tabeli (tylko jeśli okno istnieje)
+                    // Auto-scroll the grid
                     if (!this.IsDisposed && scanResultsGrid.Rows.Count > 0)
                         scanResultsGrid.FirstDisplayedScrollingRowIndex = scanResultsGrid.Rows.Count - 1;
 
@@ -108,32 +109,30 @@ namespace MP_ModbusApp
                     }
                     catch (MyModbusSlaveException)
                     {
-                        AddScanResult(currentSlaveId, "Response OK (Exception)", Color.LightGreen);
+                        //AddScanResult(currentSlaveId, "Response OK (Exception)", Color.LightGreen);
+                        AddScanResult(currentSlaveId, "Response OK", Color.LightGreen);
                     }
                     catch (IOException)
                     {
-                        AddScanResult(currentSlaveId, "Response OK (Frame Error)", Color.LightGreen);
+                        //AddScanResult(currentSlaveId, "Response OK (Frame Error)", Color.LightGreen);
+                        AddScanResult(currentSlaveId, "Response OK", Color.LightGreen);
                     }
                     catch (Exception)
                     {
                         AddScanResult(currentSlaveId, "Error", Color.LightYellow);
                     }
 
-                    // Opóźnienie (chyba że anulowano)
                     if (!_cts.Token.IsCancellationRequested)
                         await Task.Delay(20);
                 }
             }
             catch (Exception ex)
             {
-                // Logowanie błędów krytycznych pętli (opcjonalne)
-                System.Diagnostics.Debug.WriteLine("Błąd pętli skanowania: " + ex.Message);
+                System.Diagnostics.Debug.WriteLine("Scan loop error: " + ex.Message);
             }
             finally
             {
-                // --- KLUCZOWA ZMIANA: Sprawdzamy czy okno nadal istnieje ---
-                // Nie możemy odwoływać się do kontrolek UI (ToolStripMenuItem), jeśli forma jest Disposed
-
+                // Restore UI state if form is not disposed
                 if (!this.IsDisposed)
                 {
                     startToolStripMenuItem.Enabled = true;
@@ -146,13 +145,12 @@ namespace MP_ModbusApp
                     _cts = null;
                 }
 
-                // Powiadom MainWindow, że można wznowić komunikację (to jest bezpieczne)
+                // Notify MainWindow to resume normal communication
                 ScanningStateChanged?.Invoke(this, false);
 
-                // Wyświetl komunikat o sukcesie TYLKO jeśli okno nadal jest otwarte
                 if (!this.IsDisposed)
                 {
-                    MessageBox.Show("Skanowanie zakończone.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    //MessageBox.Show("Scanning finished.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }
@@ -166,15 +164,14 @@ namespace MP_ModbusApp
         {
             if (scanResultsGrid.Rows.Count == 0)
             {
-                MessageBox.Show("Brak danych do wyeksportowania.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("No data to export.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
             using (SaveFileDialog sfd = new SaveFileDialog())
             {
-                sfd.Filter = "Plik CSV (*.csv)|*.csv";
-                sfd.FileName = "ScanResults.csv";
-
+                sfd.Filter = "CSV File (*.csv)|*.csv";
+                sfd.FileName = $"ScanResults_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
                 if (sfd.ShowDialog() == DialogResult.OK)
                 {
                     try
@@ -194,20 +191,19 @@ namespace MP_ModbusApp
                         }
 
                         File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
-                        MessageBox.Show("Dane wyeksportowane pomyślnie!", "Sukces", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        //MessageBox.Show("Data exported successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show($"Błąd podczas zapisu pliku: {ex.Message}", "Błąd", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"File save error: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }
         }
 
-        // Metoda bezpiecznie dodająca wiersz (nawet z innego wątku)
+        // Thread-safe method to add scan results to the grid
         private void AddScanResult(byte slaveId, string status, Color backColor)
         {
-            // ZABEZPIECZENIE PRZED BŁĘDEM: Jeśli okno lub grid nie istnieje, wyjdź
             if (this.IsDisposed || scanResultsGrid.IsDisposed) return;
 
             if (scanResultsGrid.InvokeRequired)
@@ -223,18 +219,14 @@ namespace MP_ModbusApp
             row.DefaultCellStyle.BackColor = backColor;
         }
 
-        // Obsługa zamykania okna "krzyżykiem"
         private void DeviceScan_FormClosing(object sender, FormClosingEventArgs e)
         {
-            // Jeśli skanowanie trwa, anuluj je
             if (_cts != null && !_cts.IsCancellationRequested)
             {
                 _cts.Cancel();
             }
 
-            // Upewnij się, że MainWindow wie, że ma wznowić komunikację
-            // Wywołujemy to tutaj, bo blok 'finally' może się nie wykonać w odpowiednim momencie
-            // lub zostać przerwany, gdy okno jest niszczone.
+            // Ensure MainWindow resumes communication when scanning window is closed
             ScanningStateChanged?.Invoke(this, false);
         }
     }

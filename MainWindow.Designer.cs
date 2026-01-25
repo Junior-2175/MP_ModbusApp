@@ -268,7 +268,7 @@ namespace MP_ModbusApp
             numMaxRetries.Name = "numMaxRetries";
             numMaxRetries.Size = new Size(92, 23);
             numMaxRetries.TabIndex = 4;
-            numMaxRetries.ValueChanged += numMaxRetries_ValueChanged;
+            //numMaxRetries.ValueChanged += numMaxRetries_ValueChanged;
             // 
             // numPollDelay
             // 
