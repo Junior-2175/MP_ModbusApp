@@ -135,37 +135,56 @@ namespace MP_ModbusApp.MP_modbus
         {
             using (var ms = new MemoryStream())
             {
+                byte[] buffer = new byte[1]; // Alokacja bufora poza pętlą dla wydajności
+                bool isFirstByte = true;
+
                 while (true)
                 {
                     try
                     {
-                        // Set the main timeout for reading the first byte
-                        _port.ReadTimeout = ReadTimeout;
-                        byte[] buffer = new byte[1];
-                        // Use ReadAsync from the BaseStream
-                        int bytesRead = await _port.BaseStream.ReadAsync(buffer, 0, 1);
+                        // Ustawienie odpowiedniego czasu oczekiwania
+                        int currentTimeout = isFirstByte ? ReadTimeout : 50;
 
-                        if (bytesRead == 0) break; // End of stream
+                        // Tworzymy zadanie odczytu
+                        var readTask = _port.BaseStream.ReadAsync(buffer, 0, 1);
+
+                        // Tworzymy zadanie timeoutu (ponieważ ReadAsync w SerialPort często ignoruje ReadTimeout)
+                        var timeoutTask = Task.Delay(currentTimeout);
+
+                        // Czekamy na to, co wydarzy się pierwsze: odczyt czy timeout
+                        var completedTask = await Task.WhenAny(readTask, timeoutTask);
+
+                        if (completedTask == timeoutTask)
+                        {
+                            // Wystąpił timeout
+                            if (isFirstByte)
+                            {
+                                // Timeout na pierwszym bajcie to błąd komunikacji (brak odpowiedzi)
+                                throw new TimeoutException("Timeout waiting for response.");
+                            }
+                            else
+                            {
+                                // Timeout na kolejnych bajtach oznacza KONIEC RAMKI (RTU Silence)
+                                break;
+                            }
+                        }
+
+                        // Jeśli odczyt się powiódł, pobieramy wynik
+                        int bytesRead = await readTask;
+
+                        if (bytesRead == 0) break; // Zamknięcie strumienia
+
                         ms.WriteByte(buffer[0]);
-
-                        // After the first byte, set a short inter-byte timeout (T3.5)
-                        // 50ms is a safe, though generous, value.
-                        _port.ReadTimeout = 50;
-                    }
-                    catch (TimeoutException)
-                    {
-                        // Inter-byte timeout = end of RTU frame
-                        break;
+                        isFirstByte = false;
                     }
                     catch (Exception)
                     {
-                        throw; // Other error
+                        throw; // Przekaż inne błędy wyżej
                     }
                 }
                 return ms.ToArray();
             }
         }
-
         /// <summary>
         /// Reads an ASCII line (terminating with \n).
         /// </summary>

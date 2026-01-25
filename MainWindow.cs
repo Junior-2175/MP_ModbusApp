@@ -1305,5 +1305,22 @@ namespace MP_ModbusApp
             }
             return (int)numMaxRetries.Value;
         }
+
+        private void slaveScanToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var slaveScan = new DeviceScan
+            {
+                MdiParent = this
+            };
+            // Add event handler to refresh the tree when a new device is saved
+            //newDevice.DeviceSaved += (s, ev) => LoadDevicesToTree();
+            slaveScan.Show();
+            slaveScan.Activate();
+        }
+
+        private void addresScanToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            
+        }
     }
 }

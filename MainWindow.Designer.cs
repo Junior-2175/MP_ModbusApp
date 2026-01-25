@@ -91,6 +91,8 @@ namespace MP_ModbusApp
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
             newToolStripMenuItem = new ToolStripMenuItem();
+            slaveScanToolStripMenuItem = new ToolStripMenuItem();
+            addresScanToolStripMenuItem = new ToolStripMenuItem();
             viewToolStripMenuItem = new ToolStripMenuItem();
             communicationToolStripMenuItem = new ToolStripMenuItem();
             layoutToolStripMenuItem = new ToolStripMenuItem();
@@ -733,7 +735,7 @@ namespace MP_ModbusApp
             // 
             // fileToolStripMenuItem
             // 
-            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newToolStripMenuItem });
+            fileToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { newToolStripMenuItem, slaveScanToolStripMenuItem, addresScanToolStripMenuItem });
             fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             fileToolStripMenuItem.Size = new Size(37, 20);
             fileToolStripMenuItem.Text = "File";
@@ -743,9 +745,27 @@ namespace MP_ModbusApp
             newToolStripMenuItem.Image = Properties.Resources.icons8_file_50;
             newToolStripMenuItem.Name = "newToolStripMenuItem";
             newToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.N;
-            newToolStripMenuItem.Size = new Size(141, 22);
+            newToolStripMenuItem.Size = new Size(180, 22);
             newToolStripMenuItem.Text = "New";
             newToolStripMenuItem.Click += newToolStripMenuItem_Click;
+            // 
+            // slaveScanToolStripMenuItem
+            // 
+            slaveScanToolStripMenuItem.Image = (Image)resources.GetObject("slaveScanToolStripMenuItem.Image");
+            slaveScanToolStripMenuItem.Name = "slaveScanToolStripMenuItem";
+            slaveScanToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.D;
+            slaveScanToolStripMenuItem.Size = new Size(180, 22);
+            slaveScanToolStripMenuItem.Text = "Device Scan";
+            slaveScanToolStripMenuItem.Click += slaveScanToolStripMenuItem_Click;
+            // 
+            // addresScanToolStripMenuItem
+            // 
+            addresScanToolStripMenuItem.Image = Properties.Resources.icons8_online_binary_code_50;
+            addresScanToolStripMenuItem.Name = "addresScanToolStripMenuItem";
+            addresScanToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.A;
+            addresScanToolStripMenuItem.Size = new Size(180, 22);
+            addresScanToolStripMenuItem.Text = "Addres Scan";
+            addresScanToolStripMenuItem.Click += addresScanToolStripMenuItem_Click;
             // 
             // viewToolStripMenuItem
             // 
@@ -903,5 +923,7 @@ namespace MP_ModbusApp
         private ToolStripMenuItem splitVerticalToolStripMenuItem;
         private NumericUpDown numMaxRetries;
         private Label label13;
+        private ToolStripMenuItem slaveScanToolStripMenuItem;
+        private ToolStripMenuItem addresScanToolStripMenuItem;
     }
 }
