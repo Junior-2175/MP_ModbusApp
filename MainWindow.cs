@@ -803,6 +803,11 @@ namespace MP_ModbusApp
             scan.Show();
         }
 
-        private void addresScanToolStripMenuItem_Click(object sender, EventArgs e) { /* Placeholder */ }
+        private void addresScanToolStripMenuItem_Click(object sender, EventArgs e) {
+
+            AddressScan scan = new AddressScan() { MdiParent = this };
+            scan.Show();
+        
+        }
     }
 }

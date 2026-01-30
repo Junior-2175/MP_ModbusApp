@@ -53,7 +53,7 @@
             menuStrip1.Items.AddRange(new ToolStripItem[] { startToolStripMenuItem, stopToolStripMenuItem1, exportToolStripMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
-            menuStrip1.Size = new Size(295, 24);
+            menuStrip1.Size = new Size(334, 24);
             menuStrip1.TabIndex = 0;
             menuStrip1.Text = "menuStrip1";
             // 
@@ -113,7 +113,7 @@
             panel1.Dock = DockStyle.Top;
             panel1.Location = new Point(0, 24);
             panel1.Name = "panel1";
-            panel1.Size = new Size(295, 76);
+            panel1.Size = new Size(334, 76);
             panel1.TabIndex = 7;
             // 
             // endId
@@ -149,7 +149,7 @@
             scanResultsGrid.Location = new Point(0, 100);
             scanResultsGrid.Name = "scanResultsGrid";
             scanResultsGrid.RowHeadersVisible = false;
-            scanResultsGrid.Size = new Size(295, 350);
+            scanResultsGrid.Size = new Size(334, 301);
             scanResultsGrid.TabIndex = 8;
             // 
             // Slave_Id
@@ -171,7 +171,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(295, 450);
+            ClientSize = new Size(334, 401);
             Controls.Add(scanResultsGrid);
             Controls.Add(panel1);
             Controls.Add(menuStrip1);
