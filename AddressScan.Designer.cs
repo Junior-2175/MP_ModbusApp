@@ -47,6 +47,7 @@
             scanResultsGrid = new DataGridView();
             reg_adr = new DataGridViewTextBoxColumn();
             Response = new DataGridViewTextBoxColumn();
+            Resp_x = new DataGridViewTextBoxColumn();
             menuStrip1.SuspendLayout();
             panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)slaveId).BeginInit();
@@ -230,7 +231,7 @@
             scanResultsGrid.AllowUserToDeleteRows = false;
             scanResultsGrid.AllowUserToResizeRows = false;
             scanResultsGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            scanResultsGrid.Columns.AddRange(new DataGridViewColumn[] { reg_adr, Response });
+            scanResultsGrid.Columns.AddRange(new DataGridViewColumn[] { reg_adr, Response, Resp_x });
             scanResultsGrid.Dock = DockStyle.Fill;
             scanResultsGrid.Location = new Point(0, 180);
             scanResultsGrid.Name = "scanResultsGrid";
@@ -242,16 +243,25 @@
             // 
             reg_adr.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             reg_adr.HeaderText = "Register Address";
+            reg_adr.MinimumWidth = 120;
             reg_adr.Name = "reg_adr";
             reg_adr.ReadOnly = true;
-            reg_adr.Width = 109;
+            reg_adr.Width = 120;
             // 
             // Response
             // 
-            Response.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            Response.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             Response.HeaderText = "Response";
             Response.Name = "Response";
             Response.ReadOnly = true;
+            Response.Width = 82;
+            // 
+            // Resp_x
+            // 
+            Resp_x.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            Resp_x.HeaderText = "Response HEX";
+            Resp_x.Name = "Resp_x";
+            Resp_x.ReadOnly = true;
             // 
             // AddressScan
             // 
@@ -302,5 +312,6 @@
         private DataGridView scanResultsGrid;
         private DataGridViewTextBoxColumn reg_adr;
         private DataGridViewTextBoxColumn Response;
+        private DataGridViewTextBoxColumn Resp_x;
     }
 }
