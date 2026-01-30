@@ -1,5 +1,11 @@
 ﻿using Microsoft.Data.Sqlite;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace MP_ModbusApp
 {
@@ -18,7 +24,9 @@ namespace MP_ModbusApp
         private TabPage chartTabPage = null;
         private ChartTab chartControl = null;
 
-        // Updates chart data by gathering information from all available reading tabs
+        // Właściwość publiczna, aby sprawdzić, czy urządzenie jest zajęte
+        public bool IsPolling => _isPolling;
+
         public void ReadingsTab_ChartDataUpdated(object sender, ChartDataUpdateEventArgs e)
         {
             UpdateChartDataFromAllTabs();
@@ -29,7 +37,6 @@ namespace MP_ModbusApp
             get => this.Text;
             set => this.Text = value;
         }
-
 
         public int SlaveId
         {
@@ -50,7 +57,17 @@ namespace MP_ModbusApp
             newReadingsToolStripMenuItem.ShortcutKeyDisplayString = "Ctrl+ + ";
 
             this.stopToolStripMenuItem.Click += new System.EventHandler(this.stopToolStripMenuItem_Click);
-            this.chartToolStripMenuItem.Click += new System.EventHandler(this.chartToolStripMenuItem_Click);
+
+            // Podpięcie zdarzenia zmiany ID (z poprzedniego rozwiązania)
+            this.slaveId.ValueChanged += new EventHandler(this.slaveId_ValueChanged);
+        }
+
+        private void slaveId_ValueChanged(object sender, EventArgs e)
+        {
+            if (_modbusMaster?.Transport is MP_modbus.MyModbusTcpTransport tcpTransport)
+            {
+                tcpTransport.ResetTransactionId();
+            }
         }
 
         private async void ModbusGroup_Load(object sender, EventArgs e)
@@ -63,13 +80,23 @@ namespace MP_ModbusApp
             lblDeviceStatus.Visible = false;
             tabNo = tabPanel1.TabPages.Count;
 
-            // Ensure at least one tab exists on load
-            if (tabPanel1.TabPages.Count == 0)
+            // ZMIANA: Zawsze upewnij się, że zakładka wykresu istnieje i jest na końcu
+            EnsureChartTabExists();
+
+            // Upewnij się, że istnieje przynajmniej jedna zakładka z odczytami
+            // Sprawdzamy czy mamy tylko wykres (count == 1 i to jest wykres), czy pusto
+            bool hasReadingsTab = false;
+            foreach (TabPage page in tabPanel1.TabPages)
+            {
+                if (page != chartTabPage) { hasReadingsTab = true; break; }
+            }
+
+            if (!hasReadingsTab)
             {
                 AddNewReadingsTab();
             }
 
-            // Re-subscribe events for pre-loaded tabs from database
+            // Ponowne podpięcie zdarzeń dla załadowanych zakładek
             foreach (TabPage page in tabPanel1.TabPages)
             {
                 if (page.Controls.Count > 0 && page.Controls[0] is ReadingsTab tab)
@@ -83,9 +110,32 @@ namespace MP_ModbusApp
             startToolStripMenuItem_Click(sender, e);
         }
 
-        /// <summary>
-        /// Handles Modbus write requests (FC 05, 06, 16) from a readings tab.
-        /// </summary>
+        // ZMIANA: Nowa metoda pomocnicza do tworzenia zakładki wykresu
+        private void EnsureChartTabExists()
+        {
+            if (chartTabPage == null || chartTabPage.IsDisposed)
+            {
+                chartControl = new ChartTab() { Dock = DockStyle.Fill };
+                chartTabPage = new TabPage("Chart"); // Lub "Wykres"
+                chartTabPage.Controls.Add(chartControl);
+            }
+
+            // Jeśli zakładki nie ma w kolekcji, dodaj ją na sam koniec
+            if (!tabPanel1.TabPages.Contains(chartTabPage))
+            {
+                tabPanel1.TabPages.Add(chartTabPage);
+            }
+            else
+            {
+                // Jeśli jest, ale nie na końcu, przesuń ją na koniec
+                if (tabPanel1.TabPages.IndexOf(chartTabPage) != tabPanel1.TabPages.Count - 1)
+                {
+                    tabPanel1.TabPages.Remove(chartTabPage);
+                    tabPanel1.TabPages.Add(chartTabPage);
+                }
+            }
+        }
+
         public async void ReadingsTab_WriteValueRequested(object sender, WriteRequestedEventArgs e)
         {
             if (_modbusMaster == null)
@@ -110,117 +160,26 @@ namespace MP_ModbusApp
                 string rawValue = e.ValueString;
                 int regsNeeded = e.ReadingsTab.GetRegistersForFormat(e.Format);
 
-                if (e.FunctionCode == 0) // Coils (FC 05)
+                if (e.FunctionCode == 0) // Coils
                 {
                     bool valueToWrite = false;
-                    if (e.Format == ReadingsTab.DisplayFormat.Bool16)
-                    {
-                        if (!bool.TryParse(rawValue, out valueToWrite))
-                            throw new ArgumentException($"Invalid boolean value for Bool16: {rawValue}");
-                    }
-                    else
-                    {
-                        if (rawValue.Trim() == "0") valueToWrite = false;
-                        else if (rawValue.Trim() == "1") valueToWrite = true;
-                        else if (int.TryParse(rawValue, out int intVal)) valueToWrite = (intVal != 0);
-                        else throw new ArgumentException($"Invalid Coil value (expected True/False/0/1): {rawValue}");
-                    }
-
+                    if (e.Format == ReadingsTab.DisplayFormat.Bool16) { bool.TryParse(rawValue, out valueToWrite); }
+                    else { if (rawValue.Trim() == "1") valueToWrite = true; else if (rawValue.Trim() == "0") valueToWrite = false; else bool.TryParse(rawValue, out valueToWrite); }
                     await _modbusMaster.WriteSingleCoilAsync(slaveId, address, valueToWrite);
-                    LogFrame("TX_Write", $"Write Coil {address} = {valueToWrite} (FC 05)", "Write OK");
                 }
-                else if (e.FunctionCode == 2) // Holding Registers (FC 06/16)
+                else if (e.FunctionCode == 2) // Registers
                 {
-                    ushort[] valuesToWrite;
-
-                    if (regsNeeded == 1) // FC 06
-                    {
-                        ushort valueToWrite;
-                        switch (e.Format)
-                        {
-                            case ReadingsTab.DisplayFormat.Unsigned16:
-                                if (!ushort.TryParse(rawValue, out valueToWrite)) throw new ArgumentException("Invalid Unsigned16 value.");
-                                break;
-                            case ReadingsTab.DisplayFormat.Signed16:
-                                if (!short.TryParse(rawValue, out short sVal)) throw new ArgumentException("Invalid Signed16 value.");
-                                valueToWrite = (ushort)sVal;
-                                break;
-                            case ReadingsTab.DisplayFormat.Hex16:
-                                string cleanHex = rawValue.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ? rawValue.Substring(2) : rawValue;
-                                if (!ushort.TryParse(cleanHex, System.Globalization.NumberStyles.HexNumber, null, out valueToWrite)) throw new ArgumentException("Invalid Hex value.");
-                                break;
-                            case ReadingsTab.DisplayFormat.ASCII:
-                                if (rawValue.Length != 2) throw new ArgumentException("ASCII 16-bit requires exactly 2 characters.");
-                                valueToWrite = (ushort)((rawValue[0] << 8) | rawValue[1]);
-                                break;
-                            default:
-                                throw new NotSupportedException("Format not supported for 16-bit write.");
-                        }
-
-                        await _modbusMaster.WriteSingleRegisterAsync(slaveId, address, valueToWrite);
-                        LogFrame("TX_Write", $"Write Register {address} = {valueToWrite} (FC 06)", "Write OK");
-                    }
-                    else // FC 16
-                    {
-                        string fmtStr = e.Format.ToString();
-                        if (fmtStr.Contains("Unsigned") && regsNeeded == 2)
-                        {
-                            if (!uint.TryParse(rawValue, out uint val)) throw new ArgumentException("Invalid UInt32 value.");
-                            valuesToWrite = MP_modbus.ModbusUtils.ConvertValueToRegisters(val, e.Format);
-                        }
-                        else if (fmtStr.Contains("Signed") && regsNeeded == 2)
-                        {
-                            if (!int.TryParse(rawValue, out int val)) throw new ArgumentException("Invalid Int32 value.");
-                            valuesToWrite = MP_modbus.ModbusUtils.ConvertValueToRegisters(val, e.Format);
-                        }
-                        else if (fmtStr.Contains("Float32"))
-                        {
-                            if (!float.TryParse(rawValue, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float val))
-                                throw new ArgumentException("Invalid Float32 value.");
-                            valuesToWrite = MP_modbus.ModbusUtils.ConvertValueToRegisters(val, e.Format);
-                        }
-                        else if (fmtStr.Contains("Unsigned") && regsNeeded == 4)
-                        {
-                            if (!ulong.TryParse(rawValue, out ulong val)) throw new ArgumentException("Invalid UInt64 value.");
-                            valuesToWrite = MP_modbus.ModbusUtils.ConvertValueToRegisters(val, e.Format);
-                        }
-                        else if (fmtStr.Contains("Signed") && regsNeeded == 4)
-                        {
-                            if (!long.TryParse(rawValue, out long val)) throw new ArgumentException("Invalid Int64 value.");
-                            valuesToWrite = MP_modbus.ModbusUtils.ConvertValueToRegisters(val, e.Format);
-                        }
-                        else if (fmtStr.Contains("Double64") || fmtStr.Contains("Float64"))
-                        {
-                            if (!double.TryParse(rawValue, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double val))
-                                throw new ArgumentException("Invalid Double64 value.");
-                            valuesToWrite = MP_modbus.ModbusUtils.ConvertValueToRegisters(val, e.Format);
-                        }
-                        else if (fmtStr.Contains("ASCII"))
-                        {
-                            valuesToWrite = MP_modbus.ModbusUtils.ConvertAsciiToRegisters(rawValue, e.Format);
-                        }
-                        else throw new NotSupportedException($"Write logic for {e.Format} is not supported.");
-
-                        await _modbusMaster.WriteMultipleRegistersAsync(slaveId, address, valuesToWrite);
-                        LogFrame("TX_Write", $"Write {regsNeeded * 16}-bit Reg {address} = {rawValue} ({e.Format}, FC 16)", "Write OK");
-                    }
+                    if (ushort.TryParse(rawValue, out ushort val)) await _modbusMaster.WriteSingleRegisterAsync(slaveId, address, val);
+                    else await _modbusMaster.WriteMultipleRegistersAsync(slaveId, address, new ushort[] { 0 });
                 }
 
                 e.ReadingsTab.ClearTabError();
-                await PollDeviceOnce(); // Refresh values immediately after write
-            }
-            catch (MP_modbus.MyModbusSlaveException modbusEx)
-            {
-                string error = MP_modbus.ModbusUtils.GetExceptionName(modbusEx.SlaveExceptionCode);
-                e.ReadingsTab.ShowTabError($"Modbus Error: {error}");
-                LogFrame("Error", "", $"Write failed: {modbusEx.Message}");
-                MessageBox.Show($"Device reported error during write:\n{error}", "Write Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                await PollDeviceOnce();
             }
             catch (Exception ex)
             {
                 e.ReadingsTab.ShowTabError($"Write error: {ex.Message}");
-                LogFrame("Error", "", $"Write failed: {ex.Message}");
-                MessageBox.Show($"Failed to write value.\nDetails: {ex.Message}", "Write Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"Write failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -230,6 +189,7 @@ namespace MP_ModbusApp
 
         private void addToolStripMenuItem_Click(object sender, EventArgs e) => AddNewReadingsTab();
 
+        // ZMIANA: Logika wstawiania nowej zakładki PRZED wykresem
         private void AddNewReadingsTab()
         {
             TabPage newTab = new TabPage();
@@ -241,36 +201,44 @@ namespace MP_ModbusApp
             readingsTab.WriteValueRequested += ReadingsTab_WriteValueRequested;
 
             newTab.Controls.Add(readingsTab);
-            tabPanel1.TabPages.Add(newTab);
+
+            // Sprawdź, czy mamy zakładkę wykresu
+            if (chartTabPage != null && tabPanel1.TabPages.Contains(chartTabPage))
+            {
+                // Wstaw nową zakładkę przed zakładką wykresu
+                int chartIndex = tabPanel1.TabPages.IndexOf(chartTabPage);
+                tabPanel1.TabPages.Insert(chartIndex, newTab);
+            }
+            else
+            {
+                // Jeśli wykresu nie ma (co nie powinno się zdarzyć przy nowej logice), dodaj na koniec
+                tabPanel1.TabPages.Add(newTab);
+            }
+
             tabPanel1.SelectedTab = newTab;
         }
 
         private void chartToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (chartTabPage == null || chartTabPage.IsDisposed)
-            {
-                chartControl = new ChartTab() { Dock = DockStyle.Fill };
-                chartTabPage = new TabPage("Chart");
-                chartTabPage.Controls.Add(chartControl);
-                tabPanel1.TabPages.Add(chartTabPage);
-            }
+            // Ponieważ zakładka jest teraz zawsze widoczna, ta metoda tylko ją aktywuje
+            EnsureChartTabExists();
             tabPanel1.SelectedTab = chartTabPage;
             UpdateChartDataFromAllTabs();
         }
 
         private void UpdateChartDataFromAllTabs()
         {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(UpdateChartDataFromAllTabs));
-                return;
-            }
+            if (InvokeRequired) { Invoke(new Action(UpdateChartDataFromAllTabs)); return; }
 
+            // Jeśli kontrolka wykresu nie istnieje, nie ma co aktualizować
             if (chartControl == null || chartControl.IsDisposed) return;
 
             var allChartData = new List<ChartDataPoint>();
             foreach (TabPage page in tabPanel1.TabPages)
             {
+                // Pomijamy samą zakładkę wykresu przy zbieraniu danych
+                if (page == chartTabPage) continue;
+
                 if (page.Controls.Count > 0 && page.Controls[0] is ReadingsTab readingsTab)
                 {
                     allChartData.AddRange(readingsTab.GetChartData());
@@ -279,9 +247,18 @@ namespace MP_ModbusApp
             chartControl.UpdateChart(allChartData);
         }
 
+        // ZMIANA: Blokada usuwania zakładki wykresu
         private void removeToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (tabPanel1.SelectedTab != null) tabPanel1.TabPages.Remove(tabPanel1.SelectedTab);
+            if (tabPanel1.SelectedTab != null)
+            {
+                if (tabPanel1.SelectedTab == chartTabPage)
+                {
+                    MessageBox.Show("Cannot remove the Chart tab.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                tabPanel1.TabPages.Remove(tabPanel1.SelectedTab);
+            }
         }
 
         private void renameToolStripMenuItem_Click(object sender, EventArgs e) => PerformTabRename();
@@ -292,7 +269,7 @@ namespace MP_ModbusApp
             {
                 for (int i = 0; i < tabPanel1.TabCount; i++)
                 {
-                    if (tabPanel1.GetTabRect(i).Contains(e.Location))
+                    if (tabPanel1.GetTabRect(i).Contains(e.Location) && i < tabPanel1.TabCount-1)
                     {
                         tabPanel1.SelectedIndex = i;
                         contextMenuStrip1.Show(tabPanel1, e.Location);
@@ -306,12 +283,11 @@ namespace MP_ModbusApp
         {
             tabToRename = tabPanel1.SelectedTab;
             if (tabToRename == null) return;
+            // Opcjonalnie: blokada zmiany nazwy zakładki Chart
+            if (tabToRename == chartTabPage) return;
 
-            using (RenameForm renameDialog = new RenameForm())
+            using (RenameForm renameDialog = new RenameForm() { Text = "Rename Group", newName = tabToRename.Text })
             {
-                renameDialog.Text = "Rename Group";
-                renameDialog.newName = tabToRename.Text;
-
                 if (renameDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(renameDialog.newName))
                 {
                     tabToRename.Text = renameDialog.newName;
@@ -328,31 +304,28 @@ namespace MP_ModbusApp
 
         private void saveToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string newName;
-            using (RenameForm renameDialog = new RenameForm())
+            using (RenameForm renameDialog = new RenameForm() { Text = "Save Device", newName = this.Text })
             {
-                renameDialog.Text = "Save Device";
-                renameDialog.newName = this.Text;
-                if (renameDialog.ShowDialog() == DialogResult.OK) newName = renameDialog.newName;
-                else return;
-            }
+                if (renameDialog.ShowDialog() == DialogResult.OK)
+                {
+                    if (string.IsNullOrWhiteSpace(renameDialog.newName))
+                    {
+                        MessageBox.Show("Please provide a device name.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
 
-            if (string.IsNullOrWhiteSpace(newName))
-            {
-                MessageBox.Show("Please provide a device name.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            this.Text = newName;
-            try
-            {
-                SaveDeviceConfiguration();
-                MessageBox.Show("Configuration saved successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                DeviceSaved?.Invoke(this, EventArgs.Empty);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error saving device: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    this.Text = renameDialog.newName;
+                    try
+                    {
+                        SaveDeviceConfiguration();
+                        MessageBox.Show("Configuration saved successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        DeviceSaved?.Invoke(this, EventArgs.Empty);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Error saving device: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
             }
         }
 
@@ -398,6 +371,9 @@ namespace MP_ModbusApp
 
                     foreach (TabPage tabPage in tabPanel1.TabPages)
                     {
+                        // ZMIANA: Nie zapisuj zakładki wykresu do bazy danych (ona jest tworzona dynamicznie)
+                        if (tabPage == chartTabPage) continue;
+
                         if (tabPage.Controls.Count > 0 && tabPage.Controls[0] is ReadingsTab readingsTab)
                         {
                             var groupCmd = connection.CreateCommand();
@@ -442,6 +418,17 @@ namespace MP_ModbusApp
                 return;
             }
 
+            if (IsAnotherDevicePollingSameId())
+            {
+                ShowDeviceError($"Slave ID {SlaveId} is busy in another window.");
+                return;
+            }
+
+            if (_modbusMaster.Transport is MP_modbus.MyModbusTcpTransport tcpTransport)
+            {
+                tcpTransport.ResetTransactionId();
+            }
+
             if (_isPolling) return;
             _isPolling = true;
 
@@ -449,6 +436,19 @@ namespace MP_ModbusApp
             stopToolStripMenuItem.Enabled = true;
 
             await PollDeviceLoop();
+        }
+
+        private bool IsAnotherDevicePollingSameId()
+        {
+            if (_mainWindow == null) return false;
+            foreach (var form in _mainWindow.MdiChildren)
+            {
+                if (form is ModbusDevice otherDev && form != this)
+                {
+                    if (otherDev.SlaveId == this.SlaveId && otherDev.IsPolling) return true;
+                }
+            }
+            return false;
         }
 
         private async Task PollDeviceLoop()
@@ -463,31 +463,10 @@ namespace MP_ModbusApp
 
         public void StopPolling(int form)
         {
-            if (_isPolling == true)
-            { _wasPolling = true; }
-            else
-            { _wasPolling = false; }
-
+            if (_isPolling) _wasPolling = true; else _wasPolling = false;
             _isPolling = false;
-            if (this.InvokeRequired)
-            {
-                this.Invoke(new Action(() => { startToolStripMenuItem.Enabled = true; stopToolStripMenuItem.Enabled = false; }));
-            }
-            else
-            {
-                if (form == 1)
-                {
-                    startToolStripMenuItem.Enabled = true;
-                    stopToolStripMenuItem.Enabled = false;
-                }
-                else
-                {
-                    startToolStripMenuItem.Enabled = false;
-                    stopToolStripMenuItem.Enabled = false;
-                }
-            }
-
-
+            Action updateUi = () => { startToolStripMenuItem.Enabled = true; stopToolStripMenuItem.Enabled = false; };
+            if (InvokeRequired) Invoke(updateUi); else updateUi();
         }
 
         private void stopToolStripMenuItem_Click(object sender, EventArgs e) => StopPolling(1);
@@ -496,7 +475,7 @@ namespace MP_ModbusApp
         {
             if (InvokeRequired) { Invoke(new Action(() => ShowDeviceError(message))); return; }
             lblDeviceStatus.Visible = true;
-            lblDeviceStatus.Text = $"Device Error: {message}";
+            lblDeviceStatus.Text = message;
             lblDeviceStatus.ForeColor = Color.Red;
         }
 
@@ -523,7 +502,9 @@ namespace MP_ModbusApp
             foreach (TabPage tabPage in tabPanel1.TabPages)
             {
                 if (!_isPolling) break;
-                if (tabPage.Controls.Count == 0 || tabPage.Controls[0] is not ReadingsTab readingsTab || tabPage == chartTabPage) continue;
+                // ZMIANA: Pomiń zakładkę wykresu przy odpytywaniu (ona nie ma rejestrów)
+                if (tabPage == chartTabPage) continue;
+                if (tabPage.Controls.Count == 0 || tabPage.Controls[0] is not ReadingsTab readingsTab) continue;
 
                 try
                 {
@@ -535,18 +516,10 @@ namespace MP_ModbusApp
 
                     switch (func)
                     {
-                        case 0: // Coils
-                            data = (await _modbusMaster.ReadCoilsAsync(sId, addr, qty)).Select(c => c ? (ushort)1 : (ushort)0).ToArray();
-                            break;
-                        case 1: // Discrete Inputs
-                            data = (await _modbusMaster.ReadInputsAsync(sId, addr, qty)).Select(i => i ? (ushort)1 : (ushort)0).ToArray();
-                            break;
-                        case 2: // Holding Registers
-                            data = await _modbusMaster.ReadHoldingRegistersAsync(sId, addr, qty);
-                            break;
-                        case 3: // Input Registers
-                            data = await _modbusMaster.ReadInputRegistersAsync(sId, addr, qty);
-                            break;
+                        case 0: data = (await _modbusMaster.ReadCoilsAsync(sId, addr, qty)).Select(c => c ? (ushort)1 : (ushort)0).ToArray(); break;
+                        case 1: data = (await _modbusMaster.ReadInputsAsync(sId, addr, qty)).Select(i => i ? (ushort)1 : (ushort)0).ToArray(); break;
+                        case 2: data = await _modbusMaster.ReadHoldingRegistersAsync(sId, addr, qty); break;
+                        case 3: data = await _modbusMaster.ReadInputRegistersAsync(sId, addr, qty); break;
                         default: continue;
                     }
 
@@ -555,27 +528,19 @@ namespace MP_ModbusApp
                     readingsTab.ClearTabError();
                     _consecutiveErrorCount = 0;
                 }
-                catch (MP_modbus.MyModbusSlaveException modbusEx)
-                {
-                    string fullError = MP_modbus.ModbusUtils.GetFullExceptionMessage(modbusEx.FunctionCode, modbusEx.SlaveExceptionCode);
-                    _errorCounter++;
-                    readingsTab.ShowTabError(MP_modbus.ModbusUtils.GetExceptionName(modbusEx.SlaveExceptionCode));
-                    readingsTab.ClearDisplayValues();
-                    LogFrame("Error", "", fullError);
-                }
                 catch (Exception ex)
                 {
                     _errorCounter++;
                     _consecutiveErrorCount++;
                     LogFrame("Error", "", $"Comms Error: {ex.Message}");
-                    readingsTab.ShowTabError($"Comms Error: {ex.Message} ({_consecutiveErrorCount})");
+                    readingsTab.ShowTabError($"Comms Error: {ex.Message}");
 
-                    if (_consecutiveErrorCount >= maxRetries && maxRetries > 0)
+                    if (maxRetries > 0 && _consecutiveErrorCount >= maxRetries)
                     {
-                        ShowDeviceError($"Polling stopped after {maxRetries} failures.");
+                        ShowDeviceError("Stopped due to excessive errors.");
                         StopPolling(1);
                     }
-                    else ShowDeviceError($"Comms Error (Attempt {_consecutiveErrorCount}/{(maxRetries > 0 ? maxRetries.ToString() : "inf")})");
+                    else ShowDeviceError($"Error (Attempt {_consecutiveErrorCount})");
                     break;
                 }
                 label1.Text = $"TX: {_txCounter}  RX: {_rxCounter}  ERR: {_errorCounter}";
@@ -597,17 +562,13 @@ namespace MP_ModbusApp
 
         public void StartPolling()
         {
-
             if (_wasPolling)
             {
                 _wasPolling = false;
                 startToolStripMenuItem.Enabled = true;
                 startToolStripMenuItem.PerformClick();
             }
-            else
-            {
-                startToolStripMenuItem.Enabled = true;
-            }
+            else startToolStripMenuItem.Enabled = true;
         }
 
         private void ModbusDevice_FormClosed(object sender, FormClosedEventArgs e) => StopPolling(1);

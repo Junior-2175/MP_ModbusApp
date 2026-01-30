@@ -38,7 +38,6 @@
             toolStripSeparator2 = new ToolStripSeparator();
             renameToolStripMenuItem = new ToolStripMenuItem();
             toolStripSeparator1 = new ToolStripSeparator();
-            chartToolStripMenuItem = new ToolStripMenuItem();
             panel1 = new Panel();
             label1 = new Label();
             lblDeviceStatus = new Label();
@@ -90,7 +89,7 @@
             // 
             // contextMenuStrip1
             // 
-            contextMenuStrip1.Items.AddRange(new ToolStripItem[] { addToolStripMenuItem, removeToolStripMenuItem, toolStripSeparator2, renameToolStripMenuItem, toolStripSeparator1, chartToolStripMenuItem });
+            contextMenuStrip1.Items.AddRange(new ToolStripItem[] { addToolStripMenuItem, removeToolStripMenuItem, toolStripSeparator2, renameToolStripMenuItem, toolStripSeparator1 });
             contextMenuStrip1.Name = "contextMenuStrip1";
             contextMenuStrip1.Size = new Size(211, 104);
             // 
@@ -130,14 +129,6 @@
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
             toolStripSeparator1.Size = new Size(207, 6);
-            // 
-            // chartToolStripMenuItem
-            // 
-            chartToolStripMenuItem.Image = Properties.Resources.icons8_graph_50;
-            chartToolStripMenuItem.Name = "chartToolStripMenuItem";
-            chartToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.X;
-            chartToolStripMenuItem.Size = new Size(210, 22);
-            chartToolStripMenuItem.Text = "Chart";
             // 
             // panel1
             // 
@@ -284,7 +275,6 @@
         private TextBox txtRenameTab;
         private ToolStripMenuItem newReadingsToolStripMenuItem;
         private ToolStripSeparator toolStripSeparator2;
-        private ToolStripMenuItem chartToolStripMenuItem;
         private Label lblDeviceStatus;
         private Label label1;
     }
