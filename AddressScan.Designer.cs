@@ -45,7 +45,7 @@
             label1 = new Label();
             comboBox1 = new ComboBox();
             scanResultsGrid = new DataGridView();
-            Slave_Id = new DataGridViewTextBoxColumn();
+            reg_adr = new DataGridViewTextBoxColumn();
             Response = new DataGridViewTextBoxColumn();
             menuStrip1.SuspendLayout();
             panel1.SuspendLayout();
@@ -230,7 +230,7 @@
             scanResultsGrid.AllowUserToDeleteRows = false;
             scanResultsGrid.AllowUserToResizeRows = false;
             scanResultsGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            scanResultsGrid.Columns.AddRange(new DataGridViewColumn[] { Slave_Id, Response });
+            scanResultsGrid.Columns.AddRange(new DataGridViewColumn[] { reg_adr, Response });
             scanResultsGrid.Dock = DockStyle.Fill;
             scanResultsGrid.Location = new Point(0, 180);
             scanResultsGrid.Name = "scanResultsGrid";
@@ -238,13 +238,13 @@
             scanResultsGrid.Size = new Size(334, 221);
             scanResultsGrid.TabIndex = 9;
             // 
-            // Slave_Id
+            // reg_adr
             // 
-            Slave_Id.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-            Slave_Id.HeaderText = "Slave Id";
-            Slave_Id.Name = "Slave_Id";
-            Slave_Id.ReadOnly = true;
-            Slave_Id.Width = 72;
+            reg_adr.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            reg_adr.HeaderText = "Register Address";
+            reg_adr.Name = "reg_adr";
+            reg_adr.ReadOnly = true;
+            reg_adr.Width = 109;
             // 
             // Response
             // 
@@ -300,7 +300,7 @@
         private Label label1;
         private ComboBox comboBox1;
         private DataGridView scanResultsGrid;
-        private DataGridViewTextBoxColumn Slave_Id;
+        private DataGridViewTextBoxColumn reg_adr;
         private DataGridViewTextBoxColumn Response;
     }
 }
