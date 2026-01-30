@@ -401,7 +401,7 @@ namespace MP_ModbusApp
         private void Disconnect()
         {
             foreach (Form child in this.MdiChildren)
-                if (child is ModbusDevice device) device.StopPolling();
+                if (child is ModbusDevice device) device.StopPolling(2);
 
             _modbusMaster?.Dispose();
             _modbusMaster = null;
@@ -539,16 +539,16 @@ namespace MP_ModbusApp
                             deviceForm.DeviceTabControl.TabPages.Add(tp);
 
                             var rCmd = conn.CreateCommand();
-                            rCmd.CommandText = "SELECT RegisterNumber, RegisterName, DisplayFormatColumn FROM RegisterDefinitions WHERE GroupId = $gId";
+                            rCmd.CommandText = "SELECT RegisterNumber, RegisterName, RegisterDescription, DisplayFormatColumn FROM RegisterDefinitions WHERE GroupId = $gId";
                             rCmd.Parameters.AddWithValue("$gId", gId);
 
-                            var regs = new List<Tuple<int, string, string>>();
+                            var regs = new List<Tuple<int, string, string, string>>();
                             using (var rReader = rCmd.ExecuteReader())
                             {
                                 while (rReader.Read())
                                 {
                                     if (int.TryParse(rReader.GetValue(0).ToString().Split(' ')[0], out int rNum))
-                                        regs.Add(new Tuple<int, string, string>(rNum, rReader.GetString(1), rReader.IsDBNull(2) ? "Unsigned16" : rReader.GetString(2)));
+                                        regs.Add(new Tuple<int, string, string, string>(rNum, rReader.GetString(1), rReader.GetString(2), rReader.IsDBNull(3) ? "Unsigned16" : rReader.GetString(3)));
                                 }
                             }
                             tab.SetRegisterDefinitions(regs);
@@ -668,10 +668,11 @@ namespace MP_ModbusApp
                         {
                             var rCmd = conn.CreateCommand();
                             rCmd.Transaction = trans;
-                            rCmd.CommandText = "INSERT INTO RegisterDefinitions (GroupId, RegisterNumber, RegisterName) VALUES ($g, $rn, $name)";
+                            rCmd.CommandText = "INSERT INTO RegisterDefinitions (GroupId, RegisterNumber, RegisterName, RegisterDescription) VALUES ($g, $rn, $name)";
                             rCmd.Parameters.AddWithValue("$g", gId);
                             rCmd.Parameters.AddWithValue("$rn", int.Parse(rNode.Attribute("RegisterNumber").Value));
                             rCmd.Parameters.AddWithValue("$name", rNode.Attribute("RegisterName").Value);
+                            rCmd.Parameters.AddWithValue("$description", rNode.Attribute("RegisterDescription").Value);
                             rCmd.ExecuteNonQuery();
                         }
                     }
@@ -728,6 +729,12 @@ namespace MP_ModbusApp
                         using (var rr = rCmd.ExecuteReader())
                         {
                             while (rr.Read()) gNode.Add(new XElement("Register", new XAttribute("RegisterNumber", rr.GetInt32(0)), new XAttribute("RegisterName", rr.GetString(1))));
+                        }
+                        rCmd.CommandText = "SELECT RegisterNumber, RegisterDescription FROM RegisterDefinitions WHERE GroupId = $gId";
+                        rCmd.Parameters.AddWithValue("$gId", gId);
+                        using (var rr = rCmd.ExecuteReader())
+                        {
+                            while (rr.Read()) gNode.Add(new XElement("Register", new XAttribute("RegisterDescription", rr.GetInt32(0)), new XAttribute("RegisterDescription", rr.GetString(1))));
                         }
                         root.Add(gNode);
                     }
@@ -791,7 +798,7 @@ namespace MP_ModbusApp
             scan.ScanningStateChanged += (s, isScanning) =>
             {
                 foreach (Form child in this.MdiChildren)
-                    if (child is ModbusDevice device) { if (isScanning) device.StopPolling(); else device.StartPolling(); }
+                    if (child is ModbusDevice device) { if (isScanning) device.StopPolling(2); else device.StartPolling(); }
             };
             scan.Show();
         }

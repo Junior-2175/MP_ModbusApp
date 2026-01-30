@@ -1,13 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace MP_ModbusApp
 {
@@ -16,11 +8,11 @@ namespace MP_ModbusApp
         private MainWindow _mainWindow;
         private MP_modbus.IMyModbusMaster _modbusMaster;
         private bool _isPolling = false;
+        private bool _wasPolling = false;
         private int _consecutiveErrorCount = 0;
         private int _rxCounter = 0;
         private int _txCounter = 0;
         private int _errorCounter = 0;
-
         public event EventHandler DeviceSaved;
 
         private TabPage chartTabPage = null;
@@ -37,6 +29,7 @@ namespace MP_ModbusApp
             get => this.Text;
             set => this.Text = value;
         }
+
 
         public int SlaveId
         {
@@ -103,7 +96,7 @@ namespace MP_ModbusApp
             }
 
             bool wasPolling = _isPolling;
-            StopPolling();
+            StopPolling(1);
 
             if (_modbusMaster.Transport is MP_modbus.ModbusTransportBase transport)
             {
@@ -425,10 +418,11 @@ namespace MP_ModbusApp
                                 if (row.IsNewRow) continue;
                                 var regCmd = connection.CreateCommand();
                                 regCmd.Transaction = transaction;
-                                regCmd.CommandText = "INSERT INTO RegisterDefinitions (GroupId, RegisterNumber, RegisterName, DisplayFormatColumn) VALUES ($gId, $rNum, $rName, $fmt);";
+                                regCmd.CommandText = "INSERT INTO RegisterDefinitions (GroupId, RegisterNumber, RegisterName,RegisterDescription, DisplayFormatColumn) VALUES ($gId, $rNum, $rName, $rDescription, $fmt);";
                                 regCmd.Parameters.AddWithValue("$gId", groupId);
                                 regCmd.Parameters.AddWithValue("$rNum", baseAddr + row.Index);
                                 regCmd.Parameters.AddWithValue("$rName", row.Cells["Name"].Value ?? string.Empty);
+                                regCmd.Parameters.AddWithValue("$rDescription", row.Cells["Description"].Value ?? string.Empty);
                                 regCmd.Parameters.AddWithValue("$fmt", row.Cells["DisplayFormatColumn"].Value?.ToString() ?? "Unsigned16");
                                 regCmd.ExecuteNonQuery();
                             }
@@ -467,8 +461,13 @@ namespace MP_ModbusApp
             }
         }
 
-        public void StopPolling()
+        public void StopPolling(int form)
         {
+            if (_isPolling == true)
+            { _wasPolling = true; }
+            else
+            { _wasPolling = false; }
+
             _isPolling = false;
             if (this.InvokeRequired)
             {
@@ -476,12 +475,22 @@ namespace MP_ModbusApp
             }
             else
             {
-                startToolStripMenuItem.Enabled = true;
-                stopToolStripMenuItem.Enabled = false;
+                if (form == 1)
+                {
+                    startToolStripMenuItem.Enabled = true;
+                    stopToolStripMenuItem.Enabled = false;
+                }
+                else
+                {
+                    startToolStripMenuItem.Enabled = false;
+                    stopToolStripMenuItem.Enabled = false;
+                }
             }
+
+
         }
 
-        private void stopToolStripMenuItem_Click(object sender, EventArgs e) => StopPolling();
+        private void stopToolStripMenuItem_Click(object sender, EventArgs e) => StopPolling(1);
 
         private void ShowDeviceError(string message)
         {
@@ -564,7 +573,7 @@ namespace MP_ModbusApp
                     if (_consecutiveErrorCount >= maxRetries && maxRetries > 0)
                     {
                         ShowDeviceError($"Polling stopped after {maxRetries} failures.");
-                        StopPolling();
+                        StopPolling(1);
                     }
                     else ShowDeviceError($"Comms Error (Attempt {_consecutiveErrorCount}/{(maxRetries > 0 ? maxRetries.ToString() : "inf")})");
                     break;
@@ -588,10 +597,20 @@ namespace MP_ModbusApp
 
         public void StartPolling()
         {
-            if (startToolStripMenuItem.Enabled) startToolStripMenuItem.PerformClick();
+
+            if (_wasPolling)
+            {
+                _wasPolling = false;
+                startToolStripMenuItem.Enabled = true;
+                startToolStripMenuItem.PerformClick();
+            }
+            else
+            {
+                startToolStripMenuItem.Enabled = true;
+            }
         }
 
-        private void ModbusDevice_FormClosed(object sender, FormClosedEventArgs e) => StopPolling();
-        private void ModbusDevice_FormClosing(object sender, FormClosingEventArgs e) => StopPolling();
+        private void ModbusDevice_FormClosed(object sender, FormClosedEventArgs e) => StopPolling(1);
+        private void ModbusDevice_FormClosing(object sender, FormClosingEventArgs e) => StopPolling(1);
     }
 }

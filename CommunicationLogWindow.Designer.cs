@@ -166,6 +166,7 @@
             // 
             cboDeviceFilter.Name = "cboDeviceFilter";
             cboDeviceFilter.Size = new Size(121, 25);
+            cboDeviceFilter.Sorted = true;
             cboDeviceFilter.SelectedIndexChanged += cboDeviceFilter_SelectedIndexChanged;
             // 
             // btnClearFilter

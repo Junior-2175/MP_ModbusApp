@@ -334,8 +334,8 @@ namespace MP_ModbusApp
                 int currentRegNum = i + (int)startRegister.Value;
                 dataGridView1.Rows[i].Cells["RegisterNumber"].Value = currentRegNum;
                 dataGridView1.Rows[i].Cells["Name"].Value = "Register_" + currentRegNum;
+                dataGridView1.Rows[i].Cells["Description"].Value = "";
                 dataGridView1.Rows[i].Visible = true;
-
                 if (formats.ContainsKey(currentRegNum))
                 {
                     dataGridView1.Rows[i].Cells["DisplayFormatColumn"].Value = formats[currentRegNum];
@@ -559,7 +559,7 @@ namespace MP_ModbusApp
             finally { _isUpdatingValues = false; }
         }
 
-        public void SetRegisterDefinitions(List<Tuple<int, string, string>> registers)
+        public void SetRegisterDefinitions(List<Tuple<int, string, string, string>> registers)
         {
             foreach (var regDef in registers)
             {
@@ -567,18 +567,25 @@ namespace MP_ModbusApp
                 {
                     if (row.IsNewRow || row.Cells["RegisterNumber"].Value == null) continue;
 
-                    if (row.Cells["RegisterNumber"].Value is int regNumInCell && regNumInCell == regDef.Item1)
+                    if (int.TryParse(row.Cells["RegisterNumber"].Value?.ToString(), out int regNumInCell))
                     {
-                        row.Cells["Name"].Value = regDef.Item2;
-                        if (Enum.TryParse<DisplayFormat>(regDef.Item3, out var displayFormat))
+                        if (regNumInCell == regDef.Item1)
                         {
-                            row.Cells["DisplayFormatColumn"].Value = displayFormat;
+                            row.Cells["Name"].Value = regDef.Item2;
+                            row.Cells["Description"].Value = regDef.Item3;
+
+
+                            if (Enum.TryParse<DisplayFormat>(regDef.Item4, out var displayFormat))
+                            {
+                                row.Cells["DisplayFormatColumn"].Value = displayFormat;
+                            }
+                            else row.Cells["DisplayFormatColumn"].Value = DisplayFormat.Unsigned16;
+                            break;
                         }
-                        else row.Cells["DisplayFormatColumn"].Value = DisplayFormat.Unsigned16;
-                        break;
                     }
                 }
             }
+
             RefreshDisplayValues();
         }
 

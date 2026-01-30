@@ -177,6 +177,7 @@ namespace MP_ModbusApp
                         GroupId INTEGER NOT NULL,
                         RegisterNumber INTEGER NOT NULL,
                         RegisterName TEXT NOT NULL,
+                        RegisterDescription TEXT NOT NULL,
                         DisplayFormatColumn TEXT NOT NULL DEFAULT 'Unsigned16', /* Stores the DisplayFormat enum string */
                         FOREIGN KEY (GroupId) REFERENCES ReadingGroups (GroupId) ON DELETE CASCADE
                     );";

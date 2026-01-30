@@ -40,9 +40,6 @@
             lblTabError = new Label();
             startRegister_1 = new NumericUpDown();
             dataGridView1 = new DataGridView();
-            Name = new DataGridViewTextBoxColumn();
-            RegisterNumber = new DataGridViewTextBoxColumn();
-            Value = new DataGridViewTextBoxColumn();
             contextMenuStrip1 = new ContextMenuStrip(components);
             toolStripMenuItem2 = new ToolStripMenuItem();
             unsignedToolStripMenuItem = new ToolStripMenuItem();
@@ -113,9 +110,13 @@
             toolStripSeparator10 = new ToolStripSeparator();
             bigendianByteSwapToolStripMenuItem8 = new ToolStripMenuItem();
             littleendianByteSwapToolStripMenuItem8 = new ToolStripMenuItem();
+            _fadeTimer = new System.Windows.Forms.Timer(components);
+            Name = new DataGridViewTextBoxColumn();
+            Description = new DataGridViewTextBoxColumn();
+            RegisterNumber = new DataGridViewTextBoxColumn();
+            Value = new DataGridViewTextBoxColumn();
             DisplayFormatColumn = new DataGridViewTextBoxColumn();
             Chart = new DataGridViewCheckBoxColumn();
-            _fadeTimer = new System.Windows.Forms.Timer(components);
             ((System.ComponentModel.ISupportInitialize)numOfRegisters).BeginInit();
             ((System.ComponentModel.ISupportInitialize)startRegister).BeginInit();
             ((System.ComponentModel.ISupportInitialize)startRegisterHex).BeginInit();
@@ -251,7 +252,7 @@
             dataGridView1.AllowUserToDeleteRows = false;
             dataGridView1.AllowUserToResizeRows = false;
             dataGridView1.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dataGridView1.Columns.AddRange(new DataGridViewColumn[] { Name, RegisterNumber, Value, DisplayFormatColumn, Chart });
+            dataGridView1.Columns.AddRange(new DataGridViewColumn[] { Name, Description, RegisterNumber, Value, DisplayFormatColumn, Chart });
             dataGridView1.Dock = DockStyle.Fill;
             dataGridView1.Location = new Point(0, 109);
             dataGridView1.Name = "dataGridView1";
@@ -259,31 +260,6 @@
             dataGridView1.RowTemplate.Height = 20;
             dataGridView1.Size = new Size(332, 329);
             dataGridView1.TabIndex = 6;
-            // 
-            // Name
-            // 
-            Name.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
-            Name.HeaderText = "Name";
-            Name.Name = "Name";
-            Name.SortMode = DataGridViewColumnSortMode.NotSortable;
-            // 
-            // RegisterNumber
-            // 
-            RegisterNumber.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-            RegisterNumber.HeaderText = "Register Number";
-            RegisterNumber.Name = "RegisterNumber";
-            RegisterNumber.ReadOnly = true;
-            RegisterNumber.SortMode = DataGridViewColumnSortMode.NotSortable;
-            RegisterNumber.Width = 92;
-            // 
-            // Value
-            // 
-            Value.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-            Value.ContextMenuStrip = contextMenuStrip1;
-            Value.HeaderText = "Value";
-            Value.Name = "Value";
-            Value.SortMode = DataGridViewColumnSortMode.NotSortable;
-            Value.Width = 41;
             // 
             // contextMenuStrip1
             // 
@@ -741,6 +717,45 @@
             littleendianByteSwapToolStripMenuItem8.Text = "Little-endian byte swap";
             littleendianByteSwapToolStripMenuItem8.Click += littleendianByteSwapToolStripMenuItem8_Click;
             // 
+            // _fadeTimer
+            // 
+            _fadeTimer.Enabled = true;
+            _fadeTimer.Interval = 50;
+            _fadeTimer.Tick += _fadeTimer_Tick;
+            // 
+            // Name
+            // 
+            Name.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            Name.HeaderText = "Name";
+            Name.Name = "Name";
+            Name.SortMode = DataGridViewColumnSortMode.NotSortable;
+            // 
+            // Description
+            // 
+            Description.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            Description.HeaderText = "Description";
+            Description.Name = "Description";
+            Description.SortMode = DataGridViewColumnSortMode.NotSortable;
+            Description.Width = 73;
+            // 
+            // RegisterNumber
+            // 
+            RegisterNumber.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            RegisterNumber.HeaderText = "Register Number";
+            RegisterNumber.Name = "RegisterNumber";
+            RegisterNumber.ReadOnly = true;
+            RegisterNumber.SortMode = DataGridViewColumnSortMode.NotSortable;
+            RegisterNumber.Width = 92;
+            // 
+            // Value
+            // 
+            Value.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            Value.ContextMenuStrip = contextMenuStrip1;
+            Value.HeaderText = "Value";
+            Value.Name = "Value";
+            Value.SortMode = DataGridViewColumnSortMode.NotSortable;
+            Value.Width = 41;
+            // 
             // DisplayFormatColumn
             // 
             DisplayFormatColumn.HeaderText = "DisplayFormat";
@@ -756,19 +771,12 @@
             Chart.Name = "Chart";
             Chart.Width = 71;
             // 
-            // _fadeTimer
-            // 
-            _fadeTimer.Enabled = true;
-            _fadeTimer.Interval = 50;
-            _fadeTimer.Tick += _fadeTimer_Tick;
-            // 
             // ReadingsTab
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             Controls.Add(dataGridView1);
             Controls.Add(groupBox1);
-            //Name = "ReadingsTab";
             Size = new Size(332, 438);
             Load += ReadingsTab_Load;
             ((System.ComponentModel.ISupportInitialize)numOfRegisters).EndInit();
@@ -864,11 +872,12 @@
         private ToolStripMenuItem bigendianByteSwapToolStripMenuItem8;
         private ToolStripMenuItem littleendianByteSwapToolStripMenuItem8;
         private ToolStripMenuItem boolToolStripMenuItem;
+        private System.Windows.Forms.Timer _fadeTimer;
         private DataGridViewTextBoxColumn Name;
+        private DataGridViewTextBoxColumn Description;
         private DataGridViewTextBoxColumn RegisterNumber;
         private DataGridViewTextBoxColumn Value;
         private DataGridViewTextBoxColumn DisplayFormatColumn;
         private DataGridViewCheckBoxColumn Chart;
-        private System.Windows.Forms.Timer _fadeTimer;
     }
 }

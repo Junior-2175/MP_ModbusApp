@@ -124,17 +124,17 @@
   <data name="btnStartLogging.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         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
-        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
+        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
 </value>
   </data>
   <data name="btnStopLogging.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
