@@ -803,7 +803,8 @@ namespace MP_ModbusApp
             scan.Show();
         }
 
-        private void addresScanToolStripMenuItem_Click(object sender, EventArgs e) {
+        private void addresScanToolStripMenuItem_Click(object sender, EventArgs e)
+        {
 
             AddressScan scanForm = new AddressScan(this.ModbusMaster);
 
@@ -828,6 +829,14 @@ namespace MP_ModbusApp
             scanForm.MdiParent = this;
             scanForm.Show();
 
+        }
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            AboutBox aboutBox = new AboutBox();
+            {
+                aboutBox.ShowDialog();
+            }
         }
     }
 }

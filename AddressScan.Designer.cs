@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(AddressScan));
             menuStrip1 = new MenuStrip();
             startToolStripMenuItem = new ToolStripMenuItem();
             stopToolStripMenuItem1 = new ToolStripMenuItem();
@@ -274,6 +275,7 @@
             Controls.Add(panel1);
             Controls.Add(menuStrip1);
             FormBorderStyle = FormBorderStyle.FixedDialog;
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "AddressScan";
             Text = "AddressScan";
             menuStrip1.ResumeLayout(false);

@@ -197,6 +197,7 @@
             Controls.Add(chkStopOnError);
             Controls.Add(dgvLog);
             Controls.Add(toolStrip1);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "CommunicationLogWindow";
             Text = "Communication";
             Load += CommunicationLogWindow_Load;

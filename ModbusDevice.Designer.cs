@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ModbusDevice));
             slaveId = new NumericUpDown();
             label4 = new Label();
             tabPanel1 = new TabControl();
@@ -91,7 +92,7 @@
             // 
             contextMenuStrip1.Items.AddRange(new ToolStripItem[] { addToolStripMenuItem, removeToolStripMenuItem, toolStripSeparator2, renameToolStripMenuItem, toolStripSeparator1 });
             contextMenuStrip1.Name = "contextMenuStrip1";
-            contextMenuStrip1.Size = new Size(211, 104);
+            contextMenuStrip1.Size = new Size(211, 82);
             // 
             // addToolStripMenuItem
             // 
@@ -240,6 +241,7 @@
             Controls.Add(panel1);
             Controls.Add(menuStrip1);
             Controls.Add(txtRenameTab);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "ModbusDevice";
             Text = "New Device";
             FormClosing += ModbusDevice_FormClosing;

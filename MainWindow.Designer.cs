@@ -99,6 +99,7 @@ namespace MP_ModbusApp
             cascadeToolStripMenuItem = new ToolStripMenuItem();
             splitHorizontalToolStripMenuItem = new ToolStripMenuItem();
             splitVerticalToolStripMenuItem = new ToolStripMenuItem();
+            aboutToolStripMenuItem = new ToolStripMenuItem();
             sidePanel.SuspendLayout();
             treeViewContextMenu.SuspendLayout();
             setupPanel.SuspendLayout();
@@ -268,7 +269,6 @@ namespace MP_ModbusApp
             numMaxRetries.Name = "numMaxRetries";
             numMaxRetries.Size = new Size(92, 23);
             numMaxRetries.TabIndex = 4;
-            //numMaxRetries.ValueChanged += numMaxRetries_ValueChanged;
             // 
             // numPollDelay
             // 
@@ -726,7 +726,7 @@ namespace MP_ModbusApp
             // 
             // menuStrip1
             // 
-            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, viewToolStripMenuItem, layoutToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, viewToolStripMenuItem, layoutToolStripMenuItem, aboutToolStripMenuItem });
             menuStrip1.Location = new Point(350, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Size = new Size(321, 24);
@@ -745,7 +745,7 @@ namespace MP_ModbusApp
             newToolStripMenuItem.Image = Properties.Resources.icons8_file_50;
             newToolStripMenuItem.Name = "newToolStripMenuItem";
             newToolStripMenuItem.ShortcutKeys = Keys.Control | Keys.N;
-            newToolStripMenuItem.Size = new Size(180, 22);
+            newToolStripMenuItem.Size = new Size(177, 22);
             newToolStripMenuItem.Text = "New";
             newToolStripMenuItem.Click += newToolStripMenuItem_Click;
             // 
@@ -754,7 +754,7 @@ namespace MP_ModbusApp
             slaveScanToolStripMenuItem.Image = (Image)resources.GetObject("slaveScanToolStripMenuItem.Image");
             slaveScanToolStripMenuItem.Name = "slaveScanToolStripMenuItem";
             slaveScanToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.D;
-            slaveScanToolStripMenuItem.Size = new Size(180, 22);
+            slaveScanToolStripMenuItem.Size = new Size(177, 22);
             slaveScanToolStripMenuItem.Text = "Device Scan";
             slaveScanToolStripMenuItem.Click += slaveScanToolStripMenuItem_Click;
             // 
@@ -763,7 +763,7 @@ namespace MP_ModbusApp
             addresScanToolStripMenuItem.Image = Properties.Resources.icons8_online_binary_code_50;
             addresScanToolStripMenuItem.Name = "addresScanToolStripMenuItem";
             addresScanToolStripMenuItem.ShortcutKeys = Keys.Alt | Keys.A;
-            addresScanToolStripMenuItem.Size = new Size(180, 22);
+            addresScanToolStripMenuItem.Size = new Size(177, 22);
             addresScanToolStripMenuItem.Text = "Addres Scan";
             addresScanToolStripMenuItem.Click += addresScanToolStripMenuItem_Click;
             // 
@@ -814,6 +814,13 @@ namespace MP_ModbusApp
             splitVerticalToolStripMenuItem.Text = "Split Vertical";
             splitVerticalToolStripMenuItem.Click += splitVerticalToolStripMenuItem_Click;
             // 
+            // aboutToolStripMenuItem
+            // 
+            aboutToolStripMenuItem.Name = "aboutToolStripMenuItem";
+            aboutToolStripMenuItem.Size = new Size(52, 20);
+            aboutToolStripMenuItem.Text = "About";
+            aboutToolStripMenuItem.Click += aboutToolStripMenuItem_Click;
+            // 
             // MainWindow
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -822,12 +829,13 @@ namespace MP_ModbusApp
             Controls.Add(statusStrip1);
             Controls.Add(menuStrip1);
             Controls.Add(sidePanel);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             IsMdiContainer = true;
             MainMenuStrip = menuStrip1;
             MdiChildrenMinimizedAnchorBottom = false;
             MinimumSize = new Size(370, 530);
             Name = "MainWindow";
-            Text = "MP_ModbusApp";
+            Text = "MP ModbusApp";
             Load += MainWindow_Load;
             DragDrop += MainWindow_DragDrop;
             DragEnter += MainWindow_DragEnter;
@@ -925,5 +933,6 @@ namespace MP_ModbusApp
         private Label label13;
         private ToolStripMenuItem slaveScanToolStripMenuItem;
         private ToolStripMenuItem addresScanToolStripMenuItem;
+        private ToolStripMenuItem aboutToolStripMenuItem;
     }
 }
