@@ -183,6 +183,7 @@
             Name = "DeviceScan";
             Text = "DeviceScan";
             FormClosing += DeviceScan_FormClosing;
+            Load += DeviceScan_Load;
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)startId).EndInit();

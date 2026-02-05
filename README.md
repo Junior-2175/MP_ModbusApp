@@ -33,6 +33,8 @@ The application supports various transmission media and protocol modes:
     * **Data Type Detection:** The algorithm automatically attempts to read 16, 32, 48, and 64-bit blocks. In case of a read error for a smaller type, the program attempts to read a wider data type, allowing for automatic mapping of variables (e.g., float, long) without manual configuration.
     * Visualization of variable size in results (e.g., `(32b)`, `(64b)`).
 * **Device Scanner:** Bus scanning to find active Slave IDs.
+* DISCLAIMER: This scanning function broadcasts queries to arbitrary addresses, which may disrupt sensitive or legacy hardware. This tool should only be used in a controlled environment. The developer accepts no liability for any damages or network interruptions caused by the use of this feature.
+
 * **Communication Log (Traffic Monitor):** View sent (TX) and received (RX) frames in raw mode (HEX) with timestamps, which is crucial for debugging transmission issues.
 
 ## 🛠️ System Requirements

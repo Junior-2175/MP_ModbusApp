@@ -282,6 +282,7 @@
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "AddressScan";
             Text = "AddressScan";
+            Load += AddressScan_Load;
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
             panel1.ResumeLayout(false);

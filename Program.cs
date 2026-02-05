@@ -27,11 +27,12 @@ namespace MP_ModbusApp
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
 
+                ApplicationConfiguration.Initialize();
+
                 // Initialize the database on application startup
                 DatabaseHelper.InitializeDatabase();
                 DatabaseHelper.CreateDeviceTables();
 
-                ApplicationConfiguration.Initialize();
                 Application.Run(new MainWindow());
 
                 // Release the mutex when the application closes

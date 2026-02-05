@@ -229,5 +229,10 @@ namespace MP_ModbusApp
             // Ensure MainWindow resumes communication when scanning window is closed
             ScanningStateChanged?.Invoke(this, false);
         }
+
+        private void DeviceScan_Load(object sender, EventArgs e)
+        {
+            MessageBox.Show("Warning: Modbus network scanning generates significant traffic and sends requests to unknown addresses. This may cause instability in legacy devices. Only use this feature during machine downtime or in a test environment. The software author is not liable for any network disruptions.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        }
     }
 }
