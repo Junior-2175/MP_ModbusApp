@@ -805,9 +805,29 @@ namespace MP_ModbusApp
 
         private void addresScanToolStripMenuItem_Click(object sender, EventArgs e) {
 
-            AddressScan scan = new AddressScan() { MdiParent = this };
-            scan.Show();
-        
+            AddressScan scanForm = new AddressScan(this.ModbusMaster);
+
+            scanForm.ScanningStateChanged += (s, isScanning) =>
+            {
+                if (isScanning)
+                {
+                    foreach (var child in this.MdiChildren)
+                    {
+                        if (child is ModbusDevice dev) dev.StopPolling(1);
+                    }
+                }
+                else
+                {
+                    foreach (var child in this.MdiChildren)
+                    {
+                        if (child is ModbusDevice dev) dev.StartPolling();
+                    }
+                }
+            };
+
+            scanForm.MdiParent = this;
+            scanForm.Show();
+
         }
     }
 }
