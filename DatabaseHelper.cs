@@ -11,7 +11,9 @@ namespace MP_ModbusApp
     /// </summary>
     public static class DatabaseHelper
     {
-        private static readonly string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MP_ModbusMaster.db");
+        private static readonly string appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        private static readonly string dbPath = Path.Combine(appData, "JuniorSoft", "MP_ModbusApp", "MP_ModbusMaster.db");
+        //private static readonly string dbPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MP_ModbusMaster.db");
         private static readonly string connectionString = $"Data Source={dbPath}";
 
         /// <summary>

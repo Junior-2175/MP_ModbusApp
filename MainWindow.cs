@@ -842,7 +842,7 @@ namespace MP_ModbusApp
 
         private void helpToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string readmePath = Properties.Settings.Default.readmePath;
+            string readmePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "README.md");
 
             try
             {

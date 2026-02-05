@@ -22,14 +22,5 @@ namespace MP_ModbusApp.Properties {
                 return defaultInstance;
             }
         }
-        
-        [global::System.Configuration.ApplicationScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("C:\\Users\\mpind\\source\\repos\\MP_ModbusApp\\README.md")]
-        public string readmePath {
-            get {
-                return ((string)(this["readmePath"]));
-            }
-        }
     }
 }
