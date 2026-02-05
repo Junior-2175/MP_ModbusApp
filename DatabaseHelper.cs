@@ -30,6 +30,12 @@ namespace MP_ModbusApp
         /// </summary>
         public static void InitializeDatabase()
         {
+            string directory = Path.GetDirectoryName(dbPath);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
             using (var connection = new SqliteConnection(connectionString))
             {
                 connection.Open();
