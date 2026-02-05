@@ -173,6 +173,7 @@
             startRegister_1.Size = new Size(69, 23);
             startRegister_1.TabIndex = 1;
             startRegister_1.Value = new decimal(new int[] { 40101, 0, 0, 0 });
+            startRegister_1.ValueChanged += startRegister_1_ValueChanged;
             // 
             // startRegister
             // 
@@ -183,6 +184,7 @@
             startRegister.Size = new Size(69, 23);
             startRegister.TabIndex = 1;
             startRegister.Value = new decimal(new int[] { 100, 0, 0, 0 });
+            startRegister.ValueChanged += startRegister_ValueChanged_1;
             // 
             // label2
             // 
@@ -204,6 +206,7 @@
             startRegisterHex.Size = new Size(69, 23);
             startRegisterHex.TabIndex = 1;
             startRegisterHex.Value = new decimal(new int[] { 100, 0, 0, 0 });
+            startRegisterHex.ValueChanged += startRegisterHex_ValueChanged_1;
             // 
             // label1
             // 
@@ -225,6 +228,7 @@
             comboBox1.Name = "comboBox1";
             comboBox1.Size = new Size(219, 23);
             comboBox1.TabIndex = 2;
+            comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
             // 
             // scanResultsGrid
             // 

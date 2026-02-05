@@ -100,6 +100,8 @@ namespace MP_ModbusApp
             splitHorizontalToolStripMenuItem = new ToolStripMenuItem();
             splitVerticalToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
+            helpProvider1 = new HelpProvider();
+            helpToolStripMenuItem = new ToolStripMenuItem();
             sidePanel.SuspendLayout();
             treeViewContextMenu.SuspendLayout();
             setupPanel.SuspendLayout();
@@ -726,7 +728,7 @@ namespace MP_ModbusApp
             // 
             // menuStrip1
             // 
-            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, viewToolStripMenuItem, layoutToolStripMenuItem, aboutToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { fileToolStripMenuItem, viewToolStripMenuItem, layoutToolStripMenuItem, aboutToolStripMenuItem, helpToolStripMenuItem });
             menuStrip1.Location = new Point(350, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Size = new Size(321, 24);
@@ -820,6 +822,14 @@ namespace MP_ModbusApp
             aboutToolStripMenuItem.Size = new Size(52, 20);
             aboutToolStripMenuItem.Text = "About";
             aboutToolStripMenuItem.Click += aboutToolStripMenuItem_Click;
+            // 
+            // helpToolStripMenuItem
+            // 
+            helpToolStripMenuItem.Name = "helpToolStripMenuItem";
+            helpToolStripMenuItem.ShortcutKeys = Keys.F1;
+            helpToolStripMenuItem.Size = new Size(44, 20);
+            helpToolStripMenuItem.Text = "Help";
+            helpToolStripMenuItem.Click += helpToolStripMenuItem_Click;
             // 
             // MainWindow
             // 
@@ -934,5 +944,7 @@ namespace MP_ModbusApp
         private ToolStripMenuItem slaveScanToolStripMenuItem;
         private ToolStripMenuItem addresScanToolStripMenuItem;
         private ToolStripMenuItem aboutToolStripMenuItem;
+        private ToolStripMenuItem helpToolStripMenuItem;
+        private HelpProvider helpProvider1;
     }
 }

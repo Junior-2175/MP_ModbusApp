@@ -242,6 +242,7 @@ namespace MP_ModbusApp
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             datagridUpdate();
+            updateStartAddressDisplay();
         }
 
         private void startRegister_ValueChanged(object sender, EventArgs e)

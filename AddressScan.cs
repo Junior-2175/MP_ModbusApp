@@ -13,6 +13,7 @@ namespace MP_ModbusApp
     {
         private readonly IMyModbusMaster _modbusMaster;
         private CancellationTokenSource _cts;
+        private bool _isUpdatingValues = false;
 
         // Konfiguracja
         private const int ScanDelayMs = 50;
@@ -342,6 +343,109 @@ namespace MP_ModbusApp
                 _cts.Cancel();
             }
             ScanningStateChanged?.Invoke(this, false);
+        }
+
+        private void startRegister_1_ValueChanged(object sender, EventArgs e)
+        {
+            if (_isUpdatingValues) return;
+            _isUpdatingValues = true;
+
+            try
+            {
+                string originalString = (startRegister_1.Value - 1).ToString();
+                if (originalString.Length == 0) { _isUpdatingValues = false; return; }
+
+                string functionString = originalString.Substring(0, 1);
+                string registerString = originalString.Substring(1);
+                decimal registerStringDecimal = Convert.ToDecimal(registerString);
+                string requestedFunctionPrefix = "";
+
+                switch (comboBox1.SelectedIndex)
+                {
+                    case 0:
+                        if (startRegister_1.Value > 65536 || startRegister_1.Value < 1)
+                        {
+                            MessageBox.Show("Invalid Register Number. Must be 1-65536.");
+                            _isUpdatingValues = false;
+                            return;
+                        }
+                        registerStringDecimal = startRegister_1.Value - 1;
+                        break;
+                    case 1: requestedFunctionPrefix = "1"; break;
+                    case 2: requestedFunctionPrefix = "4"; break;
+                    case 3: requestedFunctionPrefix = "3"; break;
+                }
+
+                if (functionString != requestedFunctionPrefix && comboBox1.SelectedIndex != 0 || (registerStringDecimal < 0 || registerStringDecimal > 65535))
+                {
+                    MessageBox.Show("Invalid register range for selected function code. Correcting value.");
+                }
+
+                startRegister.Value = registerStringDecimal;
+                startRegisterHex.Value = registerStringDecimal;
+            }
+            finally
+            {
+                _isUpdatingValues = false;
+            }
+        }
+
+        private void startRegister_ValueChanged_1(object sender, EventArgs e)
+        {
+            if (_isUpdatingValues) return;
+            _isUpdatingValues = true;
+
+            try
+            {
+                startRegisterHex.Value = startRegister.Value;
+                updateStartAddressDisplay();
+            }
+            finally
+            {
+                _isUpdatingValues = false;
+            }
+        }
+
+        private void startRegisterHex_ValueChanged_1(object sender, EventArgs e)
+        {
+            if (_isUpdatingValues) return;
+            _isUpdatingValues = true;
+
+            try
+            {
+                startRegister.Value = startRegisterHex.Value;
+                updateStartAddressDisplay();
+            }
+            finally
+            {
+                _isUpdatingValues = false;
+            }
+        }
+
+        private void updateStartAddressDisplay()
+        {
+            decimal requestedFuncionNo = 0;
+            switch (comboBox1.SelectedIndex)
+            {
+                case 0: requestedFuncionNo = 0; break;
+                case 1: requestedFuncionNo = 1; break;
+                case 2: requestedFuncionNo = 4; break;
+                case 3: requestedFuncionNo = 3; break;
+            }
+
+            if (startRegister.Value > 0 && startRegister.Value < 10000)
+            {
+                startRegister_1.Value = requestedFuncionNo * 10000 + startRegister.Value + 1;
+            }
+            else
+            {
+                startRegister_1.Value = requestedFuncionNo * 100000 + startRegister.Value + 1;
+            }
+        }
+
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            updateStartAddressDisplay();
         }
     }
 }

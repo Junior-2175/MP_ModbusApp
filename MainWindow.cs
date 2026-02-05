@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Linq;
+using System.Diagnostics;
 
 namespace MP_ModbusApp
 {
@@ -837,6 +838,21 @@ namespace MP_ModbusApp
             {
                 aboutBox.ShowDialog();
             }
+        }
+
+        private void helpToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string readmePath = Properties.Settings.Default.readmePath;
+
+            try
+            {
+                // Uruchamiamy proces "notepad.exe" i jako argument podajemy ścieżkę do pliku
+                Process.Start("notepad.exe", readmePath);
+            }
+            catch (Exception ex)
+            {
+            }
+
         }
     }
 }
