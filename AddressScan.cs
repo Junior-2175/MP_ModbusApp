@@ -14,11 +14,10 @@ namespace MP_ModbusApp
         private readonly IMyModbusMaster _modbusMaster;
         private CancellationTokenSource _cts;
 
-        // Configuration constants to fix the "missing registers" issue
-        private const int ScanDelayMs = 50; // Increased from 5ms to 50ms to prevent flooding the device
-        private const int MaxRetries = 2;   // Retry up to 2 times if a register fails to respond
+        // Konfiguracja
+        private const int ScanDelayMs = 50;
+        private const int MaxRetries = 1;
 
-        // Event to notify MainWindow about scanning state
         public event EventHandler<bool> ScanningStateChanged;
 
         public AddressScan(IMyModbusMaster modbusMaster)
@@ -26,8 +25,7 @@ namespace MP_ModbusApp
             InitializeComponent();
             _modbusMaster = modbusMaster;
 
-            // Initial UI setup
-            comboBox1.SelectedIndex = 2; // Default to Holding Registers
+            comboBox1.SelectedIndex = 2; // Domyślnie Holding Registers
             SetupEvents();
             UpdateMaxQuantity();
         }
@@ -83,12 +81,10 @@ namespace MP_ModbusApp
 
             _cts = new CancellationTokenSource();
 
-            // UI State Management
             startToolStripMenuItem.Enabled = false;
             stopToolStripMenuItem1.Enabled = true;
             scanResultsGrid.Rows.Clear();
 
-            // Notify MainWindow (Pause other polling)
             ScanningStateChanged?.Invoke(this, true);
 
             try
@@ -103,48 +99,29 @@ namespace MP_ModbusApp
                     if (this.IsDisposed) break;
                     if (_cts.Token.IsCancellationRequested)
                     {
-                        AddScanResult((ushort)(startAddr + i), "Stopped", "-", Color.Orange);
+                        AddScanResult((ushort)(startAddr + i), "Stopped", "-", Color.Orange, "");
                         break;
                     }
 
                     ushort currentAddr = (ushort)(startAddr + i);
+                    int registersRemaining = quantity - i;
 
-                    // Auto-scroll
                     if (scanResultsGrid.Rows.Count > 0)
                         scanResultsGrid.FirstDisplayedScrollingRowIndex = scanResultsGrid.Rows.Count - 1;
 
-                    // === RETRY LOGIC START ===
-                    bool readSuccess = false;
-                    int attempts = 0;
+                    // Wywołanie logiki skanowania (zwraca ile rejestrów zużyto)
+                    int registersConsumed = await ReadAndLogRegisterStrategy(slaveAddress, currentAddr, funcIndex, registersRemaining);
 
-                    while (!readSuccess && attempts <= MaxRetries)
+                    if (registersConsumed == 0)
                     {
-                        if (_cts.Token.IsCancellationRequested) break;
-
-                        try
-                        {
-                            await ReadAndLogRegister(slaveAddress, currentAddr, funcIndex);
-                            readSuccess = true; // Success, exit retry loop
-                        }
-                        catch (Exception)
-                        {
-                            attempts++;
-                            if (attempts <= MaxRetries)
-                            {
-                                // Small wait before retry to let the line settle
-                                await Task.Delay(20);
-                            }
-                        }
+                        AddScanResult(currentAddr, "Error", "-", Color.Salmon, "");
+                    }
+                    else if (registersConsumed > 1)
+                    {
+                        // Przeskakujemy rejestry, jeśli odczytano blok (np. 32/64 bit)
+                        i += (registersConsumed - 1);
                     }
 
-                    if (!readSuccess)
-                    {
-                        // If all attempts failed, log Timeout
-                        AddScanResult(currentAddr, "Timeout", "-", Color.Salmon);
-                    }
-                    // === RETRY LOGIC END ===
-
-                    // Delay between valid registers to prevent device overload
                     if (!_cts.Token.IsCancellationRequested)
                         await Task.Delay(ScanDelayMs);
                 }
@@ -167,47 +144,125 @@ namespace MP_ModbusApp
                     _cts = null;
                 }
 
-                // Resume polling in MainWindow
                 ScanningStateChanged?.Invoke(this, false);
             }
         }
 
-        private async Task ReadAndLogRegister(byte slaveAddr, ushort regAddr, int funcIndex)
+        /// <summary>
+        /// Strategia: Próbuj 16 bit -> Błąd? -> 32 bit -> Błąd? -> 48 bit -> Błąd? -> 64 bit
+        /// </summary>
+        private async Task<int> ReadAndLogRegisterStrategy(byte slaveAddr, ushort regAddr, int funcIndex, int registersAvailable)
         {
-            string valStr = "";
-            string hexStr = "";
+            // --- KROK 1: Próba 16-bit (1 rejestr) ---
+            try
+            {
+                ushort[] raw16 = await ReadRawAsync(slaveAddr, regAddr, funcIndex, 1);
 
-            // NOTE: Exceptions here are caught by the loop above to trigger Retry
-            if (funcIndex == 0) // Coils (0x)
-            {
-                bool[] res = await _modbusMaster.ReadCoilsAsync(slaveAddr, regAddr, 1);
-                bool val = res[0];
-                valStr = val ? "True" : "False";
-                hexStr = val ? "1" : "0";
+                // SUKCES 16-bit
+                string valStr;
+                string hexStr;
+
+                if (funcIndex <= 1) // Coils/Inputs
+                {
+                    valStr = raw16[0] > 0 ? "True" : "False";
+                    hexStr = raw16[0] > 0 ? "1" : "0";
+                }
+                else
+                {
+                    valStr = raw16[0].ToString();
+                    hexStr = $"0x{raw16[0]:X4}";
+                }
+
+                // Brak dopisku dla 16 bit
+                AddScanResult(regAddr, valStr, hexStr, Color.LightGreen, "");
+                return 1;
             }
-            else if (funcIndex == 1) // Discrete Inputs (1x)
+            catch
             {
-                bool[] res = await _modbusMaster.ReadInputsAsync(slaveAddr, regAddr, 1);
-                bool val = res[0];
-                valStr = val ? "True" : "False";
-                hexStr = val ? "1" : "0";
-            }
-            else if (funcIndex == 2) // Holding Registers (4x)
-            {
-                ushort[] res = await _modbusMaster.ReadHoldingRegistersAsync(slaveAddr, regAddr, 1);
-                ushort val = res[0];
-                valStr = val.ToString();
-                hexStr = $"0x{val:X4}";
-            }
-            else if (funcIndex == 3) // Input Registers (3x)
-            {
-                ushort[] res = await _modbusMaster.ReadInputRegistersAsync(slaveAddr, regAddr, 1);
-                ushort val = res[0];
-                valStr = val.ToString();
-                hexStr = $"0x{val:X4}";
+                // Błąd -> idziemy dalej
             }
 
-            AddScanResult(regAddr, valStr, hexStr, Color.LightGreen);
+            // --- KROK 2: Próba 32-bit (2 rejestry) ---
+            if (registersAvailable >= 2)
+            {
+                try
+                {
+                    ushort[] raw32 = await ReadRawAsync(slaveAddr, regAddr, funcIndex, 2);
+
+                    // SUKCES 32-bit (Big Endian)
+                    uint val32 = ((uint)raw32[0] << 16) | raw32[1];
+
+                    string valStr = val32.ToString();
+                    string hexStr = $"0x{raw32[0]:X4} {raw32[1]:X4}";
+
+                    // Dodajemy znacznik (32b) do adresu
+                    AddScanResult(regAddr, valStr, hexStr, Color.LightYellow, " (32b)");
+                    return 2;
+                }
+                catch { /* Błąd -> idziemy dalej */ }
+            }
+
+            // --- KROK 3: Próba 48-bit (3 rejestry) ---
+            if (registersAvailable >= 3)
+            {
+                try
+                {
+                    ushort[] raw48 = await ReadRawAsync(slaveAddr, regAddr, funcIndex, 3);
+
+                    // SUKCES 48-bit
+                    ulong val48 = ((ulong)raw48[0] << 32) | ((ulong)raw48[1] << 16) | raw48[2];
+
+                    string valStr = val48.ToString();
+                    string hexStr = $"0x{raw48[0]:X4} {raw48[1]:X4} {raw48[2]:X4}";
+
+                    AddScanResult(regAddr, valStr, hexStr, Color.LightSkyBlue, " (48b)");
+                    return 3;
+                }
+                catch { /* Błąd -> idziemy dalej */ }
+            }
+
+            // --- KROK 4: Próba 64-bit (4 rejestry) ---
+            if (registersAvailable >= 4)
+            {
+                try
+                {
+                    ushort[] raw64 = await ReadRawAsync(slaveAddr, regAddr, funcIndex, 4);
+
+                    // SUKCES 64-bit
+                    ulong val64 = ((ulong)raw64[0] << 48) | ((ulong)raw64[1] << 32) | ((ulong)raw64[2] << 16) | raw64[3];
+
+                    string valStr = val64.ToString();
+                    string hexStr = $"0x{raw64[0]:X4} {raw64[1]:X4} {raw64[2]:X4} {raw64[3]:X4}";
+
+                    AddScanResult(regAddr, valStr, hexStr, Color.LightCyan, " (64b)");
+                    return 4;
+                }
+                catch { /* Błąd -> koniec prób */ }
+            }
+
+            return 0;
+        }
+
+        private async Task<ushort[]> ReadRawAsync(byte slaveAddr, ushort regAddr, int funcIndex, int count)
+        {
+            if (funcIndex == 0) // Coils
+            {
+                bool[] b = await _modbusMaster.ReadCoilsAsync(slaveAddr, regAddr, (ushort)count);
+                return new ushort[] { (ushort)(b[0] ? 1 : 0) };
+            }
+            else if (funcIndex == 1) // Discrete Inputs
+            {
+                bool[] b = await _modbusMaster.ReadInputsAsync(slaveAddr, regAddr, (ushort)count);
+                return new ushort[] { (ushort)(b[0] ? 1 : 0) };
+            }
+            else if (funcIndex == 2) // Holding Registers
+            {
+                return await _modbusMaster.ReadHoldingRegistersAsync(slaveAddr, regAddr, (ushort)count);
+            }
+            else // Input Registers
+            {
+                return await _modbusMaster.ReadInputRegistersAsync(slaveAddr, regAddr, (ushort)count);
+            }
         }
 
         private void StopToolStripMenuItem1_Click(object sender, EventArgs e)
@@ -215,20 +270,22 @@ namespace MP_ModbusApp
             _cts?.Cancel();
         }
 
-        private void AddScanResult(ushort addr, string value, string hex, Color backColor)
+        // Zaktualizowana metoda przyjmująca sufiks adresu
+        private void AddScanResult(ushort addr, string value, string hex, Color backColor, string addressSuffix)
         {
             if (this.IsDisposed || scanResultsGrid.IsDisposed) return;
 
             if (scanResultsGrid.InvokeRequired)
             {
-                scanResultsGrid.Invoke(new Action(() => AddScanResult(addr, value, hex, backColor)));
+                scanResultsGrid.Invoke(new Action(() => AddScanResult(addr, value, hex, backColor, addressSuffix)));
                 return;
             }
 
             int idx = scanResultsGrid.Rows.Add();
             DataGridViewRow row = scanResultsGrid.Rows[idx];
 
-            row.Cells[0].Value = addr.ToString();
+            // Tutaj łączymy adres z sufiksem, np. "100 (32b)"
+            row.Cells[0].Value = addr.ToString() + addressSuffix;
             row.Cells[1].Value = value;
             row.Cells[2].Value = hex;
 

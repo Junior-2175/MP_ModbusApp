@@ -236,6 +236,7 @@
             scanResultsGrid.Location = new Point(0, 180);
             scanResultsGrid.Name = "scanResultsGrid";
             scanResultsGrid.RowHeadersVisible = false;
+            scanResultsGrid.RowTemplate.Height = 20;
             scanResultsGrid.Size = new Size(334, 221);
             scanResultsGrid.TabIndex = 9;
             // 
