@@ -278,7 +278,6 @@
             Controls.Add(groupBox1);
             Controls.Add(panel1);
             Controls.Add(menuStrip1);
-            FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "AddressScan";
             Text = "AddressScan";

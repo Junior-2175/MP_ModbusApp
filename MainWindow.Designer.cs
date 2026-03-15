@@ -100,8 +100,10 @@ namespace MP_ModbusApp
             splitHorizontalToolStripMenuItem = new ToolStripMenuItem();
             splitVerticalToolStripMenuItem = new ToolStripMenuItem();
             aboutToolStripMenuItem = new ToolStripMenuItem();
-            helpProvider1 = new HelpProvider();
             helpToolStripMenuItem = new ToolStripMenuItem();
+            helpProvider1 = new HelpProvider();
+            toolStripSeparator2 = new ToolStripSeparator();
+            renameDeviceContextMenuItem = new ToolStripMenuItem();
             sidePanel.SuspendLayout();
             treeViewContextMenu.SuspendLayout();
             setupPanel.SuspendLayout();
@@ -171,16 +173,16 @@ namespace MP_ModbusApp
             // 
             // treeViewContextMenu
             // 
-            treeViewContextMenu.Items.AddRange(new ToolStripItem[] { importDeviceContextMenuItem, exportDeviceContextMenuItem, toolStripSeparator1, deleteDeviceContextMenuItem });
+            treeViewContextMenu.Items.AddRange(new ToolStripItem[] { importDeviceContextMenuItem, exportDeviceContextMenuItem, toolStripSeparator2, renameDeviceContextMenuItem, toolStripSeparator1, deleteDeviceContextMenuItem });
             treeViewContextMenu.Name = "contextMenuStrip1";
-            treeViewContextMenu.Size = new Size(148, 76);
+            treeViewContextMenu.Size = new Size(181, 126);
             treeViewContextMenu.Opening += treeViewContextMenu_Opening;
             // 
             // importDeviceContextMenuItem
             // 
             importDeviceContextMenuItem.Name = "importDeviceContextMenuItem";
             importDeviceContextMenuItem.ShortcutKeys = Keys.Control | Keys.I;
-            importDeviceContextMenuItem.Size = new Size(147, 22);
+            importDeviceContextMenuItem.Size = new Size(180, 22);
             importDeviceContextMenuItem.Text = "Import";
             importDeviceContextMenuItem.Click += importDeviceContextMenuItem_Click;
             // 
@@ -188,20 +190,20 @@ namespace MP_ModbusApp
             // 
             exportDeviceContextMenuItem.Name = "exportDeviceContextMenuItem";
             exportDeviceContextMenuItem.ShortcutKeys = Keys.Control | Keys.E;
-            exportDeviceContextMenuItem.Size = new Size(147, 22);
+            exportDeviceContextMenuItem.Size = new Size(180, 22);
             exportDeviceContextMenuItem.Text = "Export";
             exportDeviceContextMenuItem.Click += exportDeviceContextMenuItem_Click;
             // 
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(144, 6);
+            toolStripSeparator1.Size = new Size(177, 6);
             // 
             // deleteDeviceContextMenuItem
             // 
             deleteDeviceContextMenuItem.Name = "deleteDeviceContextMenuItem";
             deleteDeviceContextMenuItem.ShortcutKeys = Keys.Delete;
-            deleteDeviceContextMenuItem.Size = new Size(147, 22);
+            deleteDeviceContextMenuItem.Size = new Size(180, 22);
             deleteDeviceContextMenuItem.Text = "Remove";
             deleteDeviceContextMenuItem.Click += deleteDeviceContextMenuItem_Click;
             // 
@@ -831,6 +833,19 @@ namespace MP_ModbusApp
             helpToolStripMenuItem.Text = "Help";
             helpToolStripMenuItem.Click += helpToolStripMenuItem_Click;
             // 
+            // toolStripSeparator2
+            // 
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(177, 6);
+            // 
+            // renameDeviceContextMenuItem
+            // 
+            renameDeviceContextMenuItem.Name = "renameDeviceContextMenuItem";
+            renameDeviceContextMenuItem.ShortcutKeys = Keys.F2;
+            renameDeviceContextMenuItem.Size = new Size(180, 22);
+            renameDeviceContextMenuItem.Text = "Rename";
+            renameDeviceContextMenuItem.Click += renameDeviceContextMenuItem_Click;
+            // 
             // MainWindow
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -946,5 +961,7 @@ namespace MP_ModbusApp
         private ToolStripMenuItem aboutToolStripMenuItem;
         private ToolStripMenuItem helpToolStripMenuItem;
         private HelpProvider helpProvider1;
+        private ToolStripSeparator toolStripSeparator2;
+        private ToolStripMenuItem renameDeviceContextMenuItem;
     }
 }

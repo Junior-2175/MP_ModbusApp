@@ -669,11 +669,12 @@ namespace MP_ModbusApp
                         {
                             var rCmd = conn.CreateCommand();
                             rCmd.Transaction = trans;
-                            rCmd.CommandText = "INSERT INTO RegisterDefinitions (GroupId, RegisterNumber, RegisterName, RegisterDescription) VALUES ($g, $rn, $name)";
+                            rCmd.CommandText = "INSERT INTO RegisterDefinitions (GroupId, RegisterNumber, RegisterName, RegisterDescription, DisplayFormatColumn) VALUES ($g, $rn, $name, $description, $format)";
                             rCmd.Parameters.AddWithValue("$g", gId);
-                            rCmd.Parameters.AddWithValue("$rn", int.Parse(rNode.Attribute("RegisterNumber").Value));
-                            rCmd.Parameters.AddWithValue("$name", rNode.Attribute("RegisterName").Value);
-                            rCmd.Parameters.AddWithValue("$description", rNode.Attribute("RegisterDescription").Value);
+                            rCmd.Parameters.AddWithValue("$rn", int.Parse(rNode.Attribute("Number").Value));
+                            rCmd.Parameters.AddWithValue("$name", rNode.Attribute("Name").Value);
+                            rCmd.Parameters.AddWithValue("$description", rNode.Attribute("Description").Value);
+                            rCmd.Parameters.AddWithValue("$format", rNode.Attribute("Format").Value);
                             rCmd.ExecuteNonQuery();
                         }
                     }
@@ -725,17 +726,11 @@ namespace MP_ModbusApp
                         XElement gNode = new XElement("ReadingGroup", new XAttribute("GroupName", gr.GetString(1)), new XAttribute("FunctionCode", gr.GetInt32(2)), new XAttribute("StartAddress", gr.GetInt32(3)), new XAttribute("Quantity", gr.GetInt32(4)));
 
                         var rCmd = conn.CreateCommand();
-                        rCmd.CommandText = "SELECT RegisterNumber, RegisterName FROM RegisterDefinitions WHERE GroupId = $gId";
+                        rCmd.CommandText = "SELECT RegisterNumber, RegisterName, RegisterDescription, DisplayFormatColumn FROM RegisterDefinitions WHERE GroupId = $gId";
                         rCmd.Parameters.AddWithValue("$gId", gId);
                         using (var rr = rCmd.ExecuteReader())
                         {
-                            while (rr.Read()) gNode.Add(new XElement("Register", new XAttribute("RegisterNumber", rr.GetInt32(0)), new XAttribute("RegisterName", rr.GetString(1))));
-                        }
-                        rCmd.CommandText = "SELECT RegisterNumber, RegisterDescription FROM RegisterDefinitions WHERE GroupId = $gId";
-                        rCmd.Parameters.AddWithValue("$gId", gId);
-                        using (var rr = rCmd.ExecuteReader())
-                        {
-                            while (rr.Read()) gNode.Add(new XElement("Register", new XAttribute("RegisterDescription", rr.GetInt32(0)), new XAttribute("RegisterDescription", rr.GetString(1))));
+                            while (rr.Read()) gNode.Add(new XElement("Register", new XAttribute("Number", rr.GetInt32(0)), new XAttribute("Name", rr.GetString(1)), new XAttribute("Description", rr.GetString(2)), new XAttribute("Format", rr.GetString(3))));
                         }
                         root.Add(gNode);
                     }
@@ -852,6 +847,58 @@ namespace MP_ModbusApp
             catch (Exception ex)
             {
             }
+
+        }
+
+        private void renameDeviceContextMenuItem_Click(object sender, EventArgs e)
+        {
+            if (treeView.SelectedNode?.Level != 1 || treeView.SelectedNode.Tag == null) return;
+
+            long deviceId = (long)treeView.SelectedNode.Tag;
+            string oldName = treeView.SelectedNode.Text;
+
+            using (RenameForm renameDialog = new RenameForm() { Text = "Rename Device", newName = oldName })
+            {
+                if (renameDialog.ShowDialog() == DialogResult.OK && !string.IsNullOrWhiteSpace(renameDialog.newName))
+                {
+                    string newName = renameDialog.newName.Trim();
+
+                    if (newName == oldName) return;
+
+                    try
+                    {
+                        using (var conn = new SqliteConnection($"Data Source={DatabaseHelper.GetDbPath()}"))
+                        {
+                            conn.Open();
+                            var cmd = conn.CreateCommand();
+                            cmd.CommandText = "UPDATE Devices SET DeviceName = $newName WHERE DeviceId = $id";
+                            cmd.Parameters.AddWithValue("$newName", newName);
+                            cmd.Parameters.AddWithValue("$id", deviceId);
+
+                            int rowsAffected = cmd.ExecuteNonQuery();
+
+                            if (rowsAffected > 0)
+                            {
+                                treeView.SelectedNode.Text = newName;
+
+                                foreach (Form child in this.MdiChildren)
+                                {
+                                    if (child is ModbusDevice devForm && devForm.Text == oldName)
+                                    {
+                                        devForm.Text = newName;
+                                        devForm.DeviceName = newName;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Failed to update database: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+            }
+            treeView.SelectedNode = null;
 
         }
     }

@@ -231,7 +231,16 @@ namespace MP_ModbusApp
 
         protected virtual void OnChartDataUpdated(ChartDataUpdateEventArgs e)
         {
-            ChartDataUpdated?.Invoke(this, e);
+            var handlers = ChartDataUpdated;
+            if (handlers == null) return;
+            foreach (EventHandler<ChartDataUpdateEventArgs> h in handlers.GetInvocationList())
+            {
+                try { h(this, e); }
+                catch (Exception ex)
+                {
+                    // Log ex.ToString() including stack trace and continue
+                }
+            }
         }
 
         protected virtual void OnWriteValueRequested(WriteRequestedEventArgs e)
@@ -810,11 +819,17 @@ namespace MP_ModbusApp
                 dataGridView1.Rows[i].Cells["Value"].Value = FormatValue(i);
 
                 bool valueChanged = false;
+                // safe comparison
                 if (_rawData != null && _prevRawData != null)
                 {
                     for (int o = 0; o < regsNeeded; o++)
                     {
-                        if (i + o < _rawData.Length && _rawData[i + o] != _prevRawData[i + o]) { valueChanged = true; break; }
+                        int idx = i + o;
+                        if (idx < _rawData.Length && idx < _prevRawData.Length && _rawData[idx] != _prevRawData[idx])
+                        {
+                            valueChanged = true;
+                            break;
+                        }
                     }
                 }
 

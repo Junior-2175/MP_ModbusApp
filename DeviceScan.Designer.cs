@@ -177,7 +177,6 @@
             Controls.Add(scanResultsGrid);
             Controls.Add(panel1);
             Controls.Add(menuStrip1);
-            FormBorderStyle = FormBorderStyle.FixedDialog;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MainMenuStrip = menuStrip1;
             Name = "DeviceScan";

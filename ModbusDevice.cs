@@ -269,7 +269,7 @@ namespace MP_ModbusApp
             {
                 for (int i = 0; i < tabPanel1.TabCount; i++)
                 {
-                    if (tabPanel1.GetTabRect(i).Contains(e.Location) && i < tabPanel1.TabCount-1)
+                    if (tabPanel1.GetTabRect(i).Contains(e.Location) && i < tabPanel1.TabCount - 1)
                     {
                         tabPanel1.SelectedIndex = i;
                         contextMenuStrip1.Show(tabPanel1, e.Location);
@@ -573,5 +573,6 @@ namespace MP_ModbusApp
 
         private void ModbusDevice_FormClosed(object sender, FormClosedEventArgs e) => StopPolling(1);
         private void ModbusDevice_FormClosing(object sender, FormClosingEventArgs e) => StopPolling(1);
+
     }
 }
