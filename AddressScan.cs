@@ -77,6 +77,7 @@ namespace MP_ModbusApp
             if (_modbusMaster == null)
             {
                 MessageBox.Show("Modbus Master is not initialized.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                this.Close();
                 return;
             }
 
@@ -97,6 +98,7 @@ namespace MP_ModbusApp
 
                 for (int i = 0; i < quantity; i++)
                 {
+                    
                     if (this.IsDisposed) break;
                     if (_cts.Token.IsCancellationRequested)
                     {
@@ -106,7 +108,10 @@ namespace MP_ModbusApp
 
                     ushort currentAddr = (ushort)(startAddr + i);
                     int registersRemaining = quantity - i;
-
+                    if (_modbusMaster.Transport is MP_modbus.ModbusTransportBase transport)
+                    {
+                        transport.LoggingDeviceName = $"AdresScan_ ({slaveAddress})-[{currentAddr}]";
+                    }
                     if (scanResultsGrid.Rows.Count > 0)
                         scanResultsGrid.FirstDisplayedScrollingRowIndex = scanResultsGrid.Rows.Count - 1;
 

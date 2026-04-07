@@ -61,16 +61,16 @@ namespace MP_ModbusApp
 
             // 1. Visibility management
             this.Visible = latestData != null && latestData.Count > 0;
-            if (!this.Visible)
-            {
-                // Keep _seriesData so historical data is preserved
-                chart1.Series.Clear();
-                chart1.Invalidate();
-                return;
-            }
+            //if (!this.Visible)
+            //{
+            //    // Keep _seriesData so historical data is preserved
+            //    chart1.Series.Clear();
+            //    chart1.Invalidate();
+            //    return;
+            //}
 
             // 2. Save new points to history
-            AddNewPointsToHistory(latestData);
+                AddNewPointsToHistory(latestData);
 
             // 3. Update series on the chart
             chart1.Series.Clear();
@@ -144,7 +144,7 @@ namespace MP_ModbusApp
 
                 if (history.Count > MaxPoints)
                 {
-                    history.RemoveAt(0);
+                    history.RemoveAt(1000);
                 }
             }
         }

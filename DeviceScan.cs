@@ -63,6 +63,8 @@ namespace MP_ModbusApp
                 this.Close();
                 return;
             }
+            
+
 
             _cts = new CancellationTokenSource();
             startToolStripMenuItem.Enabled = false;
@@ -93,7 +95,10 @@ namespace MP_ModbusApp
                     }
 
                     byte currentSlaveId = (byte)i;
-
+                    if (_modbusMaster.Transport is MP_modbus.ModbusTransportBase transport)
+                    {
+                        transport.LoggingDeviceName = $"DeviceScan_ ({currentSlaveId})";
+                    }
                     // Auto-scroll the grid
                     if (!this.IsDisposed && scanResultsGrid.Rows.Count > 0)
                         scanResultsGrid.FirstDisplayedScrollingRowIndex = scanResultsGrid.Rows.Count - 1;
@@ -121,6 +126,7 @@ namespace MP_ModbusApp
                     {
                         AddScanResult(currentSlaveId, "Error", Color.LightYellow);
                     }
+                    
 
                     if (!_cts.Token.IsCancellationRequested)
                         await Task.Delay(20);

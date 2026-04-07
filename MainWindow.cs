@@ -901,5 +901,52 @@ namespace MP_ModbusApp
             treeView.SelectedNode = null;
 
         }
+
+        private void toolStripStatusLabel2_Click(object sender, EventArgs e)
+        {
+            string productId = "9MX01TWX2G8B";
+            string storeUrl = $"ms-windows-store://review/?ProductId={productId}";
+
+            DialogResult result = MessageBox.Show(
+                "Your feedback helps me improve this tool for everyone. " +
+                "It only takes a minute to leave a review. Would you like to do it now?",
+                "Support ModbusApp",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Information);
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = storeUrl,
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception)
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = $"https://apps.microsoft.com/store/detail/{productId}",
+                        UseShellExecute = true
+                    });
+                }
+            }
+        }
+
+        private void toolStripStatusLabel3_Click(object sender, EventArgs e)
+        {
+            string changelogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CHANGELOG.md");
+
+            try
+            {
+                // Uruchamiamy proces "notepad.exe" i jako argument podajemy ścieżkę do pliku
+                Process.Start("notepad.exe", changelogPath);
+            }
+            catch (Exception ex)
+            {
+            }
+        }
     }
 }

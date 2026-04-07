@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net9.0-windows7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <UseWindowsForms>true</UseWindowsForms>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -11,7 +11,7 @@
     <SignAssembly>False</SignAssembly>
 
 	  <Authors>Marcin Pindel</Authors>
-	  <Company>JuniorSoft</Company>
+	  <Company>Marcin Pindel</Company>
 	  <Product>MP ModbusApp</Product>
 	  <Description>A versatile Modbus Master diagnostic tool for Windows supporting Modbus RTU, Modbus TCP, and Modbus RTU over TCP*. 
 Features include intelligent register scanning, real-time data visualization, and SQLite-based device management.
@@ -45,10 +45,10 @@ Features include intelligent register scanning, real-time data visualization, an
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.10" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.10" />
-    <PackageReference Include="System.IO.Ports" Version="9.0.10" />
-    <PackageReference Include="System.Management" Version="9.0.10" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.5" />
+    <PackageReference Include="System.IO.Ports" Version="10.0.5" />
+    <PackageReference Include="System.Management" Version="10.0.5" />
     <PackageReference Include="System.Threading.Timer" Version="4.3.0" />
     <PackageReference Include="WinForms.DataVisualization" Version="1.10.0" />
   </ItemGroup>
@@ -77,6 +77,11 @@ Features include intelligent register scanning, real-time data visualization, an
     <None Update="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <None Update="CHANGELOG.md">
+      <PackagePath>\</PackagePath>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <Pack>True</Pack>
     </None>
     <None Update="README.md">
       <Pack>True</Pack>

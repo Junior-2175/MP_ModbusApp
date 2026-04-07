@@ -12,6 +12,7 @@ namespace MP_ModbusApp
 {
     public partial class RenameForm : Form
     {
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public string newName
         {
             get { return textBox1.Text; }

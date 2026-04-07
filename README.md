@@ -45,4 +45,4 @@ The application supports various transmission media and protocol modes:
 This project is licensed under the MIT License.
 
 ---
-*Author: [Marcin Pindel / JuniorSoft]*
+*Author: [Marcin Pindel]*

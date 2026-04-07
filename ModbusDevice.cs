@@ -1,11 +1,12 @@
-﻿using Microsoft.Data.Sqlite;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Data.Sqlite;
 
 namespace MP_ModbusApp
 {
@@ -31,13 +32,13 @@ namespace MP_ModbusApp
         {
             UpdateChartDataFromAllTabs();
         }
-
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public string DeviceName
         {
             get => this.Text;
             set => this.Text = value;
         }
-
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
         public int SlaveId
         {
             get => (int)slaveId.Value;

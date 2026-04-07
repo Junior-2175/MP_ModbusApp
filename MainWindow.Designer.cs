@@ -31,15 +31,17 @@ namespace MP_ModbusApp
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            TreeNode treeNode1 = new TreeNode("Group1", 2, 2);
-            TreeNode treeNode2 = new TreeNode("Device1", 1, 1, new TreeNode[] { treeNode1 });
-            TreeNode treeNode3 = new TreeNode("Devices List", 0, 0, new TreeNode[] { treeNode2 });
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWindow));
+            var treeNode1 = new TreeNode("Group1", 2, 2);
+            var treeNode2 = new TreeNode("Device1", 1, 1, new TreeNode[] { treeNode1 });
+            var treeNode3 = new TreeNode("Devices List", 0, 0, new TreeNode[] { treeNode2 });
+            var resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWindow));
             sidePanel = new Panel();
             treeView = new TreeView();
             treeViewContextMenu = new ContextMenuStrip(components);
             importDeviceContextMenuItem = new ToolStripMenuItem();
             exportDeviceContextMenuItem = new ToolStripMenuItem();
+            toolStripSeparator2 = new ToolStripSeparator();
+            renameDeviceContextMenuItem = new ToolStripMenuItem();
             toolStripSeparator1 = new ToolStripSeparator();
             deleteDeviceContextMenuItem = new ToolStripMenuItem();
             imageList1 = new ImageList(components);
@@ -87,6 +89,7 @@ namespace MP_ModbusApp
             openMenu = new Button();
             statusStrip1 = new StatusStrip();
             toolStripStatusLabel1 = new ToolStripStatusLabel();
+            toolStripStatusLabel3 = new ToolStripStatusLabel();
             toolStripStatusLabel2 = new ToolStripStatusLabel();
             menuStrip1 = new MenuStrip();
             fileToolStripMenuItem = new ToolStripMenuItem();
@@ -102,8 +105,6 @@ namespace MP_ModbusApp
             aboutToolStripMenuItem = new ToolStripMenuItem();
             helpToolStripMenuItem = new ToolStripMenuItem();
             helpProvider1 = new HelpProvider();
-            toolStripSeparator2 = new ToolStripSeparator();
-            renameDeviceContextMenuItem = new ToolStripMenuItem();
             sidePanel.SuspendLayout();
             treeViewContextMenu.SuspendLayout();
             setupPanel.SuspendLayout();
@@ -175,14 +176,14 @@ namespace MP_ModbusApp
             // 
             treeViewContextMenu.Items.AddRange(new ToolStripItem[] { importDeviceContextMenuItem, exportDeviceContextMenuItem, toolStripSeparator2, renameDeviceContextMenuItem, toolStripSeparator1, deleteDeviceContextMenuItem });
             treeViewContextMenu.Name = "contextMenuStrip1";
-            treeViewContextMenu.Size = new Size(181, 126);
+            treeViewContextMenu.Size = new Size(148, 104);
             treeViewContextMenu.Opening += treeViewContextMenu_Opening;
             // 
             // importDeviceContextMenuItem
             // 
             importDeviceContextMenuItem.Name = "importDeviceContextMenuItem";
             importDeviceContextMenuItem.ShortcutKeys = Keys.Control | Keys.I;
-            importDeviceContextMenuItem.Size = new Size(180, 22);
+            importDeviceContextMenuItem.Size = new Size(147, 22);
             importDeviceContextMenuItem.Text = "Import";
             importDeviceContextMenuItem.Click += importDeviceContextMenuItem_Click;
             // 
@@ -190,20 +191,33 @@ namespace MP_ModbusApp
             // 
             exportDeviceContextMenuItem.Name = "exportDeviceContextMenuItem";
             exportDeviceContextMenuItem.ShortcutKeys = Keys.Control | Keys.E;
-            exportDeviceContextMenuItem.Size = new Size(180, 22);
+            exportDeviceContextMenuItem.Size = new Size(147, 22);
             exportDeviceContextMenuItem.Text = "Export";
             exportDeviceContextMenuItem.Click += exportDeviceContextMenuItem_Click;
+            // 
+            // toolStripSeparator2
+            // 
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new Size(144, 6);
+            // 
+            // renameDeviceContextMenuItem
+            // 
+            renameDeviceContextMenuItem.Name = "renameDeviceContextMenuItem";
+            renameDeviceContextMenuItem.ShortcutKeys = Keys.F2;
+            renameDeviceContextMenuItem.Size = new Size(147, 22);
+            renameDeviceContextMenuItem.Text = "Rename";
+            renameDeviceContextMenuItem.Click += renameDeviceContextMenuItem_Click;
             // 
             // toolStripSeparator1
             // 
             toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(177, 6);
+            toolStripSeparator1.Size = new Size(144, 6);
             // 
             // deleteDeviceContextMenuItem
             // 
             deleteDeviceContextMenuItem.Name = "deleteDeviceContextMenuItem";
             deleteDeviceContextMenuItem.ShortcutKeys = Keys.Delete;
-            deleteDeviceContextMenuItem.Size = new Size(180, 22);
+            deleteDeviceContextMenuItem.Size = new Size(147, 22);
             deleteDeviceContextMenuItem.Text = "Remove";
             deleteDeviceContextMenuItem.Click += deleteDeviceContextMenuItem_Click;
             // 
@@ -706,7 +720,7 @@ namespace MP_ModbusApp
             // 
             // statusStrip1
             // 
-            statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabel2 });
+            statusStrip1.Items.AddRange(new ToolStripItem[] { toolStripStatusLabel1, toolStripStatusLabel3, toolStripStatusLabel2 });
             statusStrip1.Location = new Point(350, 576);
             statusStrip1.Name = "statusStrip1";
             statusStrip1.Size = new Size(321, 22);
@@ -719,14 +733,29 @@ namespace MP_ModbusApp
             toolStripStatusLabel1.Size = new Size(170, 17);
             toolStripStatusLabel1.Text = "Connected: COM1/9600/8/N/1";
             // 
+            // toolStripStatusLabel3
+            // 
+            toolStripStatusLabel3.ImageScaling = ToolStripItemImageScaling.None;
+            toolStripStatusLabel3.IsLink = true;
+            toolStripStatusLabel3.MergeAction = MergeAction.Remove;
+            toolStripStatusLabel3.Name = "toolStripStatusLabel3";
+            toolStripStatusLabel3.Size = new Size(136, 17);
+            toolStripStatusLabel3.Spring = true;
+            toolStripStatusLabel3.Text = "Changelog";
+            toolStripStatusLabel3.TextAlign = ContentAlignment.MiddleRight;
+            toolStripStatusLabel3.Click += toolStripStatusLabel3_Click;
+            // 
             // toolStripStatusLabel2
             // 
             toolStripStatusLabel2.ImageScaling = ToolStripItemImageScaling.None;
+            toolStripStatusLabel2.IsLink = true;
+            toolStripStatusLabel2.MergeAction = MergeAction.Remove;
             toolStripStatusLabel2.Name = "toolStripStatusLabel2";
-            toolStripStatusLabel2.Size = new Size(136, 17);
+            toolStripStatusLabel2.Size = new Size(267, 15);
             toolStripStatusLabel2.Spring = true;
-            toolStripStatusLabel2.Text = "toolStripStatusLabel2";
+            toolStripStatusLabel2.Text = "Enjoying ModbusApp? Rate it on Microsoft Store!";
             toolStripStatusLabel2.TextAlign = ContentAlignment.MiddleRight;
+            toolStripStatusLabel2.Click += toolStripStatusLabel2_Click;
             // 
             // menuStrip1
             // 
@@ -833,19 +862,6 @@ namespace MP_ModbusApp
             helpToolStripMenuItem.Text = "Help";
             helpToolStripMenuItem.Click += helpToolStripMenuItem_Click;
             // 
-            // toolStripSeparator2
-            // 
-            toolStripSeparator2.Name = "toolStripSeparator2";
-            toolStripSeparator2.Size = new Size(177, 6);
-            // 
-            // renameDeviceContextMenuItem
-            // 
-            renameDeviceContextMenuItem.Name = "renameDeviceContextMenuItem";
-            renameDeviceContextMenuItem.ShortcutKeys = Keys.F2;
-            renameDeviceContextMenuItem.Size = new Size(180, 22);
-            renameDeviceContextMenuItem.Text = "Rename";
-            renameDeviceContextMenuItem.Click += renameDeviceContextMenuItem_Click;
-            // 
             // MainWindow
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -934,7 +950,6 @@ namespace MP_ModbusApp
         private Button btnDisconnect;
         private StatusStrip statusStrip1;
         private ToolStripStatusLabel toolStripStatusLabel1;
-        private ToolStripStatusLabel toolStripStatusLabel2;
         private MenuStrip menuStrip1;
         private ToolStripMenuItem fileToolStripMenuItem;
         private ToolStripMenuItem newToolStripMenuItem;
@@ -963,5 +978,7 @@ namespace MP_ModbusApp
         private HelpProvider helpProvider1;
         private ToolStripSeparator toolStripSeparator2;
         private ToolStripMenuItem renameDeviceContextMenuItem;
+        private ToolStripStatusLabel toolStripStatusLabel2;
+        private ToolStripStatusLabel toolStripStatusLabel3;
     }
 }
