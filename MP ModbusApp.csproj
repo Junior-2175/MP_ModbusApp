@@ -24,7 +24,6 @@ Features include intelligent register scanning, real-time data visualization, an
 	  <AssemblyVersion>1.0.0.0</AssemblyVersion>
 	  <PackageIcon>ikona.png</PackageIcon>
 	  <PackageReadmeFile>README.md</PackageReadmeFile>
-	  <ApplicationManifest>app.manifest</ApplicationManifest>
 	  
 	  
 	  
