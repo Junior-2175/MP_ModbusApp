@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DeviceScan));
+            var resources = new System.ComponentModel.ComponentResourceManager(typeof(DeviceScan));
             menuStrip1 = new MenuStrip();
             startToolStripMenuItem = new ToolStripMenuItem();
             stopToolStripMenuItem1 = new ToolStripMenuItem();
@@ -36,14 +36,18 @@
             label4 = new Label();
             startId = new NumericUpDown();
             panel1 = new Panel();
+            label2 = new Label();
+            timeoutRetries = new NumericUpDown();
             endId = new NumericUpDown();
             label1 = new Label();
             scanResultsGrid = new DataGridView();
             Slave_Id = new DataGridViewTextBoxColumn();
             Response = new DataGridViewTextBoxColumn();
+            Retries = new DataGridViewTextBoxColumn();
             menuStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)startId).BeginInit();
             panel1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)timeoutRetries).BeginInit();
             ((System.ComponentModel.ISupportInitialize)endId).BeginInit();
             ((System.ComponentModel.ISupportInitialize)scanResultsGrid).BeginInit();
             SuspendLayout();
@@ -87,7 +91,7 @@
             // 
             label4.AutoSize = true;
             label4.Font = new Font("Segoe UI", 9F);
-            label4.Location = new Point(2, 14);
+            label4.Location = new Point(3, 14);
             label4.Name = "label4";
             label4.Size = new Size(47, 15);
             label4.TabIndex = 3;
@@ -96,7 +100,7 @@
             // startId
             // 
             startId.Font = new Font("Segoe UI", 9F);
-            startId.Location = new Point(94, 12);
+            startId.Location = new Point(55, 12);
             startId.Maximum = new decimal(new int[] { 254, 0, 0, 0 });
             startId.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             startId.Name = "startId";
@@ -107,6 +111,8 @@
             // 
             // panel1
             // 
+            panel1.Controls.Add(label2);
+            panel1.Controls.Add(timeoutRetries);
             panel1.Controls.Add(endId);
             panel1.Controls.Add(label1);
             panel1.Controls.Add(startId);
@@ -117,10 +123,29 @@
             panel1.Size = new Size(334, 76);
             panel1.TabIndex = 7;
             // 
+            // label2
+            // 
+            label2.AutoSize = true;
+            label2.Font = new Font("Segoe UI", 9F);
+            label2.Location = new Point(158, 14);
+            label2.Name = "label2";
+            label2.Size = new Size(90, 15);
+            label2.TabIndex = 7;
+            label2.Text = "Timeout retries:";
+            // 
+            // timeoutRetries
+            // 
+            timeoutRetries.Location = new Point(253, 12);
+            timeoutRetries.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            timeoutRetries.Name = "timeoutRetries";
+            timeoutRetries.Size = new Size(69, 23);
+            timeoutRetries.TabIndex = 6;
+            timeoutRetries.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            // 
             // endId
             // 
             endId.Font = new Font("Segoe UI", 9F);
-            endId.Location = new Point(94, 41);
+            endId.Location = new Point(55, 41);
             endId.Maximum = new decimal(new int[] { 254, 0, 0, 0 });
             endId.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             endId.Name = "endId";
@@ -145,7 +170,7 @@
             scanResultsGrid.AllowUserToDeleteRows = false;
             scanResultsGrid.AllowUserToResizeRows = false;
             scanResultsGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            scanResultsGrid.Columns.AddRange(new DataGridViewColumn[] { Slave_Id, Response });
+            scanResultsGrid.Columns.AddRange(new DataGridViewColumn[] { Slave_Id, Response, Retries });
             scanResultsGrid.Dock = DockStyle.Fill;
             scanResultsGrid.Location = new Point(0, 100);
             scanResultsGrid.Name = "scanResultsGrid";
@@ -169,6 +194,14 @@
             Response.Name = "Response";
             Response.ReadOnly = true;
             // 
+            // Retries
+            // 
+            Retries.AutoSizeMode = DataGridViewAutoSizeColumnMode.DisplayedCells;
+            Retries.HeaderText = "Retries";
+            Retries.Name = "Retries";
+            Retries.ReadOnly = true;
+            Retries.Width = 67;
+            // 
             // DeviceScan
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -188,6 +221,7 @@
             ((System.ComponentModel.ISupportInitialize)startId).EndInit();
             panel1.ResumeLayout(false);
             panel1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)timeoutRetries).EndInit();
             ((System.ComponentModel.ISupportInitialize)endId).EndInit();
             ((System.ComponentModel.ISupportInitialize)scanResultsGrid).EndInit();
             ResumeLayout(false);
@@ -206,7 +240,10 @@
         private ToolStripMenuItem stopToolStripMenuItem1;
         private ToolStripMenuItem exportToolStripMenuItem;
         private DataGridView scanResultsGrid;
+        private Label label2;
+        private NumericUpDown timeoutRetries;
         private DataGridViewTextBoxColumn Slave_Id;
         private DataGridViewTextBoxColumn Response;
+        private DataGridViewTextBoxColumn Retries;
     }
 }

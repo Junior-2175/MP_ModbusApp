@@ -29,6 +29,8 @@
         {
             var resources = new System.ComponentModel.ComponentResourceManager(typeof(AboutBox));
             tableLayoutPanel = new TableLayoutPanel();
+            labelCoffe = new Label();
+            labelRate = new Label();
             logoPictureBox = new PictureBox();
             labelProductName = new Label();
             labelVersion = new Label();
@@ -45,26 +47,61 @@
             tableLayoutPanel.ColumnCount = 2;
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33F));
             tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 67F));
+            tableLayoutPanel.Controls.Add(labelCoffe, 1, 5);
+            tableLayoutPanel.Controls.Add(labelRate, 1, 4);
             tableLayoutPanel.Controls.Add(logoPictureBox, 0, 0);
             tableLayoutPanel.Controls.Add(labelProductName, 1, 0);
             tableLayoutPanel.Controls.Add(labelVersion, 1, 1);
             tableLayoutPanel.Controls.Add(labelCopyright, 1, 2);
             tableLayoutPanel.Controls.Add(labelCompanyName, 1, 3);
-            tableLayoutPanel.Controls.Add(textBoxDescription, 1, 4);
-            tableLayoutPanel.Controls.Add(okButton, 1, 5);
+            tableLayoutPanel.Controls.Add(textBoxDescription, 1, 7);
+            tableLayoutPanel.Controls.Add(okButton, 1, 8);
             tableLayoutPanel.Dock = DockStyle.Fill;
             tableLayoutPanel.Location = new Point(10, 10);
             tableLayoutPanel.Margin = new Padding(4, 3, 4, 3);
             tableLayoutPanel.Name = "tableLayoutPanel";
-            tableLayoutPanel.RowCount = 6;
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
-            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
+            tableLayoutPanel.RowCount = 9;
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 6F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 6F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 6F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 6F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 6F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 6F));
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 4F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 10F));
             tableLayoutPanel.Size = new Size(487, 307);
             tableLayoutPanel.TabIndex = 0;
+            // 
+            // labelCoffe
+            // 
+            labelCoffe.Dock = DockStyle.Fill;
+            labelCoffe.Font = new Font("Segoe UI", 9F, FontStyle.Underline);
+            labelCoffe.ForeColor = Color.Blue;
+            labelCoffe.Location = new Point(167, 90);
+            labelCoffe.Margin = new Padding(7, 0, 4, 0);
+            labelCoffe.MaximumSize = new Size(0, 20);
+            labelCoffe.Name = "labelCoffe";
+            labelCoffe.Size = new Size(316, 18);
+            labelCoffe.TabIndex = 26;
+            labelCoffe.Text = "Help keep MP_ModbusApp growing. Buy me a coffee!";
+            labelCoffe.TextAlign = ContentAlignment.MiddleLeft;
+            labelCoffe.Click += labelCoffe_Click;
+            // 
+            // labelRate
+            // 
+            labelRate.Dock = DockStyle.Fill;
+            labelRate.Font = new Font("Segoe UI", 9F, FontStyle.Underline);
+            labelRate.ForeColor = Color.Blue;
+            labelRate.Location = new Point(167, 72);
+            labelRate.Margin = new Padding(7, 0, 4, 0);
+            labelRate.MaximumSize = new Size(0, 20);
+            labelRate.Name = "labelRate";
+            labelRate.Size = new Size(316, 18);
+            labelRate.TabIndex = 25;
+            labelRate.Text = "Enjoying MP_ModbusApp? Rate it on Microsoft Store!";
+            labelRate.TextAlign = ContentAlignment.MiddleLeft;
+            labelRate.Click += labelRate_Click;
             // 
             // logoPictureBox
             // 
@@ -73,8 +110,8 @@
             logoPictureBox.Location = new Point(4, 3);
             logoPictureBox.Margin = new Padding(4, 3, 4, 3);
             logoPictureBox.Name = "logoPictureBox";
-            tableLayoutPanel.SetRowSpan(logoPictureBox, 6);
-            logoPictureBox.Size = new Size(152, 301);
+            tableLayoutPanel.SetRowSpan(logoPictureBox, 8);
+            logoPictureBox.Size = new Size(152, 267);
             logoPictureBox.SizeMode = PictureBoxSizeMode.Zoom;
             logoPictureBox.TabIndex = 12;
             logoPictureBox.TabStop = false;
@@ -86,7 +123,7 @@
             labelProductName.Margin = new Padding(7, 0, 4, 0);
             labelProductName.MaximumSize = new Size(0, 20);
             labelProductName.Name = "labelProductName";
-            labelProductName.Size = new Size(316, 20);
+            labelProductName.Size = new Size(316, 18);
             labelProductName.TabIndex = 19;
             labelProductName.Text = "Product Name";
             labelProductName.TextAlign = ContentAlignment.MiddleLeft;
@@ -94,11 +131,11 @@
             // labelVersion
             // 
             labelVersion.Dock = DockStyle.Fill;
-            labelVersion.Location = new Point(167, 30);
+            labelVersion.Location = new Point(167, 18);
             labelVersion.Margin = new Padding(7, 0, 4, 0);
             labelVersion.MaximumSize = new Size(0, 20);
             labelVersion.Name = "labelVersion";
-            labelVersion.Size = new Size(316, 20);
+            labelVersion.Size = new Size(316, 18);
             labelVersion.TabIndex = 0;
             labelVersion.Text = "Version";
             labelVersion.TextAlign = ContentAlignment.MiddleLeft;
@@ -106,11 +143,11 @@
             // labelCopyright
             // 
             labelCopyright.Dock = DockStyle.Fill;
-            labelCopyright.Location = new Point(167, 60);
+            labelCopyright.Location = new Point(167, 36);
             labelCopyright.Margin = new Padding(7, 0, 4, 0);
             labelCopyright.MaximumSize = new Size(0, 20);
             labelCopyright.Name = "labelCopyright";
-            labelCopyright.Size = new Size(316, 20);
+            labelCopyright.Size = new Size(316, 18);
             labelCopyright.TabIndex = 21;
             labelCopyright.Text = "Copyright";
             labelCopyright.TextAlign = ContentAlignment.MiddleLeft;
@@ -118,11 +155,11 @@
             // labelCompanyName
             // 
             labelCompanyName.Dock = DockStyle.Fill;
-            labelCompanyName.Location = new Point(167, 90);
+            labelCompanyName.Location = new Point(167, 54);
             labelCompanyName.Margin = new Padding(7, 0, 4, 0);
             labelCompanyName.MaximumSize = new Size(0, 20);
             labelCompanyName.Name = "labelCompanyName";
-            labelCompanyName.Size = new Size(316, 20);
+            labelCompanyName.Size = new Size(316, 18);
             labelCompanyName.TabIndex = 22;
             labelCompanyName.Text = "Company Name";
             labelCompanyName.TextAlign = ContentAlignment.MiddleLeft;
@@ -186,5 +223,7 @@
         private System.Windows.Forms.Label labelCompanyName;
         private System.Windows.Forms.TextBox textBoxDescription;
         private System.Windows.Forms.Button okButton;
+        private Label labelCoffe;
+        private Label labelRate;
     }
 }

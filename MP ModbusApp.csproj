@@ -1,33 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net9.0-windows7.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <ApplicationIcon>ikona.ico</ApplicationIcon>
-    <StartupObject>MP_ModbusApp.Program</StartupObject>
-    <SignAssembly>False</SignAssembly>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net9.0-windows10.0.17763.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<ApplicationIcon>ikona.ico</ApplicationIcon>
+		<StartupObject>MP_ModbusApp.Program</StartupObject>
+		<SignAssembly>False</SignAssembly>
+		<Authors>Marcin Pindel</Authors>
+		<Company>Marcin Pindel</Company>
+		<Product>MP ModbusApp</Product>
+		<Description>A versatile Modbus Master diagnostic tool for Windows supporting Modbus RTU, Modbus TCP, and Modbus RTU over TCP*.
 
-	  <Authors>Marcin Pindel</Authors>
-	  <Company>Marcin Pindel</Company>
-	  <Product>MP ModbusApp</Product>
-	  <Description>A versatile Modbus Master diagnostic tool for Windows supporting Modbus RTU, Modbus TCP, and Modbus RTU over TCP*. 
 Features include intelligent register scanning, real-time data visualization, and SQLite-based device management.
 
-
 *Experimental support</Description>
-	  <Copyright>Copyright © 2026</Copyright>
-	  <Version>1.0.0.0</Version>
-	  <FileVersion>1.0.0.0</FileVersion>
-	  <AssemblyVersion>1.0.0.0</AssemblyVersion>
-	  <PackageIcon>ikona.png</PackageIcon>
-	  <PackageReadmeFile>README.md</PackageReadmeFile>
-	  
-	  
-	  
-  </PropertyGroup>
+		<Copyright>Copyright © 2026</Copyright>
+		<Version>1.0.0.0</Version>
+		<FileVersion>1.0.0.0</FileVersion>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<PackageIcon>ikona.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <Optimize>True</Optimize>

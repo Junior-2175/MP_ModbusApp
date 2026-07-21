@@ -413,6 +413,7 @@ namespace MP_ModbusApp
         private async void startToolStripMenuItem_Click(object sender, EventArgs e)
         {
             _modbusMaster = _mainWindow?.ModbusMaster;
+            _consecutiveErrorCount = 0;
             if (_modbusMaster == null)
             {
                 ShowDeviceError("Port not connected! Configure connection in Setup.");

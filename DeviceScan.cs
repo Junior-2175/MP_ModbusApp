@@ -38,9 +38,11 @@ namespace MP_ModbusApp
             scanResultsGrid.Columns.Clear();
             scanResultsGrid.Columns.Add("colSlaveId", "Slave ID");
             scanResultsGrid.Columns.Add("colStatus", "Status");
+            scanResultsGrid.Columns.Add("colRetries", "Retries");
 
             scanResultsGrid.Columns[0].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             scanResultsGrid.Columns[1].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            scanResultsGrid.Columns[2].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
 
             scanResultsGrid.AllowUserToAddRows = false;
             scanResultsGrid.ReadOnly = true;
@@ -84,52 +86,60 @@ namespace MP_ModbusApp
             {
                 for (int i = start; i <= end; i++)
                 {
-                    // Check if form is still active
-                    if (this.IsDisposed) break;
+                    for (int attempt = 1; attempt < timeoutRetries.Value+1; attempt++)
+                    {
+                        // Check if form is still active
+                        if (this.IsDisposed) break;
 
-                    // Check for cancellation request
-                    if (_cts.Token.IsCancellationRequested)
-                    {
-                        AddScanResult(0, "Stopped", Color.Orange);
-                        break;
-                    }
+                        // Check for cancellation request
+                        if (_cts.Token.IsCancellationRequested)
+                        {
+                            AddScanResult((byte)i, "Stopped","0", Color.Orange);
+                            break;
+                        }
 
-                    byte currentSlaveId = (byte)i;
-                    if (_modbusMaster.Transport is MP_modbus.ModbusTransportBase transport)
-                    {
-                        transport.LoggingDeviceName = $"DeviceScan_ ({currentSlaveId})";
-                    }
-                    // Auto-scroll the grid
-                    if (!this.IsDisposed && scanResultsGrid.Rows.Count > 0)
-                        scanResultsGrid.FirstDisplayedScrollingRowIndex = scanResultsGrid.Rows.Count - 1;
+                        byte currentSlaveId = (byte)i;
+                        if (_modbusMaster.Transport is MP_modbus.ModbusTransportBase transport)
+                        {
+                            transport.LoggingDeviceName = $"DeviceScan_ ({currentSlaveId})";
+                        }
+                        // Auto-scroll the grid
+                        if (!this.IsDisposed && scanResultsGrid.Rows.Count > 0)
+                            scanResultsGrid.FirstDisplayedScrollingRowIndex = scanResultsGrid.Rows.Count - 1;
 
-                    try
-                    {
-                        await _modbusMaster.ReadHoldingRegistersAsync(currentSlaveId, registerAddress, quantity);
-                        AddScanResult(currentSlaveId, "Response OK", Color.LightGreen);
-                    }
-                    catch (TimeoutException)
-                    {
-                        AddScanResult(currentSlaveId, "Timeout", Color.Salmon);
-                    }
-                    catch (MyModbusSlaveException)
-                    {
-                        //AddScanResult(currentSlaveId, "Response OK (Exception)", Color.LightGreen);
-                        AddScanResult(currentSlaveId, "Response OK", Color.LightGreen);
-                    }
-                    catch (IOException)
-                    {
-                        //AddScanResult(currentSlaveId, "Response OK (Frame Error)", Color.LightGreen);
-                        AddScanResult(currentSlaveId, "Response OK", Color.LightGreen);
-                    }
-                    catch (Exception)
-                    {
-                        AddScanResult(currentSlaveId, "Error", Color.LightYellow);
-                    }
-                    
+                        try
+                        {
+                            await _modbusMaster.ReadHoldingRegistersAsync(currentSlaveId, registerAddress, quantity);
+                            AddScanResult(currentSlaveId, "Response OK", attempt.ToString(), Color.LightGreen);
+                            attempt = (int)timeoutRetries.Value+1;
+                        }
+                        catch (TimeoutException)
+                        {
+                            AddScanResult(currentSlaveId, "Timeout", attempt.ToString(), Color.Salmon);
+                        }
+                        catch (MyModbusSlaveException)
+                        {
+                            //AddScanResult(currentSlaveId, "Response OK (Exception)", Color.LightGreen);
+                            AddScanResult(currentSlaveId, "Response OK", attempt.ToString(), Color.LightGreen);
+                            attempt = (int)timeoutRetries.Value+1;
+                        }
+                        catch (IOException)
+                        {
+                            //AddScanResult(currentSlaveId, "Response OK (Frame Error)", Color.LightGreen);
+                            AddScanResult(currentSlaveId, "Response OK", attempt.ToString(), Color.LightGreen);
+                            attempt = (int)timeoutRetries.Value+1;
+                        }
+                        catch (Exception)
+                        {
+                            AddScanResult(currentSlaveId, "Error", attempt.ToString(), Color.LightYellow);
+                            attempt = (int)timeoutRetries.Value+1;
+                        }
+                        
 
-                    if (!_cts.Token.IsCancellationRequested)
-                        await Task.Delay(20);
+
+                        if (!_cts.Token.IsCancellationRequested)
+                            await Task.Delay(20);
+                    }
                 }
             }
             catch (Exception ex)
@@ -183,7 +193,7 @@ namespace MP_ModbusApp
                     try
                     {
                         StringBuilder sb = new StringBuilder();
-                        sb.AppendLine("Slave ID;Status");
+                        sb.AppendLine("Slave ID;Status;Retries");
 
                         foreach (DataGridViewRow row in scanResultsGrid.Rows)
                         {
@@ -192,7 +202,8 @@ namespace MP_ModbusApp
                                 string id = row.Cells[0].Value?.ToString() ?? "";
                                 string status = row.Cells[1].Value?.ToString() ?? "";
                                 status = status.Replace(";", ",");
-                                sb.AppendLine($"{id};{status}");
+                                string retries = row.Cells[2].Value?.ToString() ?? "";
+                                sb.AppendLine($"{id};{status};{retries}");
                             }
                         }
 
@@ -208,21 +219,56 @@ namespace MP_ModbusApp
         }
 
         // Thread-safe method to add scan results to the grid
-        private void AddScanResult(byte slaveId, string status, Color backColor)
+        private void AddScanResult(byte slaveId, string status, string retries, Color backColor)
         {
+            /// - OLD ///  if (this.IsDisposed || scanResultsGrid.IsDisposed) return;
+            /// - OLD /// 
+            /// - OLD /// if (scanResultsGrid.InvokeRequired)
+            /// - OLD /// {
+            /// - OLD ///     scanResultsGrid.Invoke(new Action(() => AddScanResult(slaveId, status, retries, backColor)));
+            /// - OLD ///     return;
+            /// - OLD /// }
+            /// - OLD /// 
+            /// - OLD /// int rowIndex = scanResultsGrid.Rows.Add();
+            /// - OLD /// DataGridViewRow row = scanResultsGrid.Rows[rowIndex];
+            /// - OLD /// row.Cells[0].Value = slaveId > 0 ? slaveId.ToString() : "-";
+            /// - OLD /// row.Cells[1].Value = status;
+            /// - OLD /// row.Cells[2].Value = retries;
+            /// - OLD /// row.DefaultCellStyle.BackColor = backColor;
+
+
             if (this.IsDisposed || scanResultsGrid.IsDisposed) return;
 
             if (scanResultsGrid.InvokeRequired)
             {
-                scanResultsGrid.Invoke(new Action(() => AddScanResult(slaveId, status, backColor)));
+                scanResultsGrid.Invoke(new Action(() => AddScanResult(slaveId, status, retries, backColor)));
                 return;
             }
 
-            int rowIndex = scanResultsGrid.Rows.Add();
-            DataGridViewRow row = scanResultsGrid.Rows[rowIndex];
-            row.Cells[0].Value = slaveId > 0 ? slaveId.ToString() : "-";
-            row.Cells[1].Value = status;
-            row.DefaultCellStyle.BackColor = backColor;
+            DataGridViewRow targetRow = null;
+
+            // Szukaj istniejącego wiersza dla tego Slave ID
+            foreach (DataGridViewRow row in scanResultsGrid.Rows)
+            {
+                if (row.Cells[0].Value?.ToString() == slaveId.ToString())
+                {
+                    targetRow = row;
+                    break;
+                }
+            }
+
+            // Jeśli nie znaleziono, dodaj nowy
+            if (targetRow == null)
+            {
+                int rowIndex = scanResultsGrid.Rows.Add();
+                targetRow = scanResultsGrid.Rows[rowIndex];
+                targetRow.Cells[0].Value = slaveId > 0 ? slaveId.ToString() : "-";
+            }
+
+            // Aktualizuj dane
+            targetRow.Cells[1].Value = status;
+            targetRow.Cells[2].Value = retries;
+            targetRow.DefaultCellStyle.BackColor = backColor;
         }
 
         private void DeviceScan_FormClosing(object sender, FormClosingEventArgs e)

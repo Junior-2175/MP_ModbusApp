@@ -755,6 +755,7 @@ namespace MP_ModbusApp
             toolStripStatusLabel2.Spring = true;
             toolStripStatusLabel2.Text = "Enjoying ModbusApp? Rate it on Microsoft Store!";
             toolStripStatusLabel2.TextAlign = ContentAlignment.MiddleRight;
+            toolStripStatusLabel2.Visible = false;
             toolStripStatusLabel2.Click += toolStripStatusLabel2_Click;
             // 
             // menuStrip1
