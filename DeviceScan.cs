@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Windows.Forms.DataVisualization.Charting;
 
 namespace MP_ModbusApp
 {
@@ -18,16 +17,14 @@ namespace MP_ModbusApp
         // Event to notify about the current scanning status
         public event EventHandler<bool> ScanningStateChanged;
 
+        public DeviceScan() : this(null)
+        {
+        }
+
         public DeviceScan(IMyModbusMaster modbusMaster)
         {
             InitializeComponent();
             _modbusMaster = modbusMaster;
-            SetupDataGridView();
-        }
-
-        public DeviceScan()
-        {
-            InitializeComponent();
             SetupDataGridView();
         }
 
@@ -65,8 +62,6 @@ namespace MP_ModbusApp
                 this.Close();
                 return;
             }
-            
-
 
             _cts = new CancellationTokenSource();
             startToolStripMenuItem.Enabled = false;
@@ -81,12 +76,13 @@ namespace MP_ModbusApp
             byte end = (byte)endId.Value;
             ushort registerAddress = 10;
             ushort quantity = 1;
+            int maxRetries = (int)timeoutRetries.Value;
 
             try
             {
                 for (int i = start; i <= end; i++)
                 {
-                    for (int attempt = 1; attempt < timeoutRetries.Value+1; attempt++)
+                    for (int attempt = 1; attempt <= maxRetries; attempt++)
                     {
                         // Check if form is still active
                         if (this.IsDisposed) break;
@@ -94,7 +90,7 @@ namespace MP_ModbusApp
                         // Check for cancellation request
                         if (_cts.Token.IsCancellationRequested)
                         {
-                            AddScanResult((byte)i, "Stopped","0", Color.Orange);
+                            AddScanResult((byte)i, "Stopped", "0", Color.Orange);
                             break;
                         }
 
@@ -103,6 +99,7 @@ namespace MP_ModbusApp
                         {
                             transport.LoggingDeviceName = $"DeviceScan_ ({currentSlaveId})";
                         }
+
                         // Auto-scroll the grid
                         if (!this.IsDisposed && scanResultsGrid.Rows.Count > 0)
                             scanResultsGrid.FirstDisplayedScrollingRowIndex = scanResultsGrid.Rows.Count - 1;
@@ -111,31 +108,39 @@ namespace MP_ModbusApp
                         {
                             await _modbusMaster.ReadHoldingRegistersAsync(currentSlaveId, registerAddress, quantity);
                             AddScanResult(currentSlaveId, "Response OK", attempt.ToString(), Color.LightGreen);
-                            attempt = (int)timeoutRetries.Value+1;
+                            break; // Sukces - przejdź do następnego Slave ID
                         }
                         catch (TimeoutException)
                         {
                             AddScanResult(currentSlaveId, "Timeout", attempt.ToString(), Color.Salmon);
                         }
-                        catch (MyModbusSlaveException)
+                        catch (MyModbusSlaveException ex)
                         {
-                            //AddScanResult(currentSlaveId, "Response OK (Exception)", Color.LightGreen);
-                            AddScanResult(currentSlaveId, "Response OK", attempt.ToString(), Color.LightGreen);
-                            attempt = (int)timeoutRetries.Value+1;
+                            // Sprawdzamy treść komunikatu wyjątku pod kątem błędów bramki Modbus TCP (np. brak ścieżki, niedostępność)
+                            string message = ex.Message.ToLower();
+
+                            if (message.Contains("gateway") || message.Contains("path") || message.Contains("unavailable") || message.Contains("failed"))
+                            {
+                                AddScanResult(currentSlaveId, "Gateway Error", attempt.ToString(), Color.Salmon);
+                            }
+                            else
+                            {
+                                // Prawdziwy wyjątek z urządzenia (np. Illegal Data Address) potwierdza, że urządzenie żyje w sieci
+                                AddScanResult(currentSlaveId, "Device Responded (Exception)", attempt.ToString(), Color.LightGreen);
+                                break;
+                            }
                         }
                         catch (IOException)
                         {
-                            //AddScanResult(currentSlaveId, "Response OK (Frame Error)", Color.LightGreen);
-                            AddScanResult(currentSlaveId, "Response OK", attempt.ToString(), Color.LightGreen);
-                            attempt = (int)timeoutRetries.Value+1;
+                            // Błąd ramki/transmisji - urządzenie fizycznie odpowiedziało, ale ramka uszkodzona
+                            AddScanResult(currentSlaveId, "Device Responded (Frame Error)", attempt.ToString(), Color.LightGreen);
+                            break;
                         }
                         catch (Exception)
                         {
                             AddScanResult(currentSlaveId, "Error", attempt.ToString(), Color.LightYellow);
-                            attempt = (int)timeoutRetries.Value+1;
+                            break;
                         }
-                        
-
 
                         if (!_cts.Token.IsCancellationRequested)
                             await Task.Delay(20);
@@ -163,11 +168,6 @@ namespace MP_ModbusApp
 
                 // Notify MainWindow to resume normal communication
                 ScanningStateChanged?.Invoke(this, false);
-
-                if (!this.IsDisposed)
-                {
-                    //MessageBox.Show("Scanning finished.", "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
             }
         }
 
@@ -208,7 +208,6 @@ namespace MP_ModbusApp
                         }
 
                         File.WriteAllText(sfd.FileName, sb.ToString(), Encoding.UTF8);
-                        //MessageBox.Show("Data exported successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     catch (Exception ex)
                     {
@@ -221,22 +220,6 @@ namespace MP_ModbusApp
         // Thread-safe method to add scan results to the grid
         private void AddScanResult(byte slaveId, string status, string retries, Color backColor)
         {
-            /// - OLD ///  if (this.IsDisposed || scanResultsGrid.IsDisposed) return;
-            /// - OLD /// 
-            /// - OLD /// if (scanResultsGrid.InvokeRequired)
-            /// - OLD /// {
-            /// - OLD ///     scanResultsGrid.Invoke(new Action(() => AddScanResult(slaveId, status, retries, backColor)));
-            /// - OLD ///     return;
-            /// - OLD /// }
-            /// - OLD /// 
-            /// - OLD /// int rowIndex = scanResultsGrid.Rows.Add();
-            /// - OLD /// DataGridViewRow row = scanResultsGrid.Rows[rowIndex];
-            /// - OLD /// row.Cells[0].Value = slaveId > 0 ? slaveId.ToString() : "-";
-            /// - OLD /// row.Cells[1].Value = status;
-            /// - OLD /// row.Cells[2].Value = retries;
-            /// - OLD /// row.DefaultCellStyle.BackColor = backColor;
-
-
             if (this.IsDisposed || scanResultsGrid.IsDisposed) return;
 
             if (scanResultsGrid.InvokeRequired)
