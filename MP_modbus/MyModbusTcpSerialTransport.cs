@@ -4,6 +4,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MP_ModbusApp.MP_modbus
@@ -122,7 +123,7 @@ namespace MP_ModbusApp.MP_modbus
         }
 
         /// <summary>
-        /// Reads an RTU frame from the TCP stream, detecting the end of the frame using an inter-byte timeout.
+        /// Reads an RTU frame from the TCP stream, detecting the end of the frame using an inter-byte timeout via CancellationToken.
         /// </summary>
         private async Task<byte[]> ReadRtuFrameAsync()
         {
@@ -130,28 +131,43 @@ namespace MP_ModbusApp.MP_modbus
             {
                 while (true)
                 {
-                    try
-                    {
-                        // Set the main timeout for reading the first byte
-                        _stream.ReadTimeout = ReadTimeout;
-                        byte[] buffer = new byte[1];
-                        int bytesRead = await _stream.ReadAsync(buffer, 0, 1);
+                    // Główny timeout dla pierwszego bajtu, krótszy (inter-byte) dla kolejnych
+                    int currentTimeout = ms.Length == 0 ? ReadTimeout : 50;
 
-                        if (bytesRead == 0) break; // End of stream
-                        ms.WriteByte(buffer[0]);
+                    using (var cts = new CancellationTokenSource(currentTimeout))
+                    {
+                        try
+                        {
+                            byte[] buffer = new byte[1];
+                            // Przekazujemy token anulujący, który przerwie zadanie po upływie czasu
+                            int bytesRead = await _stream.ReadAsync(buffer, 0, 1, cts.Token);
 
-                        // After the first byte, set a short inter-byte timeout (T3.5)
-                        // 50ms is a safe, though generous, value.
-                        _stream.ReadTimeout = 50;
-                    }
-                    catch (IOException ex) when (ex.InnerException is SocketException sockEx && sockEx.SocketErrorCode == SocketError.TimedOut)
-                    {
-                        // Inter-byte timeout = end of RTU frame
-                        break;
-                    }
-                    catch (Exception)
-                    {
-                        throw; // Other error
+                            if (bytesRead == 0)
+                            {
+                                // Koniec strumienia (połączenie TCP zostało zerwane przez symulator/urządzenie)
+                                throw new SocketException((int)SocketError.ConnectionAborted);
+                            }
+
+                            ms.WriteByte(buffer[0]);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            // OperationCanceledException jest rzucany, gdy czas CancellationToken minie
+                            if (ms.Length > 0)
+                            {
+                                // Przerwa po odebraniu danych - uznajemy to za koniec ramki RTU
+                                break;
+                            }
+                            else
+                            {
+                                // Timeout przy oczekiwaniu na PIERWSZY bajt
+                                throw new TimeoutException("Brak odpowiedzi od urządzenia (Timeout).");
+                            }
+                        }
+                        catch (Exception)
+                        {
+                            throw; // Inne błędy (np. zrujnowane gniazdo TCP)
+                        }
                     }
                 }
                 return ms.ToArray();

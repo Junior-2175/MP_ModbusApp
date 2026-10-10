@@ -121,7 +121,7 @@ namespace MP_ModbusApp
 
                             if (message.Contains("gateway") || message.Contains("path") || message.Contains("unavailable") || message.Contains("failed"))
                             {
-                                AddScanResult(currentSlaveId, "Gateway Error", attempt.ToString(), Color.Salmon);
+                                AddScanResult(currentSlaveId, "Gateway Error", attempt.ToString(), Color.LightYellow);
                             }
                             else
                             {
@@ -133,7 +133,7 @@ namespace MP_ModbusApp
                         catch (IOException)
                         {
                             // Błąd ramki/transmisji - urządzenie fizycznie odpowiedziało, ale ramka uszkodzona
-                            AddScanResult(currentSlaveId, "Device Responded (Frame Error)", attempt.ToString(), Color.LightGreen);
+                            AddScanResult(currentSlaveId, "Frame Error", attempt.ToString(), Color.Salmon);
                             break;
                         }
                         catch (Exception)

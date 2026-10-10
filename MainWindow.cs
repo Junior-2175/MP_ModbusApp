@@ -17,7 +17,6 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Linq;
-using System.Diagnostics;
 
 namespace MP_ModbusApp
 {
@@ -290,25 +289,33 @@ namespace MP_ModbusApp
             if (cboxIPAddress.SelectedItem != null) DatabaseHelper.SaveSetting("LastUsedIPAddress", cboxIPAddress.SelectedItem.ToString());
         }
 
+        // --- ZMODYFIKOWANE: Podpięcie pod wciśnięcie klawisza Enter ---
         private async void CboxIPAddress_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.KeyCode == Keys.Enter)
             {
                 e.SuppressKeyPress = true;
-                string address = cboxIPAddress.Text.Trim();
-                if (string.IsNullOrEmpty(address)) return;
+                await ProcessAndSaveIpAddress(cboxIPAddress.Text.Trim());
+            }
+        }
 
-                if (await IsValidIpOrHostname(address))
-                {
-                    DatabaseHelper.SaveIpAddress(address);
-                    if (!cboxIPAddress.Items.Contains(address)) cboxIPAddress.Items.Insert(0, address);
-                    cboxIPAddress.SelectedItem = address;
-                    DatabaseHelper.SaveSetting("LastUsedIPAddress", address);
-                }
-                else
-                {
-                    MessageBox.Show($"'{address}' is not a valid IP address or hostname.", "Invalid Address", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                }
+        // --- NOWA METODA DO ZAPISU I WALIDACJI IP ---
+        private async Task<bool> ProcessAndSaveIpAddress(string address)
+        {
+            if (string.IsNullOrEmpty(address)) return false;
+
+            if (await IsValidIpOrHostname(address))
+            {
+                DatabaseHelper.SaveIpAddress(address);
+                if (!cboxIPAddress.Items.Contains(address)) cboxIPAddress.Items.Insert(0, address);
+                cboxIPAddress.SelectedItem = address;
+                DatabaseHelper.SaveSetting("LastUsedIPAddress", address);
+                return true;
+            }
+            else
+            {
+                MessageBox.Show($"'{address}' is not a valid IP address or hostname.", "Invalid Address", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
             }
         }
 
@@ -366,8 +373,17 @@ namespace MP_ModbusApp
                 }
                 else
                 {
+                    // --- ZMODYFIKOWANE: Wywołanie metody walidacji i zapisu adresu IP przed połączeniem ---
+                    string address = cboxIPAddress.Text.Trim();
+
+                    bool isAddressValid = await ProcessAndSaveIpAddress(address);
+                    if (!isAddressValid)
+                    {
+                        throw new Exception("Connection aborted: Invalid IP address or hostname.");
+                    }
+
                     tcpClient = new System.Net.Sockets.TcpClient();
-                    var connectTask = tcpClient.ConnectAsync(cboxIPAddress.Text, (int)numIPPort.Value);
+                    var connectTask = tcpClient.ConnectAsync(address, (int)numIPPort.Value);
                     if (await Task.WhenAny(connectTask, Task.Delay((int)numIPConnTimeout.Value)) != connectTask)
                         throw new TimeoutException("Connection timed out.");
 
@@ -376,7 +392,7 @@ namespace MP_ModbusApp
                     if (cboxConnection.SelectedIndex == 1) transport = new MyModbusTcpTransport(tcpClient, this);
                     else transport = new MyModbusTcpSerialTransport(tcpClient, rBtnRTU.Checked, this);
 
-                    connectionPort = $"{cboxIPAddress.Text}:{numIPPort.Value}";
+                    connectionPort = $"{address}:{numIPPort.Value}";
                 }
 
                 transport.ReadTimeout = (int)numResponseTimeout.Value;

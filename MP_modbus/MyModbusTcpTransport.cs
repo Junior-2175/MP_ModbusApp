@@ -4,6 +4,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MP_ModbusApp.MP_modbus
@@ -58,9 +59,9 @@ namespace MP_ModbusApp.MP_modbus
                 LogFrame(adu, "TX", slaveId);
                 await WriteAsync(adu);
 
-                // 5. Read MBAP response
+                // 5. Read MBAP response with timeout
                 byte[] mbapResponse = new byte[6];
-                await ReadFullAsync(mbapResponse, 6);
+                await ReadExactWithTimeoutAsync(mbapResponse, 6);
 
                 // 6. Validate Transaction ID
                 ushort responseTid = BinaryPrimitives.ReadUInt16BigEndian(mbapResponse.AsSpan(0, 2));
@@ -69,12 +70,12 @@ namespace MP_ModbusApp.MP_modbus
                     throw new IOException($"Mismatched Transaction ID. Sent: {_transactionId}, Recv: {responseTid}");
                 }
 
-                // 7. Read PDU
+                // 7. Read PDU with timeout
                 ushort responseLen = BinaryPrimitives.ReadUInt16BigEndian(mbapResponse.AsSpan(4, 2));
                 if (responseLen == 0) throw new IOException("Zero length PDU.");
 
                 byte[] pduResponse = new byte[responseLen];
-                await ReadFullAsync(pduResponse, responseLen);
+                await ReadExactWithTimeoutAsync(pduResponse, responseLen);
 
                 LogFrame(mbapResponse.Concat(pduResponse).ToArray(), "RX", slaveId);
 
@@ -83,6 +84,36 @@ namespace MP_ModbusApp.MP_modbus
             finally
             {
                 _transactionLock.Release();
+            }
+        }
+
+        private async Task ReadExactWithTimeoutAsync(byte[] buffer, int count)
+        {
+            int offset = 0;
+            int remaining = count;
+
+            // Jeśli ReadTimeout z warstwy bazowej nie został ustawiony (0), zabezpieczamy się standardowym 1000 ms
+            int timeout = ReadTimeout > 0 ? ReadTimeout : 1000;
+
+            using (var cts = new CancellationTokenSource(timeout))
+            {
+                try
+                {
+                    while (remaining > 0)
+                    {
+                        int bytesRead = await _stream.ReadAsync(buffer, offset, remaining, cts.Token);
+                        if (bytesRead == 0)
+                        {
+                            throw new SocketException((int)SocketError.ConnectionAborted);
+                        }
+                        offset += bytesRead;
+                        remaining -= bytesRead;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw new TimeoutException("Device not responded (Timeout).");
+                }
             }
         }
 
